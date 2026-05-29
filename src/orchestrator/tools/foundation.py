@@ -23,15 +23,20 @@ def capture_objective(objective: str) -> dict[str, Any]:
 
 
 def get_orchestrator_status() -> dict[str, Any]:
-    """Return the phase-1 capability status exposed to the ADK root agent."""
+    """Return the phase-2 capability status exposed to the ADK root agent."""
 
     return {
         "status": "ready",
-        "phase": "phase_1_foundation",
+        "phase": "phase_2_adk_workflows",
         "capabilities": [
             "root_agent",
             "runner",
             "in_memory_session_service",
             "in_memory_artifact_service",
+            "sequential_workflow",
+            "parallel_workflow",
+            "review_critic_workflow",
+            "iterative_refinement_workflow",
+            "human_in_the_loop_workflow",
         ],
     }

@@ -1,4 +1,4 @@
-"""Bootstrap the Google ADK Runner for the phase-1 orchestrator."""
+"""Bootstrap the Google ADK Runner for the orchestrator."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from orchestrator.config import OrchestratorSettings
 
 @dataclass(frozen=True)
 class AdkRuntime:
-    """Container for ADK runtime objects created in phase 1."""
+    """Container for ADK runtime objects."""
 
     settings: OrchestratorSettings
     root_agent: Any
@@ -25,9 +25,8 @@ class AdkRuntime:
 def build_runtime(settings: OrchestratorSettings | None = None) -> AdkRuntime:
     """Build a Runner with in-memory Session and Artifact services.
 
-    This implements the phase-1 foundation without custom orchestration logic:
-    one ADK root agent, one ADK Runner, one in-memory SessionService, and one
-    in-memory ArtifactService.
+    This uses the official ADK Runner with one ADK root agent, in-memory
+    SessionService and in-memory ArtifactService.
     """
 
     resolved_settings = settings or OrchestratorSettings.from_env()
@@ -67,7 +66,7 @@ async def run_once(
         app_name=runtime.settings.app_name,
         user_id=runtime.settings.user_id,
         session_id=resolved_session_id,
-        state={"phase": "phase_1_foundation"},
+        state={"phase": "phase_2_adk_workflows"},
     )
 
     Content = load_symbol("google.genai.types", "Content")
