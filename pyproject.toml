@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adk-agent-orchestrator"
+version = "0.1.0"
+description = "Greenfield Google ADK Python agent orchestrator foundation."
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = "MIT"
+authors = [
+  { name = "Meu Orquestrador Team" }
+]
+dependencies = [
+  "google-adk>=2.0.0,<3.0.0",
+  "python-dotenv>=1.0.1,<2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0,<9.0.0",
+  "ruff>=0.8.0,<1.0.0"
+]
+
+[project.scripts]
+adk-orchestrator-smoke = "orchestrator.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/orchestrator"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
