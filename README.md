@@ -67,7 +67,8 @@ adk-agent-orchestrator/
 ├── src/orchestrator/
 │   ├── agent.py                 # módulo de descoberta do ADK com root_agent
 │   ├── agents/root.py           # factory do RootOrchestratorAgent
-│   ├── agents/workflows.py      # factories dos workflows ADK da Fase 2
+│   ├── agents/specialists.py    # factories dos agentes especialistas
+│   ├── agents/workflows.py      # composição dos workflows ADK da Fase 2
 │   ├── runner/bootstrap.py      # Runner + SessionService + ArtifactService
 │   ├── tools/foundation.py      # tools de status/captura
 │   ├── tools/human.py           # tool de aprovação humana

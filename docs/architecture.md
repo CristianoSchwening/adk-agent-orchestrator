@@ -52,6 +52,12 @@ Implementar workflows multiagente, tools/MCP, contrato UI/API e readiness de ava
 └───────────────┘ └─────────────────┘
 ```
 
+## Agentes especialistas e workflows ADK da Fase 2
+
+Os agentes especialistas ficam em `src/orchestrator/agents/specialists.py` e os workflows ficam em `src/orchestrator/agents/workflows.py`. Essa separação preserva o ponto forte conceitual do legado — agente/toolkit/subtask/execução com papéis claros — sem reintroduzir `Workforce`, `TaskBoard` ou `Subtask`.
+
+Especialistas disponíveis: planner, executor, critic, summarizer, researcher, refiner e approval agent.
+
 ## Workflows ADK da Fase 2
 
 | Workflow | Primitiva ADK | Papel |

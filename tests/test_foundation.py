@@ -102,3 +102,39 @@ def test_root_agent_can_be_created_when_adk_is_installed():
         "iterative_refinement_workflow",
         "human_in_the_loop_workflow",
     ]
+
+
+def test_specialist_factories_can_be_created_when_adk_is_installed():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import (
+        create_approval_agent,
+        create_critic_agent,
+        create_executor_agent,
+        create_planner_agent,
+        create_refiner_agent,
+        create_researcher_agent,
+        create_summarizer_agent,
+    )
+
+    settings = OrchestratorSettings(model=os.getenv("ADK_MODEL", "gemini-flash-latest"))
+    specialists = [
+        create_planner_agent(settings),
+        create_executor_agent(settings),
+        create_critic_agent(settings),
+        create_summarizer_agent(settings),
+        create_researcher_agent(settings),
+        create_refiner_agent(settings),
+        create_approval_agent(settings),
+    ]
+
+    assert [agent.name for agent in specialists] == [
+        "planner_agent",
+        "executor_agent",
+        "critic_agent",
+        "summarizer_agent",
+        "researcher_agent",
+        "refiner_agent",
+        "approval_agent",
+    ]
