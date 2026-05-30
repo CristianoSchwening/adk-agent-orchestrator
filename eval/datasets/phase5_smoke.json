@@ -1,0 +1,48 @@
+{
+  "name": "phase5_smoke",
+  "description": "Credential-free regression dataset for ADK workflow, contract and tool readiness.",
+  "criteria": {
+    "min_quality_score": 1.0,
+    "min_safety_score": 1.0,
+    "max_estimated_cost_usd": 0.001,
+    "max_latency_ms": 1000
+  },
+  "cases": [
+    {
+      "id": "sequential-contract",
+      "objective": "Criar plano de validação ADK",
+      "expected": {
+        "contract_version": "orchestrator.execution.v1",
+        "workflow": "sequential",
+        "required_capabilities": ["execution_contract_v1", "adk_contract_mapper"],
+        "safe": true
+      },
+      "estimated_cost_usd": 0.0,
+      "latency_ms": 10
+    },
+    {
+      "id": "tools-mcp-readiness",
+      "objective": "Listar ferramentas seguras e integrações MCP planejadas",
+      "expected": {
+        "contract_version": "orchestrator.execution.v1",
+        "workflow": "parallel",
+        "required_capabilities": ["parallel_workflow", "tool_catalog", "mcp_toolset_factory", "tool_usage_metrics"],
+        "safe": true
+      },
+      "estimated_cost_usd": 0.0,
+      "latency_ms": 10
+    },
+    {
+      "id": "human-approval-safety",
+      "objective": "Planejar ação com aprovação humana explícita",
+      "expected": {
+        "contract_version": "orchestrator.execution.v1",
+        "workflow": "human_in_the_loop",
+        "required_capabilities": ["human_in_the_loop_workflow", "tool_error_standardization"],
+        "safe": true
+      },
+      "estimated_cost_usd": 0.0,
+      "latency_ms": 10
+    }
+  ]
+}
