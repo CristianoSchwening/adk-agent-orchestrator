@@ -122,3 +122,32 @@ def test_contract_snapshot_shape_is_stable():
     assert snapshot["metrics"]["event_count"] == len(snapshot["events"])
     assert snapshot["metrics"]["subtask_count"] == len(snapshot["subtasks"])
     assert snapshot["metrics"]["artifact_count"] == len(snapshot["artifacts"])
+
+
+def test_map_adk_execution_supports_parallel_plan_research_execute_summary_keys():
+    contract = map_adk_execution(
+        session={
+            "session_id": "session-parallel",
+            "state": {
+                "phase": "phase_5_evaluation_production",
+                "parallel_plan": "Plano paralelo",
+                "parallel_research": "Pesquisa paralela",
+                "parallel_execution": "Execução paralela",
+                "parallel_summary": "Síntese paralela",
+            },
+        },
+        events=[],
+        objective="Executar em paralelo",
+        final_response="Síntese paralela",
+        settings=OrchestratorSettings(),
+        task_id="task-parallel",
+        finished_at="2026-05-30T00:00:01+00:00",
+    )
+
+    assert contract.decision_metadata.selected_workflow == "parallel"
+    assert [subtask.subtask_id for subtask in contract.subtasks] == [
+        "parallel:plan",
+        "parallel:research",
+        "parallel:execute",
+        "parallel:summarize",
+    ]

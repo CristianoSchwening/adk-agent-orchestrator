@@ -75,7 +75,15 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
         "sequential_summarizer_agent",
     ]
     assert workflows["parallel"].name == "parallel_workflow"
-    assert len(workflows["parallel"].sub_agents) == 3
+    assert [agent.name for agent in workflows["parallel"].sub_agents] == [
+        "parallel_specialists_agent",
+        "parallel_summarizer_agent",
+    ]
+    assert [agent.name for agent in workflows["parallel"].sub_agents[0].sub_agents] == [
+        "parallel_planner_agent",
+        "parallel_researcher_agent",
+        "parallel_executor_agent",
+    ]
     assert workflows["review_critic"].max_iterations == BudgetPolicy().max_iterations
     assert workflows["iterative_refinement"].max_iterations == BudgetPolicy().max_iterations
     assert workflows["human_in_the_loop"].sub_agents[1].name == "human_approval_agent"

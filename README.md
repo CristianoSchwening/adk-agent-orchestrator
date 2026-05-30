@@ -11,7 +11,7 @@ Esta entrega implementa a **Fase 5 — Avaliação e Produção** sobre o contra
 - Configuração por `.env`/variáveis de ambiente.
 - Workflows equivalentes usando apenas primitivas ADK Python:
   - `SequentialAgent` para pipeline Planner → Executor → Critic → Summarizer.
-  - `ParallelAgent` para especialistas independentes.
+  - `SequentialAgent` envolvendo `ParallelAgent` para Planner/Researcher/Executor em paralelo e Summarizer final.
   - `LoopAgent` para `review_critic`.
   - `LoopAgent` para `iterative_refinement`.
   - `SequentialAgent` com tool ADK para `human_in_the_loop`.

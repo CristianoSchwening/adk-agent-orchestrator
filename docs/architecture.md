@@ -63,10 +63,21 @@ Especialistas disponíveis: planner, executor, critic, summarizer, researcher, r
 | Workflow | Primitiva ADK | Papel |
 | --- | --- | --- |
 | `sequential` | `SequentialAgent` | Planejar, executar, criticar e resumir em ordem determinística. |
-| `parallel` | `ParallelAgent` | Rodar especialistas independentes para arquitetura, qualidade e risco. |
+| `parallel` | `SequentialAgent` contendo `ParallelAgent` + Summarizer | Rodar Planner, Researcher e Executor em paralelo e consolidar com Summarizer. |
 | `review_critic` | `LoopAgent` | Alternar autoria e crítica dentro do orçamento de iteração. |
 | `iterative_refinement` | `LoopAgent` | Criar rascunho, avaliar e refinar iterativamente. |
 | `human_in_the_loop` | `SequentialAgent` + function tool ADK | Registrar decisão humana estruturada antes do follow-up. |
+
+O workflow `parallel` segue o desenho original do legado reinterpretado em ADK:
+
+```text
+parallel_workflow (SequentialAgent)
+├── parallel_specialists_agent (ParallelAgent)
+│   ├── parallel_planner_agent
+│   ├── parallel_researcher_agent
+│   └── parallel_executor_agent
+└── parallel_summarizer_agent
+```
 
 ## Tools e MCP da Fase 3
 

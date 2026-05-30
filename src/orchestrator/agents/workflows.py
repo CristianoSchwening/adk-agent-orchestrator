@@ -13,16 +13,14 @@ from typing import Any
 from orchestrator.adk_compat import load_symbol
 from orchestrator.agents.specialists import (
     create_approval_agent,
-    create_architecture_agent,
     create_context_agent,
     create_critic_agent,
     create_evaluator_agent,
     create_executor_agent,
     create_followup_agent,
     create_planner_agent,
-    create_quality_agent,
     create_refiner_agent,
-    create_risk_agent,
+    create_researcher_agent,
     create_summarizer_agent,
 )
 from orchestrator.config import OrchestratorSettings
@@ -83,20 +81,46 @@ def create_sequential_workflow(settings: OrchestratorSettings | None = None) -> 
 
 
 def create_parallel_workflow(settings: OrchestratorSettings | None = None) -> Any:
-    """Create an ADK ParallelAgent with independent specialist workers."""
+    """Create Planner/Researcher/Executor in parallel followed by a Summarizer."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    _, ParallelAgent, _ = _load_adk_workflow_primitives()
+    SequentialAgent, ParallelAgent, _ = _load_adk_workflow_primitives()
 
-    return ParallelAgent(
-        name="parallel_workflow",
-        description=(
-            "ADK ParallelAgent that evaluates an objective through independent specialists."
-        ),
+    parallel_block = ParallelAgent(
+        name="parallel_specialists_agent",
+        description="Runs planner, researcher and executor specialists in parallel.",
         sub_agents=[
-            create_architecture_agent(resolved_settings),
-            create_quality_agent(resolved_settings),
-            create_risk_agent(resolved_settings),
+            create_planner_agent(
+                resolved_settings,
+                name="parallel_planner_agent",
+                output_key="parallel_plan",
+                parallel_worker=True,
+            ),
+            create_researcher_agent(
+                resolved_settings,
+                name="parallel_researcher_agent",
+                output_key="parallel_research",
+                parallel_worker=True,
+            ),
+            create_executor_agent(
+                resolved_settings,
+                name="parallel_executor_agent",
+                output_key="parallel_execution",
+                parallel_worker=True,
+            ),
+        ],
+    )
+
+    return SequentialAgent(
+        name="parallel_workflow",
+        description="ADK workflow that runs parallel specialists and summarizes their outputs.",
+        sub_agents=[
+            parallel_block,
+            create_summarizer_agent(
+                resolved_settings,
+                name="parallel_summarizer_agent",
+                output_key="parallel_summary",
+            ),
         ],
     )
 

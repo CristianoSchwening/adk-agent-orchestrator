@@ -26,7 +26,7 @@
       "expected": {
         "contract_version": "orchestrator.execution.v1",
         "workflow": "parallel",
-        "required_capabilities": ["tool_catalog", "mcp_toolset_factory", "tool_usage_metrics"],
+        "required_capabilities": ["parallel_workflow", "tool_catalog", "mcp_toolset_factory", "tool_usage_metrics"],
         "safe": true
       },
       "estimated_cost_usd": 0.0,
