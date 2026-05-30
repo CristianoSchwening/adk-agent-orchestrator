@@ -1,0 +1,97 @@
+{
+  "contract_version": "orchestrator.execution.v1",
+  "task": {
+    "task_id": "task-demo",
+    "objective": "Criar plano de validação ADK",
+    "status": "completed",
+    "app_name": "adk-agent-orchestrator",
+    "user_id": "local-user",
+    "session_id": "session-demo",
+    "created_at": "2026-05-30T00:00:00+00:00",
+    "updated_at": "2026-05-30T00:00:01+00:00",
+    "final_response": "Plano validado e sumarizado."
+  },
+  "subtasks": [
+    {
+      "subtask_id": "sequential:plan",
+      "name": "plan",
+      "status": "completed",
+      "agent_name": null,
+      "workflow": "sequential",
+      "input_summary": null,
+      "output_summary": "1. Validar contrato\n2. Rodar testes",
+      "started_at": null,
+      "finished_at": "2026-05-30T00:00:01+00:00",
+      "error": null
+    },
+    {
+      "subtask_id": "sequential:summarize",
+      "name": "summarize",
+      "status": "completed",
+      "agent_name": null,
+      "workflow": "sequential",
+      "input_summary": null,
+      "output_summary": "Plano validado e sumarizado.",
+      "started_at": null,
+      "finished_at": "2026-05-30T00:00:01+00:00",
+      "error": null
+    }
+  ],
+  "events": [
+    {
+      "event_id": "event-1",
+      "type": "model",
+      "message": "Planejamento concluído.",
+      "timestamp": "2026-05-30T00:00:00+00:00",
+      "source": "sequential_planner_agent",
+      "severity": "info",
+      "subtask_id": null,
+      "metadata": {}
+    },
+    {
+      "event_id": "event-2",
+      "type": "final_response",
+      "message": "Plano validado e sumarizado.",
+      "timestamp": "2026-05-30T00:00:01+00:00",
+      "source": "sequential_summarizer_agent",
+      "severity": "info",
+      "subtask_id": null,
+      "metadata": {}
+    }
+  ],
+  "metrics": {
+    "duration_ms": 1000,
+    "event_count": 2,
+    "subtask_count": 2,
+    "artifact_count": 1,
+    "tool_call_count": 0,
+    "model_event_count": 2,
+    "error_count": 0,
+    "custom": {
+      "phase": "phase_4_contract_ui",
+      "tool_timeout_seconds": 10.0,
+      "mcp_server_count": 0
+    }
+  },
+  "decision_metadata": {
+    "selected_workflow": "sequential",
+    "rationale": "Objetivo linear adequado a planejamento e resumo sequenciais.",
+    "confidence": 0.82,
+    "alternatives": [
+      "parallel"
+    ],
+    "policy_version": "phase4-default"
+  },
+  "artifacts": [
+    {
+      "artifact_id": "artifact-plan",
+      "name": "plan.md",
+      "mime_type": "text/markdown",
+      "uri": "artifact://session-demo/plan.md",
+      "size_bytes": 128,
+      "metadata": {
+        "version": "1"
+      }
+    }
+  ]
+}
