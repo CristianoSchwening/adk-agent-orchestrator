@@ -23,11 +23,11 @@ def capture_objective(objective: str) -> dict[str, Any]:
 
 
 def get_orchestrator_status() -> dict[str, Any]:
-    """Return the phase-4 capability status exposed to the ADK root agent."""
+    """Return the phase-5 capability status exposed to the ADK root agent."""
 
     return {
         "status": "ready",
-        "phase": "phase_4_contract_ui",
+        "phase": "phase_5_evaluation_production",
         "capabilities": [
             "root_agent",
             "runner",
@@ -47,5 +47,10 @@ def get_orchestrator_status() -> dict[str, Any]:
             "execution_contract_v1",
             "adk_contract_mapper",
             "contract_snapshots",
+            "continuous_evaluation",
+            "evaluation_datasets",
+            "structured_logging",
+            "google_cloud_readiness",
+            "production_runbooks",
         ],
     }

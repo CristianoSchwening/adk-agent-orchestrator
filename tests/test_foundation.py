@@ -27,7 +27,7 @@ def test_tools_return_structured_payloads():
 
     assert captured["status"] == "success"
     assert captured["objective"] == "Criar uma fundação ADK"
-    assert status["phase"] == "phase_4_contract_ui"
+    assert status["phase"] == "phase_5_evaluation_production"
     assert "root_agent" in status["capabilities"]
     assert "in_memory_session_service" in status["capabilities"]
     assert "sequential_workflow" in status["capabilities"]

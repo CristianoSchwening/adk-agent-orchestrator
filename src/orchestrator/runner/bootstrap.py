@@ -59,10 +59,11 @@ def initial_session_state(settings: OrchestratorSettings) -> dict[str, object]:
     """Return the initial ADK session state tracked by the public contract."""
 
     return {
-        "phase": "phase_4_contract_ui",
+        "phase": "phase_5_evaluation_production",
         "contract_version": "orchestrator.execution.v1",
         "tool_timeout_seconds": settings.tool_timeout_seconds,
         "mcp_server_count": len(settings.mcp_servers),
+        "evaluation_dataset": "eval/datasets/phase5_smoke.json",
     }
 
 

@@ -33,7 +33,7 @@ class FakeArtifact:
 def test_initial_session_state_tracks_phase4_contract_version():
     state = initial_session_state(OrchestratorSettings(tool_timeout_seconds=2.0))
 
-    assert state["phase"] == "phase_4_contract_ui"
+    assert state["phase"] == "phase_5_evaluation_production"
     assert state["contract_version"] == CONTRACT_VERSION
     assert state["tool_timeout_seconds"] == 2.0
 
@@ -41,7 +41,7 @@ def test_initial_session_state_tracks_phase4_contract_version():
 def test_status_reports_contract_capabilities():
     status = get_orchestrator_status()
 
-    assert status["phase"] == "phase_4_contract_ui"
+    assert status["phase"] == "phase_5_evaluation_production"
     assert "execution_contract_v1" in status["capabilities"]
     assert "adk_contract_mapper" in status["capabilities"]
     assert "contract_snapshots" in status["capabilities"]
@@ -54,7 +54,7 @@ def test_map_adk_execution_returns_versioned_contract():
             "app_name": "app",
             "user_id": "user",
             "state": {
-                "phase": "phase_4_contract_ui",
+                "phase": "phase_5_evaluation_production",
                 "workflow": "sequential",
                 "sequential_plan": "Plano",
                 "decision_rationale": "Objetivo linear.",
