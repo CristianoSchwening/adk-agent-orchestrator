@@ -1,4 +1,4 @@
-"""Minimal function tools used by the root ADK agent in phase 1."""
+"""Foundation function tools used by the root ADK agent."""
 
 from __future__ import annotations
 
@@ -23,11 +23,11 @@ def capture_objective(objective: str) -> dict[str, Any]:
 
 
 def get_orchestrator_status() -> dict[str, Any]:
-    """Return the phase-2 capability status exposed to the ADK root agent."""
+    """Return the phase-3 capability status exposed to the ADK root agent."""
 
     return {
         "status": "ready",
-        "phase": "phase_2_adk_workflows",
+        "phase": "phase_3_tools_mcp",
         "capabilities": [
             "root_agent",
             "runner",
@@ -38,5 +38,11 @@ def get_orchestrator_status() -> dict[str, Any]:
             "review_critic_workflow",
             "iterative_refinement_workflow",
             "human_in_the_loop_workflow",
+            "tool_catalog",
+            "local_adk_function_tools",
+            "mcp_toolset_factory",
+            "tool_timeouts",
+            "tool_error_standardization",
+            "tool_usage_metrics",
         ],
     }

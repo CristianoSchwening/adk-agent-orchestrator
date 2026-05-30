@@ -1,8 +1,8 @@
-# Arquitetura — Fase 2 ADK Python
+# Arquitetura — Fase 3 ADK Python
 
 ## Objetivo
 
-Implementar workflows multiagente equivalentes usando somente primitivas oficiais do Google ADK Python, mantendo o repositório greenfield e sem reaproveitar o runtime legado.
+Implementar workflows multiagente e uma camada inicial de tools/MCP usando somente primitivas oficiais do Google ADK Python, mantendo o repositório greenfield e sem reaproveitar o runtime legado.
 
 ## Escopo implementado
 
@@ -17,6 +17,7 @@ Implementar workflows multiagente equivalentes usando somente primitivas oficiai
 │ - LlmAgent ADK                │
 │ - tools de status/captura     │
 │ - subagentes de workflow ADK  │
+│ - tools locais e MCP toolsets  │
 └─────────┬─────────────────────┘
           │
           ├── sequential_workflow
@@ -59,14 +60,18 @@ Implementar workflows multiagente equivalentes usando somente primitivas oficiai
 | `iterative_refinement` | `LoopAgent` | Criar rascunho, avaliar e refinar iterativamente. |
 | `human_in_the_loop` | `SequentialAgent` + function tool ADK | Registrar decisão humana estruturada antes do follow-up. |
 
+## Tools e MCP da Fase 3
+
+A Fase 3 adiciona um catálogo de tools locais e desejadas, function tools seguras para filesystem/HTTP/documentos/dados/modelo e uma factory lazy para `MCPToolset`. Timeouts, erros padronizados e métricas process-local ficam em `src/orchestrator/tools/`.
+
 ## Decisões arquiteturais
 
-1. **ADK como runtime central**: o bootstrap usa `Runner`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`, `InMemorySessionService` e `InMemoryArtifactService`.
+1. **ADK como runtime central**: o bootstrap usa `Runner`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`, ADK function tools, MCP Toolsets, `InMemorySessionService` e `InMemoryArtifactService`.
 2. **Sem código legado**: não há dependência de `workforce.py`, `TaskBoard`, `Subtask` ou `Toolkit`.
 3. **Lazy imports do ADK**: os módulos de domínio podem ser testados mesmo quando o wheel `google-adk` não está instalado no interpretador local.
 4. **Workflows como subagentes**: o agente raiz recebe os workflows como subagentes ADK, permitindo delegação pelo mecanismo nativo do ADK.
 5. **Persistência in-memory**: adequada ao desenvolvimento local; fases futuras devem avaliar serviços persistentes.
-6. **Configuração por ambiente**: `ADK_APP_NAME`, `ADK_USER_ID` e `ADK_MODEL` são lidos de variáveis de ambiente.
+6. **Configuração por ambiente**: `ADK_APP_NAME`, `ADK_USER_ID`, `ADK_MODEL`, `ADK_TOOL_TIMEOUT_SECONDS` e `ADK_MCP_SERVERS` são lidos de variáveis de ambiente.
 
 ## Fluxo de execução
 
@@ -83,7 +88,7 @@ run_once(objective)
    │     ├── InMemoryArtifactService()
    │     └── Runner(...)
    │
-   ├── session_service.create_session(..., state={"phase": "phase_2_adk_workflows"})
+   ├── session_service.create_session(..., state={"phase": "phase_3_tools_mcp", ...})
    ├── runner.run_async(...)
    └── resposta final
 ```

@@ -13,7 +13,14 @@ from typing import Any
 from orchestrator.adk_compat import load_symbol
 from orchestrator.config import OrchestratorSettings
 from orchestrator.policies import BudgetPolicy
-from orchestrator.tools import request_human_approval
+from orchestrator.tools import (
+    describe_model_request,
+    extract_document_outline,
+    fetch_http_text,
+    inspect_json_records,
+    read_text_file,
+    request_human_approval,
+)
 
 PHASE_2_WORKFLOW_NAMES = (
     "sequential",
@@ -84,6 +91,7 @@ def create_sequential_workflow(settings: OrchestratorSettings | None = None) -> 
                 Planeje a solução do objetivo recebido em etapas claras, pequenas e verificáveis.
                 Escreva premissas, dependências e critérios de sucesso antes de propor execução.
                 """,
+                tools=[read_text_file, extract_document_outline],
                 output_key="sequential_plan",
             ),
             llm(
@@ -93,6 +101,7 @@ def create_sequential_workflow(settings: OrchestratorSettings | None = None) -> 
                 Use o plano disponível no estado da sessão para produzir a solução solicitada.
                 Preserve rastreabilidade entre etapas do plano e decisões tomadas.
                 """,
+                tools=[read_text_file, fetch_http_text, inspect_json_records],
                 output_key="sequential_execution",
             ),
             llm(
@@ -111,6 +120,7 @@ def create_sequential_workflow(settings: OrchestratorSettings | None = None) -> 
                 Consolide plano, execução e crítica em uma resposta final concisa em português,
                 destacando resultado, riscos remanescentes e próximos passos recomendados.
                 """,
+                tools=[describe_model_request],
                 output_key="sequential_summary",
             ),
         ],
@@ -136,6 +146,7 @@ def create_parallel_workflow(settings: OrchestratorSettings | None = None) -> An
                 instruction=(
                     "Avalie impactos de arquitetura, interfaces e decomposição do objetivo."
                 ),
+                tools=[read_text_file, extract_document_outline],
                 output_key="parallel_architecture_assessment",
                 parallel_worker=True,
             ),
@@ -145,6 +156,7 @@ def create_parallel_workflow(settings: OrchestratorSettings | None = None) -> An
                 instruction=(
                     "Avalie estratégia de testes, qualidade, observabilidade e critérios de aceite."
                 ),
+                tools=[inspect_json_records],
                 output_key="parallel_quality_assessment",
                 parallel_worker=True,
             ),
@@ -154,6 +166,7 @@ def create_parallel_workflow(settings: OrchestratorSettings | None = None) -> An
                 instruction=(
                     "Avalie riscos de segurança, privacidade, compliance, prazo e operação."
                 ),
+                tools=[fetch_http_text],
                 output_key="parallel_risk_assessment",
                 parallel_worker=True,
             ),
@@ -233,6 +246,7 @@ def create_iterative_refinement_workflow(
                 instruction=(
                     "Avalie o rascunho contra critérios de aceite e priorize melhorias concretas."
                 ),
+                tools=[inspect_json_records, extract_document_outline],
                 output_key="refinement_evaluation",
             ),
             llm(

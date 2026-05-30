@@ -2,7 +2,7 @@
 
 Repositório **greenfield** para a reimplementação do orquestrador usando **Google Agent Development Kit (ADK) para Python**.
 
-Esta entrega implementa a **Fase 2 — Workflows ADK Python** sobre a fundação ADK-only da Fase 1:
+Esta entrega implementa a **Fase 3 — Tools e MCP** sobre os workflows ADK Python da Fase 2:
 
 - `RootOrchestratorAgent` em ADK Python com subagentes de workflow.
 - `Runner` oficial do ADK.
@@ -15,11 +15,15 @@ Esta entrega implementa a **Fase 2 — Workflows ADK Python** sobre a fundação
   - `LoopAgent` para `review_critic`.
   - `LoopAgent` para `iterative_refinement`.
   - `SequentialAgent` com tool ADK para `human_in_the_loop`.
+- Tools locais seguras para filesystem, HTTP, documentos, dados e planejamento de modelo.
+- Catálogo de tools consultável pelo agente raiz.
+- Factory lazy para integração externa via ADK `MCPToolset`.
+- Timeouts, erros padronizados e métricas locais de uso de tools.
 - Testes de smoke para configuração, tools, políticas e composição dos workflows.
 
 > A implementação não reaproveita runtime legado (`Workforce`, `TaskBoard` ou `Subtask`). O novo desenho parte das primitivas oficiais do ADK Python.
 
-## Arquitetura da Fase 2
+## Arquitetura da Fase 3
 
 ```text
 User / CLI / ADK Web
@@ -33,7 +37,8 @@ RootOrchestratorAgent (ADK LlmAgent)
         ├── parallel_workflow (ADK ParallelAgent)
         ├── review_critic_workflow (ADK LoopAgent)
         ├── iterative_refinement_workflow (ADK LoopAgent)
-        └── human_in_the_loop_workflow (ADK SequentialAgent + tool)
+        ├── human_in_the_loop_workflow (ADK SequentialAgent + tool)
+        └── Phase 3 local tools + MCP toolsets
         │
         ▼
 ADK Runner
@@ -55,6 +60,10 @@ adk-agent-orchestrator/
 │   ├── runner/bootstrap.py      # Runner + SessionService + ArtifactService
 │   ├── tools/foundation.py      # tools de status/captura
 │   ├── tools/human.py           # tool de aprovação humana
+│   ├── tools/local.py           # tools locais da Fase 3
+│   ├── tools/catalog.py         # catálogo de tools
+│   ├── tools/metrics.py         # métricas de uso de tools
+│   ├── mcp/factory.py           # factory lazy para MCPToolset
 │   ├── policies/budget.py       # policy de orçamento para loops ADK
 │   └── main.py                  # CLI smoke
 ├── tests/test_foundation.py
@@ -91,6 +100,15 @@ ruff check .
 python -m compileall -q src tests
 ```
 
+## Configuração de Tools e MCP
+
+```bash
+ADK_TOOL_TIMEOUT_SECONDS="10"
+ADK_MCP_SERVERS='[{"name":"filesystem","transport":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","."]}]'
+```
+
+Consulte detalhes em [`docs/tools.md`](docs/tools.md).
+
 ## Executar via CLI própria
 
 ```bash
@@ -115,7 +133,7 @@ adk web --port 8000
 
 ## Próximos passos
 
-1. Ligar `BudgetPolicy` a callbacks/state avançados do ADK.
-2. Criar adapter de eventos ADK para o contrato de UI.
-3. Persistir sessões e artefatos fora de memória para ambientes compartilhados.
-4. Adicionar observabilidade de produção e rastreamento de decisões human-in-the-loop.
+1. Ligar métricas locais de tools a ADK Session Events e observabilidade de produção.
+2. Ligar `BudgetPolicy` a callbacks/state avançados do ADK.
+3. Criar adapter de eventos ADK para o contrato de UI.
+4. Persistir sessões e artefatos fora de memória para ambientes compartilhados.

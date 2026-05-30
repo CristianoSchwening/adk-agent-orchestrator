@@ -66,7 +66,11 @@ async def run_once(
         app_name=runtime.settings.app_name,
         user_id=runtime.settings.user_id,
         session_id=resolved_session_id,
-        state={"phase": "phase_2_adk_workflows"},
+        state={
+            "phase": "phase_3_tools_mcp",
+            "tool_timeout_seconds": runtime.settings.tool_timeout_seconds,
+            "mcp_server_count": len(runtime.settings.mcp_servers),
+        },
     )
 
     Content = load_symbol("google.genai.types", "Content")
