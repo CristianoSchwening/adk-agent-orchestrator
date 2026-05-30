@@ -1,8 +1,8 @@
-# Arquitetura — Fase 3 ADK Python
+# Arquitetura — Fase 4 ADK Python
 
 ## Objetivo
 
-Implementar workflows multiagente e uma camada inicial de tools/MCP usando somente primitivas oficiais do Google ADK Python, mantendo o repositório greenfield e sem reaproveitar o runtime legado.
+Implementar workflows multiagente, tools/MCP e um contrato de execução versionado para UI/API usando somente primitivas oficiais do Google ADK Python, mantendo o repositório greenfield e sem reaproveitar o runtime legado.
 
 ## Escopo implementado
 
@@ -18,6 +18,7 @@ Implementar workflows multiagente e uma camada inicial de tools/MCP usando somen
 │ - tools de status/captura     │
 │ - subagentes de workflow ADK  │
 │ - tools locais e MCP toolsets  │
+│ - contrato UI/API versionado   │
 └─────────┬─────────────────────┘
           │
           ├── sequential_workflow
@@ -64,6 +65,10 @@ Implementar workflows multiagente e uma camada inicial de tools/MCP usando somen
 
 A Fase 3 adiciona um catálogo de tools locais e desejadas, function tools seguras para filesystem/HTTP/documentos/dados/modelo e uma factory lazy para `MCPToolset`. Timeouts, erros padronizados e métricas process-local ficam em `src/orchestrator/tools/`.
 
+## Contrato de execução da Fase 4
+
+A Fase 4 adiciona DTOs versionados em `src/orchestrator/contracts/dto.py` e um mapper em `src/orchestrator/mapping/adk.py`. O contrato `orchestrator.execution.v1` projeta ADK Session, Events e Artifacts para `task`, `subtasks`, `events`, `metrics`, `decision_metadata` e `artifacts`, mantendo clientes Web/Android desacoplados da orquestração interna.
+
 ## Decisões arquiteturais
 
 1. **ADK como runtime central**: o bootstrap usa `Runner`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`, ADK function tools, MCP Toolsets, `InMemorySessionService` e `InMemoryArtifactService`.
@@ -72,6 +77,7 @@ A Fase 3 adiciona um catálogo de tools locais e desejadas, function tools segur
 4. **Workflows como subagentes**: o agente raiz recebe os workflows como subagentes ADK, permitindo delegação pelo mecanismo nativo do ADK.
 5. **Persistência in-memory**: adequada ao desenvolvimento local; fases futuras devem avaliar serviços persistentes.
 6. **Configuração por ambiente**: `ADK_APP_NAME`, `ADK_USER_ID`, `ADK_MODEL`, `ADK_TOOL_TIMEOUT_SECONDS` e `ADK_MCP_SERVERS` são lidos de variáveis de ambiente.
+7. **Contrato versionado**: clientes consomem `orchestrator.execution.v1`; mudanças futuras devem criar nova versão ou mapper compatível.
 
 ## Fluxo de execução
 
@@ -88,7 +94,7 @@ run_once(objective)
    │     ├── InMemoryArtifactService()
    │     └── Runner(...)
    │
-   ├── session_service.create_session(..., state={"phase": "phase_3_tools_mcp", ...})
+   ├── session_service.create_session(..., state={"phase": "phase_4_contract_ui", "contract_version": "orchestrator.execution.v1", ...})
    ├── runner.run_async(...)
    └── resposta final
 ```

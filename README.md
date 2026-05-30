@@ -2,7 +2,7 @@
 
 Repositório **greenfield** para a reimplementação do orquestrador usando **Google Agent Development Kit (ADK) para Python**.
 
-Esta entrega implementa a **Fase 3 — Tools e MCP** sobre os workflows ADK Python da Fase 2:
+Esta entrega implementa a **Fase 4 — Contrato e UI** sobre Tools/MCP da Fase 3:
 
 - `RootOrchestratorAgent` em ADK Python com subagentes de workflow.
 - `Runner` oficial do ADK.
@@ -19,11 +19,15 @@ Esta entrega implementa a **Fase 3 — Tools e MCP** sobre os workflows ADK Pyth
 - Catálogo de tools consultável pelo agente raiz.
 - Factory lazy para integração externa via ADK `MCPToolset`.
 - Timeouts, erros padronizados e métricas locais de uso de tools.
-- Testes de smoke para configuração, tools, políticas e composição dos workflows.
+- Contrato JSON versionado `orchestrator.execution.v1` para UI/API.
+- DTOs para task, subtasks, events, metrics, decision_metadata e artifacts.
+- Mapper de ADK Session/Events/Artifacts para contrato de execução.
+- Snapshot JSON em `docs/contracts/` para consumidores Web/Android/API.
+- Testes de smoke para configuração, tools, contrato, políticas e composição dos workflows.
 
 > A implementação não reaproveita runtime legado (`Workforce`, `TaskBoard` ou `Subtask`). O novo desenho parte das primitivas oficiais do ADK Python.
 
-## Arquitetura da Fase 3
+## Arquitetura da Fase 4
 
 ```text
 User / CLI / ADK Web
@@ -38,7 +42,8 @@ RootOrchestratorAgent (ADK LlmAgent)
         ├── review_critic_workflow (ADK LoopAgent)
         ├── iterative_refinement_workflow (ADK LoopAgent)
         ├── human_in_the_loop_workflow (ADK SequentialAgent + tool)
-        └── Phase 3 local tools + MCP toolsets
+        ├── Phase 3 local tools + MCP toolsets
+        └── Phase 4 execution contract mapper
         │
         ▼
 ADK Runner
@@ -64,6 +69,8 @@ adk-agent-orchestrator/
 │   ├── tools/catalog.py         # catálogo de tools
 │   ├── tools/metrics.py         # métricas de uso de tools
 │   ├── mcp/factory.py           # factory lazy para MCPToolset
+│   ├── contracts/dto.py         # DTOs versionados do contrato de execução
+│   ├── mapping/adk.py           # mapper ADK -> contrato UI/API
 │   ├── policies/budget.py       # policy de orçamento para loops ADK
 │   └── main.py                  # CLI smoke
 ├── tests/test_foundation.py
@@ -109,6 +116,14 @@ ADK_MCP_SERVERS='[{"name":"filesystem","transport":"stdio","command":"npx","args
 
 Consulte detalhes em [`docs/tools.md`](docs/tools.md).
 
+## Contrato de execução para UI/API
+
+```bash
+adk-orchestrator-smoke --contract-json "Validar contrato Fase 4"
+```
+
+A versão atual do contrato é `orchestrator.execution.v1` e inclui `task`, `subtasks`, `events`, `metrics`, `decision_metadata` e `artifacts`. Consulte [`docs/contracts/README.md`](docs/contracts/README.md) e o snapshot [`docs/contracts/execution_contract_v1.example.json`](docs/contracts/execution_contract_v1.example.json).
+
 ## Executar via CLI própria
 
 ```bash
@@ -133,7 +148,7 @@ adk web --port 8000
 
 ## Próximos passos
 
-1. Ligar métricas locais de tools a ADK Session Events e observabilidade de produção.
-2. Ligar `BudgetPolicy` a callbacks/state avançados do ADK.
-3. Criar adapter de eventos ADK para o contrato de UI.
+1. Expor o contrato por uma API HTTP para Web/Android.
+2. Ligar métricas locais de tools a ADK Session Events e observabilidade de produção.
+3. Ligar `BudgetPolicy` a callbacks/state avançados do ADK.
 4. Persistir sessões e artefatos fora de memória para ambientes compartilhados.
