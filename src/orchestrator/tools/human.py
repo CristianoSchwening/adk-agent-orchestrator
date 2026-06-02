@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 ApprovalDecision = Literal["approved", "rejected", "needs_changes"]
@@ -21,5 +21,5 @@ def request_human_approval(
         "rationale": rationale.strip(),
         "requested_action": requested_action.strip(),
         "approved": decision == "approved",
-        "recorded_at": datetime.now(UTC).isoformat(),
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
     }

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -18,7 +18,7 @@ def capture_objective(objective: str) -> dict[str, Any]:
     return {
         "status": "success" if normalized_objective else "empty_objective",
         "objective": normalized_objective,
-        "captured_at": datetime.now(UTC).isoformat(),
+        "captured_at": datetime.now(timezone.utc).isoformat(),
     }
 
 

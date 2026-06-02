@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from threading import Lock
 from typing import Any
 
@@ -98,4 +98,4 @@ def reset_tool_usage_metrics() -> dict[str, Any]:
     """Clear process-local tool usage metrics and return a status payload."""
 
     TOOL_METRICS.reset()
-    return {"status": "reset", "reset_at": datetime.now(UTC).isoformat()}
+    return {"status": "reset", "reset_at": datetime.now(timezone.utc).isoformat()}

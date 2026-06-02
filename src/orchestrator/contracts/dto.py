@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 CONTRACT_VERSION = "orchestrator.execution.v1"
@@ -16,7 +16,7 @@ EventSeverity = Literal["debug", "info", "warning", "error"]
 def utc_now_iso() -> str:
     """Return a timezone-aware UTC timestamp for contract DTOs."""
 
-    return datetime.now(UTC).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass(frozen=True)

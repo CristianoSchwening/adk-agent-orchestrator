@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeoutError
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from time import perf_counter
 from typing import Any
 
@@ -51,7 +51,7 @@ def execute_tool_call(
     """Execute a local tool operation with timeout, errors and metrics."""
 
     timeout = timeout_seconds or OrchestratorSettings.from_env().tool_timeout_seconds
-    started_at = datetime.now(UTC)
+    started_at = datetime.now(timezone.utc)
     started = perf_counter()
     error_code: str | None = None
     executor = ThreadPoolExecutor(max_workers=1)
@@ -82,7 +82,7 @@ def execute_tool_call(
                 elapsed_ms=elapsed_ms,
             )
     finally:
-        finished_at = datetime.now(UTC)
+        finished_at = datetime.now(timezone.utc)
         elapsed_ms = int((perf_counter() - started) * 1000)
         TOOL_METRICS.record(
             tool_name=tool_name,

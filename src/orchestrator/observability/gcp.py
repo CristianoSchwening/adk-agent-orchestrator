@@ -12,7 +12,7 @@ import json
 import logging
 import os
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -46,7 +46,7 @@ class JsonFormatter(logging.Formatter):
         payload: dict[str, Any] = {
             "severity": record.levelname,
             "message": record.getMessage(),
-            "timestamp": datetime.now(UTC).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "service": self._settings.service_name,
             "environment": self._settings.environment,
             "logger": record.name,
