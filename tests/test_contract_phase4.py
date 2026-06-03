@@ -36,6 +36,7 @@ def test_initial_session_state_tracks_phase4_contract_version():
     assert state["phase"] == "phase_5_evaluation_production"
     assert state["contract_version"] == CONTRACT_VERSION
     assert state["tool_timeout_seconds"] == 2.0
+    assert state["progressive_agent_responses"] == []
 
 
 def test_status_reports_contract_capabilities():
@@ -116,12 +117,16 @@ def test_contract_snapshot_shape_is_stable():
         "metrics",
         "decision_metadata",
         "artifacts",
+        "progressive_agent_responses",
     }
     assert snapshot["task"]["status"] == "completed"
     assert snapshot["decision_metadata"]["selected_workflow"] == "sequential"
     assert snapshot["metrics"]["event_count"] == len(snapshot["events"])
     assert snapshot["metrics"]["subtask_count"] == len(snapshot["subtasks"])
     assert snapshot["metrics"]["artifact_count"] == len(snapshot["artifacts"])
+    assert snapshot["progressive_agent_responses"][1]["depends_on_response_ids"] == [
+        "response-x"
+    ]
 
 
 def test_map_adk_execution_supports_parallel_plan_research_execute_summary_keys():
@@ -151,3 +156,72 @@ def test_map_adk_execution_supports_parallel_plan_research_execute_summary_keys(
         "parallel:execute",
         "parallel:summarize",
     ]
+
+
+def test_map_adk_execution_projects_progressive_agent_responses():
+    contract = map_adk_execution(
+        session={
+            "session_id": "session-progressive",
+            "state": {
+                "phase": "phase_5_evaluation_production",
+                "workflow": "progressive_multi_agent_response",
+                "progressive_agent_responses": [
+                    {
+                        "response_id": "response-z",
+                        "agent_name": "progressive_agent_b",
+                        "agent_role": "research_specialist",
+                        "content": "Aprofunda a resposta X.",
+                        "depends_on_response_ids": ["response-x"],
+                        "visibility": "user_visible",
+                        "status": "published",
+                        "publication_order": 2,
+                        "created_at": "2026-05-30T00:00:01+00:00",
+                        "metadata": {"state_key": "progressive_agent_responses"},
+                    },
+                    {
+                        "response_id": "response-x",
+                        "agent_name": "progressive_agent_a",
+                        "agent_role": "planner_specialist",
+                        "content": "Primeira análise.",
+                        "depends_on_response_ids": [],
+                        "visibility": "user_visible",
+                        "status": "published",
+                        "publication_order": 1,
+                        "created_at": "2026-05-30T00:00:00+00:00",
+                        "metadata": {"state_key": "progressive_agent_responses"},
+                    },
+                    {
+                        "response_id": "response-c",
+                        "agent_name": "progressive_agent_c",
+                        "agent_role": "synthesis_specialist",
+                        "content": "Reconcilia X e Z.",
+                        "depends_on_response_ids": ["response-x", "response-z"],
+                        "visibility": "user_visible",
+                        "status": "published",
+                        "publication_order": 3,
+                        "created_at": "2026-05-30T00:00:02+00:00",
+                        "metadata": {"state_key": "progressive_agent_responses"},
+                    },
+                ],
+            },
+        },
+        events=[],
+        objective="Mostrar especialistas",
+        final_response="Síntese final",
+        settings=OrchestratorSettings(),
+        task_id="task-progressive",
+        finished_at="2026-05-30T00:00:03+00:00",
+    )
+
+    assert contract.decision_metadata.selected_workflow == "progressive_multi_agent_response"
+    assert [r.response_id for r in contract.progressive_agent_responses] == [
+        "response-x",
+        "response-z",
+        "response-c",
+    ]
+    assert contract.progressive_agent_responses[1].depends_on_response_ids == ["response-x"]
+    assert contract.progressive_agent_responses[2].depends_on_response_ids == [
+        "response-x",
+        "response-z",
+    ]
+    assert contract.metrics.custom["progressive_agent_response_count"] == 3

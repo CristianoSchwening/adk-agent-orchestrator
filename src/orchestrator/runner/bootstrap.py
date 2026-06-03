@@ -64,6 +64,7 @@ def initial_session_state(settings: OrchestratorSettings) -> dict[str, object]:
         "tool_timeout_seconds": settings.tool_timeout_seconds,
         "mcp_server_count": len(settings.mcp_servers),
         "evaluation_dataset": "eval/datasets/phase5_smoke.json",
+        "progressive_agent_responses": [],
     }
 
 
