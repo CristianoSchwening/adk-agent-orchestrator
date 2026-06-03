@@ -12,6 +12,54 @@ TaskStatus = Literal["pending", "running", "completed", "failed", "cancelled", "
 SubtaskStatus = Literal["pending", "running", "completed", "failed", "skipped", "blocked"]
 EventSeverity = Literal["debug", "info", "warning", "error"]
 
+AgentHelpStatus = Literal[
+    "requested",
+    "accepted",
+    "rejected",
+    "completed",
+    "failed",
+]
+
+
+@dataclass(frozen=True)
+class AgentHelpRequest:
+    """Internal brokered request for point-in-time help between specialists."""
+
+    request_id: str
+    requester_agent: str
+    provider_agent: str
+    requested_capability: str
+    reason: str
+    payload: dict[str, Any] = field(default_factory=dict)
+    status: AgentHelpStatus = "requested"
+    response: dict[str, Any] | str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the request into a JSON-compatible dictionary."""
+
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class AgentHelpResponse:
+    """Internal brokered response to a point-in-time specialist help request."""
+
+    request_id: str
+    requester_agent: str
+    provider_agent: str
+    requested_capability: str
+    reason: str
+    payload: dict[str, Any] = field(default_factory=dict)
+    status: AgentHelpStatus = "completed"
+    response: dict[str, Any] | str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the response into a JSON-compatible dictionary."""
+
+        return asdict(self)
+
 
 def utc_now_iso() -> str:
     """Return a timezone-aware UTC timestamp for contract DTOs."""

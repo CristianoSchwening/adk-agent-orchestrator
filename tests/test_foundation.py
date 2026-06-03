@@ -5,6 +5,7 @@ import os
 from orchestrator.adk_compat import is_adk_installed
 from orchestrator.agents import PHASE_2_WORKFLOW_NAMES
 from orchestrator.config import OrchestratorSettings
+from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse
 from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import capture_objective, get_orchestrator_status, request_human_approval
 
@@ -32,6 +33,7 @@ def test_tools_return_structured_payloads():
     assert "in_memory_session_service" in status["capabilities"]
     assert "sequential_workflow" in status["capabilities"]
     assert "human_in_the_loop_workflow" in status["capabilities"]
+    assert "agent_help_request_workflow" in status["capabilities"]
     assert "tool_catalog" in status["capabilities"]
     assert "mcp_toolset_factory" in status["capabilities"]
 
@@ -87,6 +89,41 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     assert workflows["review_critic"].max_iterations == BudgetPolicy().max_iterations
     assert workflows["iterative_refinement"].max_iterations == BudgetPolicy().max_iterations
     assert workflows["human_in_the_loop"].sub_agents[1].name == "human_approval_agent"
+    assert workflows["agent_help_request"].name == "agent_help_request_workflow"
+    assert [agent.name for agent in workflows["agent_help_request"].sub_agents] == [
+        "agent_help_task_owner_agent",
+        "agent_help_request_broker_agent",
+        "agent_help_provider_agent",
+        "agent_help_response_broker_agent",
+        "agent_help_task_finalizer_agent",
+    ]
+
+
+def test_agent_help_contracts_are_serializable():
+    request = AgentHelpRequest(
+        request_id="help-1",
+        requester_agent="planner_agent",
+        provider_agent="researcher_agent",
+        requested_capability="evidence_check",
+        reason="Need current supporting context.",
+        payload={"question": "What evidence supports the plan?"},
+        metadata={"help_needed": True},
+    )
+    response = AgentHelpResponse(
+        request_id=request.request_id,
+        requester_agent=request.requester_agent,
+        provider_agent=request.provider_agent,
+        requested_capability=request.requested_capability,
+        reason=request.reason,
+        payload=request.payload,
+        response={"summary": "Evidence is sufficient."},
+        metadata={"brokered": True},
+    )
+
+    assert request.to_dict()["status"] == "requested"
+    assert request.to_dict()["response"] is None
+    assert response.to_dict()["status"] == "completed"
+    assert response.to_dict()["request_id"] == "help-1"
 
 
 def test_adk_installation_probe_is_boolean():
@@ -109,6 +146,7 @@ def test_root_agent_can_be_created_when_adk_is_installed():
         "review_critic_workflow",
         "iterative_refinement_workflow",
         "human_in_the_loop_workflow",
+        "agent_help_request_workflow",
     ]
 
 

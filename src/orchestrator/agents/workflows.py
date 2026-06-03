@@ -18,13 +18,21 @@ from orchestrator.agents.specialists import (
     create_evaluator_agent,
     create_executor_agent,
     create_followup_agent,
+    create_llm_specialist_factory,
     create_planner_agent,
     create_refiner_agent,
     create_researcher_agent,
     create_summarizer_agent,
 )
 from orchestrator.config import OrchestratorSettings
+from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse
 from orchestrator.policies import BudgetPolicy
+from orchestrator.tools import (
+    extract_document_outline,
+    fetch_http_text,
+    inspect_json_records,
+    read_text_file,
+)
 
 PHASE_2_WORKFLOW_NAMES = (
     "sequential",
@@ -32,6 +40,7 @@ PHASE_2_WORKFLOW_NAMES = (
     "review_critic",
     "iterative_refinement",
     "human_in_the_loop",
+    "agent_help_request",
 )
 
 
@@ -211,6 +220,146 @@ def create_human_in_the_loop_workflow(settings: OrchestratorSettings | None = No
     )
 
 
+def _agent_help_contract_template(
+    contract_type: type[AgentHelpRequest] | type[AgentHelpResponse],
+) -> dict[str, Any]:
+    """Return the required keys for the internal agent-help contract."""
+
+    return {
+        "contract": contract_type.__name__,
+        "required_fields": [
+            "request_id",
+            "requester_agent",
+            "provider_agent",
+            "requested_capability",
+            "reason",
+            "payload",
+            "status",
+            "response",
+            "metadata",
+        ],
+    }
+
+
+def create_agent_help_request_workflow(
+    settings: OrchestratorSettings | None = None,
+    *,
+    budget_policy: BudgetPolicy | None = None,
+) -> Any:
+    """Create a brokered workflow for bounded specialist-to-specialist help.
+
+    The workflow is deliberately separate from the existing phase-2 workflows:
+    a task-owner specialist remains accountable for the primary objective, while
+    a broker normalizes any point-in-time help request into ``AgentHelpRequest``
+    and ``AgentHelpResponse`` contracts before and after the provider specialist
+    contributes. This avoids free peer-to-peer conversation between agents.
+    """
+
+    resolved_settings = settings or OrchestratorSettings.from_env()
+    policy = budget_policy or BudgetPolicy()
+    SequentialAgent, _, _ = _load_adk_workflow_primitives()
+    llm = create_llm_specialist_factory(resolved_settings)
+    request_contract = _agent_help_contract_template(AgentHelpRequest)
+    response_contract = _agent_help_contract_template(AgentHelpResponse)
+
+    task_owner = llm(
+        name="agent_help_task_owner_agent",
+        description="Owns the primary task and identifies narrowly scoped help needs.",
+        instruction=f"""
+        Você é o agente responsável pela tarefa principal. Resolva o máximo possível dentro
+        da sua especialidade e só solicite apoio pontual quando uma capacidade externa for
+        claramente necessária. Não converse diretamente com outros agentes.
+
+        Se precisar de ajuda, emita exatamente um contrato AgentHelpRequest com os campos
+        obrigatórios {request_contract["required_fields"]}. Defina requester_agent como seu
+        próprio nome, escolha um provider_agent específico, descreva requested_capability,
+        reason e payload mínimo necessário. Use status="requested" e deixe response como null.
+        Se não precisar de ajuda, explique a decisão e marque metadata.help_needed=false.
+        """,
+        output_key="agent_help_task_owner_draft",
+        tools=[read_text_file, fetch_http_text, inspect_json_records],
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    request_broker = llm(
+        name="agent_help_request_broker_agent",
+        description="Mediates and validates bounded help requests before provider execution.",
+        instruction=f"""
+        Você é o broker/mediador. Sua função é impedir conversa livre entre agentes.
+        Leia a saída do task owner e normalize no contrato {request_contract}.
+        Valide request_id, requester_agent, provider_agent, requested_capability, reason,
+        payload, status, response e metadata. Rejeite ou reduza pedidos amplos demais.
+        Não acrescente diálogo aberto; entregue somente um AgentHelpRequest estruturado.
+        Respeite o limite operacional de {policy.max_model_calls} chamadas de modelo como
+        metadata.max_model_calls quando aplicável.
+        """,
+        output_key="agent_help_request",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    provider = llm(
+        name="agent_help_provider_agent",
+        description="Provides one bounded specialist answer only for the brokered request.",
+        instruction=f"""
+        Você é o especialista provedor. Responda somente ao AgentHelpRequest validado pelo
+        broker em agent_help_request. Não inicie conversa com o solicitante e não expanda o
+        escopo além de requested_capability, reason e payload.
+
+        Produza um AgentHelpResponse com os campos obrigatórios
+        {response_contract["required_fields"]}. Preserve request_id, requester_agent,
+        provider_agent e requested_capability. Use status="completed" quando responder,
+        ou status="failed"/"rejected" com justificativa em response quando não puder ajudar.
+        """,
+        output_key="agent_help_provider_response",
+        tools=[read_text_file, fetch_http_text, extract_document_outline, inspect_json_records],
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    response_broker = llm(
+        name="agent_help_response_broker_agent",
+        description="Validates provider output and prepares a bounded handoff to the task owner.",
+        instruction=f"""
+        Você é o broker/mediador de resposta. Valide agent_help_provider_response contra
+        {response_contract}. Garanta que a resposta está vinculada ao mesmo request_id e que
+        não há conversa livre, tarefas novas ou delegação em cadeia. Entregue somente o
+        AgentHelpResponse estruturado e saneado para o agente responsável.
+        """,
+        output_key="agent_help_response",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    finalizer = llm(
+        name="agent_help_task_finalizer_agent",
+        description="Integrates the brokered help response into the primary task result.",
+        instruction="""
+        Retome a responsabilidade pela tarefa principal. Use agent_help_response apenas como
+        apoio pontual, cite como ele influenciou a solução e finalize sem abrir nova conversa
+        com o provedor. Se o broker rejeitou a ajuda, prossiga com premissas explícitas.
+        """,
+        output_key="agent_help_final_result",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    return SequentialAgent(
+        name="agent_help_request_workflow",
+        description=(
+            "ADK workflow for a task-owner agent to request bounded specialist help through "
+            "a broker using AgentHelpRequest and AgentHelpResponse contracts."
+        ),
+        sub_agents=[task_owner, request_broker, provider, response_broker, finalizer],
+    )
+
+
 def create_phase2_workflows(
     settings: OrchestratorSettings | None = None,
     *,
@@ -231,4 +380,8 @@ def create_phase2_workflows(
             budget_policy=budget_policy,
         ),
         "human_in_the_loop": create_human_in_the_loop_workflow(resolved_settings),
+        "agent_help_request": create_agent_help_request_workflow(
+            resolved_settings,
+            budget_policy=budget_policy,
+        ),
     }

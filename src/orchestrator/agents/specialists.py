@@ -36,6 +36,8 @@ def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..
         tools: Iterable[Callable[..., Any]] = (),
         output_key: str | None = None,
         parallel_worker: bool | None = None,
+        disallow_transfer_to_parent: bool | None = None,
+        disallow_transfer_to_peers: bool | None = None,
     ) -> Any:
         kwargs: dict[str, Any] = {
             "model": settings.model,
@@ -48,6 +50,10 @@ def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..
             kwargs["output_key"] = output_key
         if parallel_worker is not None:
             kwargs["parallel_worker"] = parallel_worker
+        if disallow_transfer_to_parent is not None:
+            kwargs["disallow_transfer_to_parent"] = disallow_transfer_to_parent
+        if disallow_transfer_to_peers is not None:
+            kwargs["disallow_transfer_to_peers"] = disallow_transfer_to_peers
         return LlmAgent(**kwargs)
 
     return create_llm_agent
