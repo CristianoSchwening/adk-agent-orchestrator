@@ -5,7 +5,7 @@ import os
 from orchestrator.adk_compat import is_adk_installed
 from orchestrator.agents import PHASE_2_WORKFLOW_NAMES
 from orchestrator.config import OrchestratorSettings
-from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse
+from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse, AgentVisibleResponse
 from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import capture_objective, get_orchestrator_status, request_human_approval
 
@@ -34,6 +34,7 @@ def test_tools_return_structured_payloads():
     assert "sequential_workflow" in status["capabilities"]
     assert "human_in_the_loop_workflow" in status["capabilities"]
     assert "agent_help_request_workflow" in status["capabilities"]
+    assert "progressive_multi_agent_response_workflow" in status["capabilities"]
     assert "tool_catalog" in status["capabilities"]
     assert "mcp_toolset_factory" in status["capabilities"]
 
@@ -90,6 +91,9 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     assert workflows["iterative_refinement"].max_iterations == BudgetPolicy().max_iterations
     assert workflows["human_in_the_loop"].sub_agents[1].name == "human_approval_agent"
     assert workflows["agent_help_request"].name == "agent_help_request_workflow"
+    assert workflows["progressive_multi_agent_response"].name == (
+        "progressive_multi_agent_response_workflow"
+    )
     assert [agent.name for agent in workflows["agent_help_request"].sub_agents] == [
         "agent_help_task_owner_agent",
         "agent_help_request_broker_agent",
@@ -97,6 +101,15 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
         "agent_help_response_broker_agent",
         "agent_help_task_finalizer_agent",
     ]
+    assert [agent.name for agent in workflows["progressive_multi_agent_response"].sub_agents] == [
+        "progressive_agent_a",
+        "progressive_agent_b",
+        "progressive_agent_c",
+        "progressive_response_publisher_agent",
+    ]
+    assert workflows["progressive_multi_agent_response"].sub_agents[-1].output_key == (
+        "progressive_agent_responses"
+    )
 
 
 def test_agent_help_contracts_are_serializable():
@@ -126,6 +139,26 @@ def test_agent_help_contracts_are_serializable():
     assert response.to_dict()["request_id"] == "help-1"
 
 
+def test_agent_visible_response_contract_is_serializable():
+    response = AgentVisibleResponse(
+        response_id="response-c",
+        agent_name="progressive_agent_c",
+        agent_role="synthesis_specialist",
+        content="Síntese baseada nas contribuições anteriores.",
+        depends_on_response_ids=["response-x", "response-z"],
+        publication_order=3,
+        created_at="2026-05-30T00:00:01+00:00",
+        metadata={"workflow": "progressive_multi_agent_response"},
+    )
+
+    payload = response.to_dict()
+
+    assert payload["response_id"] == "response-c"
+    assert payload["depends_on_response_ids"] == ["response-x", "response-z"]
+    assert payload["visibility"] == "user_visible"
+    assert payload["status"] == "published"
+
+
 def test_adk_installation_probe_is_boolean():
     assert isinstance(is_adk_installed(), bool)
 
@@ -147,6 +180,7 @@ def test_root_agent_can_be_created_when_adk_is_installed():
         "iterative_refinement_workflow",
         "human_in_the_loop_workflow",
         "agent_help_request_workflow",
+        "progressive_multi_agent_response_workflow",
     ]
 
 

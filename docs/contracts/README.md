@@ -17,6 +17,7 @@ A Fase 4 define um contrato JSON versionado para clientes Web, Android, CLI ou A
 | `metrics` | Contadores de eventos, subtasks, artifacts, tools, modelo e erros. |
 | `decision_metadata` | Workflow selecionado, racional, confiança, alternativas e versão de policy. |
 | `artifacts` | Referências a artifacts ADK ou outputs persistidos. |
+| `progressive_agent_responses` | Mensagens de especialistas que podem aparecer no chat com autoria (`agent_name`/`agent_role`), ordem (`publication_order`) e causalidade (`depends_on_response_ids`). |
 
 ## Referência do legado
 
@@ -31,4 +32,9 @@ Um webapp futuro deve:
 3. Renderizar `subtasks` como timeline ou kanban de etapas.
 4. Renderizar `events` como log streaming/histórico.
 5. Renderizar `metrics` e `decision_metadata` em painéis de auditoria.
-6. Usar `contract_version` para compatibilidade e migrações.
+6. Renderizar `progressive_agent_responses` como mensagens de chat sucessivas quando o workflow selecionado for `progressive_multi_agent_response`; usar `response_id` e `depends_on_response_ids` para mostrar dependências entre contribuições.
+7. Usar `contract_version` para compatibilidade e migrações.
+
+## Respostas progressivas de especialistas
+
+O modo `progressive_multi_agent_response` é separado de `agent_help_request`: ele não representa ajuda pontual brokerada entre agentes. Ele modela uma experiência de chat em que especialistas publicam contribuições sucessivas ao usuário. O estado ADK usa a chave `progressive_agent_responses`, e o contrato público expõe uma lista de `AgentVisibleResponse` com `response_id`, `agent_name`, `agent_role`, `content`, `depends_on_response_ids`, `visibility`, `status`, `publication_order`, `created_at` e `metadata`. Assim, o frontend pode mostrar que a resposta Z depende da resposta X e que a resposta C depende de múltiplas respostas anteriores.

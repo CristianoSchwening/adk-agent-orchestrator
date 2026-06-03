@@ -25,7 +25,7 @@ from orchestrator.agents.specialists import (
     create_summarizer_agent,
 )
 from orchestrator.config import OrchestratorSettings
-from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse
+from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse, AgentVisibleResponse
 from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import (
     extract_document_outline,
@@ -41,6 +41,7 @@ PHASE_2_WORKFLOW_NAMES = (
     "iterative_refinement",
     "human_in_the_loop",
     "agent_help_request",
+    "progressive_multi_agent_response",
 )
 
 
@@ -360,6 +361,149 @@ def create_agent_help_request_workflow(
     )
 
 
+def _agent_visible_response_contract_template() -> dict[str, Any]:
+    """Return required keys for the progressive user-visible response entity."""
+
+    return {
+        "contract": AgentVisibleResponse.__name__,
+        "state_key": "progressive_agent_responses",
+        "required_fields": [
+            "response_id",
+            "agent_name",
+            "agent_role",
+            "content",
+            "depends_on_response_ids",
+            "visibility",
+            "status",
+            "publication_order",
+            "created_at",
+            "metadata",
+        ],
+    }
+
+
+def create_progressive_multi_agent_response_workflow(
+    settings: OrchestratorSettings | None = None,
+    *,
+    budget_policy: BudgetPolicy | None = None,
+) -> Any:
+    """Create a separate workflow for progressive specialist chat responses.
+
+    Unlike ``agent_help_request``, this mode is not brokered point-in-time help
+    between agents. It is a user-experience workflow where several specialists
+    intentionally publish successive user-visible contributions. Each later
+    contribution may cite prior response IDs as dependencies so the UI can show
+    authorship, order and causality.
+    """
+
+    resolved_settings = settings or OrchestratorSettings.from_env()
+    policy = budget_policy or BudgetPolicy()
+    SequentialAgent, _, _ = _load_adk_workflow_primitives()
+    llm = create_llm_specialist_factory(resolved_settings)
+    visible_response_contract = _agent_visible_response_contract_template()
+    required_fields = visible_response_contract["required_fields"]
+
+    agent_a = llm(
+        name="progressive_agent_a",
+        description="Publishes the first specialist contribution for the user.",
+        instruction=f"""
+        Você é o Agente A no workflow progressive_multi_agent_response_workflow.
+        Publique a primeira contribuição especializada para o usuário em formato
+        AgentVisibleResponse com os campos obrigatórios {required_fields}.
+
+        Regras:
+        - Use response_id="response-x", agent_name="progressive_agent_a" e um
+          agent_role claro para a sua especialidade.
+        - Use depends_on_response_ids=[] porque esta é a primeira resposta.
+        - Use visibility="user_visible", status="published" e publication_order=1.
+        - Inclua metadata.workflow="progressive_multi_agent_response" e
+          metadata.state_key="progressive_agent_responses".
+        """,
+        output_key="progressive_response_a",
+        tools=[read_text_file, fetch_http_text, inspect_json_records],
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    agent_b = llm(
+        name="progressive_agent_b",
+        description="Publishes a second specialist contribution that depends on Agent A.",
+        instruction=f"""
+        Você é o Agente B. Leia progressive_response_a como contexto anterior e publique
+        uma nova contribuição no formato AgentVisibleResponse com os campos obrigatórios
+        {required_fields}.
+
+        Regras:
+        - Declare explicitamente depends_on_response_ids=["response-x"].
+        - Use response_id="response-z", agent_name="progressive_agent_b",
+          visibility="user_visible", status="published" e publication_order=2.
+        - Complemente, conteste ou aprofunde a resposta X sem ocultar a causalidade.
+        - Respeite o limite operacional de {policy.max_model_calls} chamadas de modelo
+          como metadata.max_model_calls quando aplicável.
+        """,
+        output_key="progressive_response_b",
+        tools=[read_text_file, extract_document_outline, inspect_json_records],
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    agent_c = llm(
+        name="progressive_agent_c",
+        description="Publishes a third contribution that can depend on multiple prior answers.",
+        instruction=f"""
+        Você é o Agente C. Leia progressive_response_a e progressive_response_b como
+        contexto anterior e publique uma terceira contribuição no formato
+        AgentVisibleResponse com os campos obrigatórios {required_fields}.
+
+        Regras:
+        - Declare depends_on_response_ids=["response-x", "response-z"], demonstrando
+          que uma resposta pode depender das respostas X e Z anteriores.
+        - Use response_id="response-c", agent_name="progressive_agent_c",
+          visibility="user_visible", status="published" e publication_order=3.
+        - Mostre claramente onde você usa ou reconcilia as contribuições anteriores.
+        """,
+        output_key="progressive_response_c",
+        tools=[fetch_http_text, extract_document_outline, inspect_json_records],
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    publisher = llm(
+        name="progressive_response_publisher_agent",
+        description="Normalizes progressive specialist responses into session state.",
+        instruction=f"""
+        Normalize progressive_response_a, progressive_response_b e progressive_response_c
+        em uma lista JSON ordenada de AgentVisibleResponse sob a chave de estado
+        progressive_agent_responses. Cada item deve conter exatamente os campos
+        obrigatórios {required_fields}.
+
+        Preserve autoria, publication_order e causalidade:
+        - response-x não depende de respostas anteriores;
+        - response-z depende de response-x;
+        - response-c depende de response-x e response-z.
+
+        Não transforme este modo em AgentHelpRequest/AgentHelpResponse; este workflow é
+        independente e voltado a mensagens sucessivas de especialistas no chat.
+        """,
+        output_key="progressive_agent_responses",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+    return SequentialAgent(
+        name="progressive_multi_agent_response_workflow",
+        description=(
+            "ADK workflow for successive user-visible specialist responses with authored "
+            "message order and dependency causality stored in progressive_agent_responses."
+        ),
+        sub_agents=[agent_a, agent_b, agent_c, publisher],
+    )
+
+
 def create_phase2_workflows(
     settings: OrchestratorSettings | None = None,
     *,
@@ -381,6 +525,10 @@ def create_phase2_workflows(
         ),
         "human_in_the_loop": create_human_in_the_loop_workflow(resolved_settings),
         "agent_help_request": create_agent_help_request_workflow(
+            resolved_settings,
+            budget_policy=budget_policy,
+        ),
+        "progressive_multi_agent_response": create_progressive_multi_agent_response_workflow(
             resolved_settings,
             budget_policy=budget_policy,
         ),
