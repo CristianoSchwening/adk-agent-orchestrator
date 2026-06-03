@@ -2,6 +2,9 @@
 
 from orchestrator.contracts.dto import (
     CONTRACT_VERSION,
+    AgentHelpRequest,
+    AgentHelpResponse,
+    AgentHelpStatus,
     ArtifactDTO,
     DecisionMetadataDTO,
     EventDTO,
@@ -13,6 +16,9 @@ from orchestrator.contracts.dto import (
 
 __all__ = [
     "CONTRACT_VERSION",
+    "AgentHelpRequest",
+    "AgentHelpResponse",
+    "AgentHelpStatus",
     "ArtifactDTO",
     "DecisionMetadataDTO",
     "EventDTO",

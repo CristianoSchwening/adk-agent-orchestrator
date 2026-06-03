@@ -38,6 +38,7 @@ def get_orchestrator_status() -> dict[str, Any]:
             "review_critic_workflow",
             "iterative_refinement_workflow",
             "human_in_the_loop_workflow",
+            "agent_help_request_workflow",
             "tool_catalog",
             "local_adk_function_tools",
             "mcp_toolset_factory",
