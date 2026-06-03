@@ -4,7 +4,10 @@ import os
 
 from orchestrator.adk_compat import is_adk_installed
 from orchestrator.agents import PHASE_2_WORKFLOW_NAMES
-from orchestrator.config import OrchestratorSettings
+from orchestrator.config import (
+    OrchestratorSettings,
+    ProgressiveMultiAgentResponseSettings,
+)
 from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse, AgentVisibleResponse
 from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import capture_objective, get_orchestrator_status, request_human_approval
@@ -109,6 +112,95 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     ]
     assert workflows["progressive_multi_agent_response"].sub_agents[-1].output_key == (
         "progressive_agent_responses"
+    )
+
+
+def test_progressive_workflow_without_final_summarizer_when_disabled():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_progressive_multi_agent_response_workflow
+
+    settings = OrchestratorSettings(
+        model="gemini-flash-latest",
+        progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings(
+            final_summarizer_enabled=False,
+            final_response_strategy="all_visible_responses",
+        ),
+    )
+
+    workflow = create_progressive_multi_agent_response_workflow(settings)
+
+    assert [agent.name for agent in workflow.sub_agents] == [
+        "progressive_agent_a",
+        "progressive_agent_b",
+        "progressive_agent_c",
+        "progressive_response_publisher_agent",
+    ]
+    assert "response_chain_summarizer_agent" not in {agent.name for agent in workflow.sub_agents}
+    assert workflow.sub_agents[-1].output_key == "progressive_agent_responses"
+
+
+def test_progressive_workflow_adds_final_summarizer_when_enabled():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_progressive_multi_agent_response_workflow
+
+    settings = OrchestratorSettings(
+        model="gemini-flash-latest",
+        progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings(
+            final_summarizer_enabled=True,
+            final_response_strategy="summarizer_response",
+        ),
+    )
+
+    workflow = create_progressive_multi_agent_response_workflow(settings)
+
+    assert [agent.name for agent in workflow.sub_agents] == [
+        "progressive_agent_a",
+        "progressive_agent_b",
+        "progressive_agent_c",
+        "progressive_response_publisher_agent",
+        "response_chain_summarizer_agent",
+    ]
+    assert workflow.sub_agents[-1].output_key == "progressive_final_response"
+    assert "final_summarizer_enabled=enabled" in workflow.sub_agents[-1].instruction
+    assert "summarizer_response" in workflow.sub_agents[-1].instruction
+
+
+def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_progressive_multi_agent_response_workflow
+
+    settings = OrchestratorSettings(
+        model="gemini-flash-latest",
+        progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings(
+            final_summarizer_enabled="auto",
+            final_response_strategy="root_selected_response",
+        ),
+    )
+
+    workflow = create_progressive_multi_agent_response_workflow(settings)
+
+    assert workflow.sub_agents[-1].name == "response_chain_summarizer_agent"
+    assert workflow.sub_agents[-1].output_key == "progressive_final_response"
+    assert "final_summarizer_enabled=auto" in workflow.sub_agents[-1].instruction
+    assert "ponto de decisão do root" in workflow.sub_agents[-1].instruction
+    assert "root_selected_response" in workflow.sub_agents[-1].instruction
+
+
+def test_progressive_workflow_settings_from_env(monkeypatch):
+    monkeypatch.setenv("ADK_PROGRESSIVE_FINAL_SUMMARIZER_ENABLED", "auto")
+    monkeypatch.setenv("ADK_PROGRESSIVE_FINAL_RESPONSE_STRATEGY", "root_selected_response")
+
+    settings = OrchestratorSettings.from_env()
+
+    assert settings.progressive_multi_agent_response.final_summarizer_enabled == "auto"
+    assert settings.progressive_multi_agent_response.final_response_strategy == (
+        "root_selected_response"
     )
 
 

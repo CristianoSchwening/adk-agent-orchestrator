@@ -8,6 +8,13 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 MCPTransport = Literal["stdio", "sse", "streamable_http"]
+ProgressiveFinalSummarizerMode = Literal["enabled", "disabled", "auto"]
+ProgressiveFinalResponseStrategy = Literal[
+    "last_agent_response",
+    "summarizer_response",
+    "root_selected_response",
+    "all_visible_responses",
+]
 
 
 @dataclass(frozen=True)
@@ -84,6 +91,83 @@ def _parse_mcp_servers(raw_value: str | None) -> tuple[MCPServerSettings, ...]:
     return tuple(MCPServerSettings.from_mapping(item) for item in payload)
 
 
+def _normalize_progressive_final_summarizer_mode(
+    value: bool | str,
+) -> ProgressiveFinalSummarizerMode:
+    if isinstance(value, bool):
+        return "enabled" if value else "disabled"
+    normalized = str(value).strip().lower()
+    boolean_aliases = {
+        "true": "enabled",
+        "1": "enabled",
+        "yes": "enabled",
+        "on": "enabled",
+        "false": "disabled",
+        "0": "disabled",
+        "no": "disabled",
+        "off": "disabled",
+    }
+    normalized = boolean_aliases.get(normalized, normalized)
+    if normalized not in {"enabled", "disabled", "auto"}:
+        raise ValueError(
+            "final_summarizer_enabled must be a boolean or one of: enabled, disabled, auto."
+        )
+    return normalized  # type: ignore[return-value]
+
+
+def _normalize_progressive_final_response_strategy(
+    value: str,
+) -> ProgressiveFinalResponseStrategy:
+    normalized = str(value).strip().lower()
+    allowed = {
+        "last_agent_response",
+        "summarizer_response",
+        "root_selected_response",
+        "all_visible_responses",
+    }
+    if normalized not in allowed:
+        raise ValueError(
+            "final_response_strategy must be one of: last_agent_response, "
+            "summarizer_response, root_selected_response, all_visible_responses."
+        )
+    return normalized  # type: ignore[return-value]
+
+
+@dataclass(frozen=True)
+class ProgressiveMultiAgentResponseSettings:
+    """Configuration for the progressive multi-agent response workflow."""
+
+    final_summarizer_enabled: bool | ProgressiveFinalSummarizerMode = "disabled"
+    final_response_strategy: ProgressiveFinalResponseStrategy = "all_visible_responses"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "final_summarizer_enabled",
+            _normalize_progressive_final_summarizer_mode(self.final_summarizer_enabled),
+        )
+        object.__setattr__(
+            self,
+            "final_response_strategy",
+            _normalize_progressive_final_response_strategy(self.final_response_strategy),
+        )
+
+    @classmethod
+    def from_env(cls) -> ProgressiveMultiAgentResponseSettings:
+        """Build progressive workflow settings from optional environment variables."""
+
+        return cls(
+            final_summarizer_enabled=os.getenv(
+                "ADK_PROGRESSIVE_FINAL_SUMMARIZER_ENABLED",
+                cls.final_summarizer_enabled,
+            ),
+            final_response_strategy=os.getenv(
+                "ADK_PROGRESSIVE_FINAL_RESPONSE_STRATEGY",
+                cls.final_response_strategy,
+            ),
+        )
+
+
 @dataclass(frozen=True)
 class OrchestratorSettings:
     """Settings required to bootstrap an ADK runner and local tool layer."""
@@ -93,6 +177,9 @@ class OrchestratorSettings:
     model: str = "gemini-flash-latest"
     tool_timeout_seconds: float = 10.0
     mcp_servers: tuple[MCPServerSettings, ...] = ()
+    progressive_multi_agent_response: ProgressiveMultiAgentResponseSettings = field(
+        default_factory=ProgressiveMultiAgentResponseSettings
+    )
 
     @classmethod
     def from_env(cls) -> OrchestratorSettings:
@@ -108,4 +195,5 @@ class OrchestratorSettings:
                 "ADK_TOOL_TIMEOUT_SECONDS",
             ),
             mcp_servers=_parse_mcp_servers(os.getenv("ADK_MCP_SERVERS")),
+            progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings.from_env(),
         )
