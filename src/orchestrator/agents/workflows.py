@@ -24,7 +24,11 @@ from orchestrator.agents.specialists import (
     create_researcher_agent,
     create_summarizer_agent,
 )
-from orchestrator.config import OrchestratorSettings
+from orchestrator.config import (
+    OrchestratorSettings,
+    ProgressiveFinalResponseStrategy,
+    ProgressiveFinalSummarizerMode,
+)
 from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse, AgentVisibleResponse
 from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import (
@@ -361,6 +365,78 @@ def create_agent_help_request_workflow(
     )
 
 
+def _progressive_final_strategy_instruction(
+    strategy: ProgressiveFinalResponseStrategy,
+) -> str:
+    """Return an instruction snippet for the configured final-response strategy."""
+
+    strategy_instructions = {
+        "last_agent_response": (
+            "A resposta final canônica deve ser a última contribuição especializada "
+            "publicada por progressive_agent_c, sem síntese adicional obrigatória."
+        ),
+        "summarizer_response": (
+            "A resposta final canônica deve ser a saída de response_chain_summarizer_agent."
+        ),
+        "root_selected_response": (
+            "O root deve selecionar explicitamente a melhor resposta final ou decidir se "
+            "uma síntese de fechamento é necessária."
+        ),
+        "all_visible_responses": (
+            "Todas as respostas em progressive_agent_responses devem permanecer visíveis; "
+            "não reduza a cadeia a uma única mensagem final por padrão."
+        ),
+    }
+    return strategy_instructions[strategy]
+
+
+def _create_response_chain_summarizer_agent(
+    llm: Any,
+    *,
+    mode: ProgressiveFinalSummarizerMode,
+    strategy: ProgressiveFinalResponseStrategy,
+) -> Any:
+    """Create the optional final agent that closes the progressive response chain."""
+
+    if mode == "enabled":
+        mode_instruction = (
+            "final_summarizer_enabled=enabled: gere uma síntese final obrigatória que "
+            "feche a cadeia, reconciliando progressive_response_a, progressive_response_b, "
+            "progressive_response_c e progressive_agent_responses."
+        )
+    else:
+        mode_instruction = (
+            "final_summarizer_enabled=auto: aja como o ponto de decisão do root. "
+            "Primeiro decida se a cadeia precisa de síntese final. Se precisar, sintetize; "
+            "se não precisar, selecione a resposta existente mais adequada e explique a "
+            "decisão sem duplicar conteúdo."
+        )
+
+    return llm(
+        name="response_chain_summarizer_agent",
+        description=(
+            "Optionally synthesizes or closes the progressive multi-agent response chain."
+        ),
+        instruction=f"""
+        {mode_instruction}
+
+        Estratégia de finalização configurada: {strategy}.
+        {_progressive_final_strategy_instruction(strategy)}
+
+        Regras:
+        - Preserve autoria, response_id e depends_on_response_ids ao citar contribuições.
+        - Não remova progressive_agent_responses; eles continuam sendo as mensagens
+          user-visible publicadas no chat.
+        - Produza progressive_final_response com a decisão final, a estratégia aplicada
+          e, quando houver síntese, uma resposta curta de fechamento.
+        """,
+        output_key="progressive_final_response",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+    )
+
+
 def _agent_visible_response_contract_template() -> dict[str, Any]:
     """Return required keys for the progressive user-visible response entity."""
 
@@ -402,6 +478,10 @@ def create_progressive_multi_agent_response_workflow(
     llm = create_llm_specialist_factory(resolved_settings)
     visible_response_contract = _agent_visible_response_contract_template()
     required_fields = visible_response_contract["required_fields"]
+    progressive_config = resolved_settings.progressive_multi_agent_response
+    final_summarizer_mode = progressive_config.final_summarizer_enabled
+    final_response_strategy = progressive_config.final_response_strategy
+    final_strategy_instruction = _progressive_final_strategy_instruction(final_response_strategy)
 
     agent_a = llm(
         name="progressive_agent_a",
@@ -485,6 +565,11 @@ def create_progressive_multi_agent_response_workflow(
         - response-z depende de response-x;
         - response-c depende de response-x e response-z.
 
+        Configuração de finalização:
+        - final_summarizer_enabled={final_summarizer_mode};
+        - final_response_strategy={final_response_strategy};
+        - {final_strategy_instruction}
+
         Não transforme este modo em AgentHelpRequest/AgentHelpResponse; este workflow é
         independente e voltado a mensagens sucessivas de especialistas no chat.
         """,
@@ -494,13 +579,23 @@ def create_progressive_multi_agent_response_workflow(
         disallow_transfer_to_peers=True,
     )
 
+    sub_agents = [agent_a, agent_b, agent_c, publisher]
+    if final_summarizer_mode in {"enabled", "auto"}:
+        sub_agents.append(
+            _create_response_chain_summarizer_agent(
+                llm,
+                mode=final_summarizer_mode,
+                strategy=final_response_strategy,
+            )
+        )
+
     return SequentialAgent(
         name="progressive_multi_agent_response_workflow",
         description=(
             "ADK workflow for successive user-visible specialist responses with authored "
             "message order and dependency causality stored in progressive_agent_responses."
         ),
-        sub_agents=[agent_a, agent_b, agent_c, publisher],
+        sub_agents=sub_agents,
     )
 
 
