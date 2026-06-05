@@ -7,6 +7,7 @@ from orchestrator.contracts.dto import (
     EventDTO,
     ExecutionContractDTO,
     MetricsDTO,
+    ProgressiveAgentResponseDTO,
     SubtaskDTO,
     TaskDTO,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "EventDTO",
     "ExecutionContractDTO",
     "MetricsDTO",
+    "ProgressiveAgentResponseDTO",
     "SubtaskDTO",
     "TaskDTO",
 ]

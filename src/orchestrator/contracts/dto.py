@@ -102,6 +102,18 @@ class MetricsDTO:
 
 
 @dataclass(frozen=True)
+class ProgressiveAgentResponseDTO:
+    """One agent contribution in a progressive multi-agent response workflow."""
+
+    response_id: str
+    agent_name: str
+    content: str
+    timestamp: str
+    depends_on_response_ids: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ExecutionContractDTO:
     """Complete versioned execution view consumed by clients."""
 
@@ -112,6 +124,7 @@ class ExecutionContractDTO:
     metrics: MetricsDTO
     decision_metadata: DecisionMetadataDTO
     artifacts: list[ArtifactDTO] = field(default_factory=list)
+    progressive_agent_responses: list[ProgressiveAgentResponseDTO] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the contract into a JSON-compatible dictionary."""

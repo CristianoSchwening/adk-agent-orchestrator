@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADK Orchestrator UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.04em; text-transform: uppercase; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+    }
+    .badge-completed { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+    .badge-running   { background: rgba(99,102,241,.15); color: var(--accent2); border: 1px solid rgba(99,102,241,.3); }
+    .badge-failed    { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+    .badge-pending   { background: rgba(100,116,139,.15); color: var(--muted); border: 1px solid rgba(100,116,139,.3); }
+    .badge-blocked   { background: rgba(234,179,8,.15); color: var(--yellow); border: 1px solid rgba(234,179,8,.3); }
+    .badge-skipped   { background: rgba(100,116,139,.1); color: var(--muted); border: 1px solid rgba(100,116,139,.2); }
+    .pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green  { background: var(--green); }
+    .dot-red    { background: var(--red); }
+    .dot-blue   { background: var(--blue); }
+    .dot-yellow { background: var(--yellow); }
+    .dot-muted  { background: var(--muted); }
+    .dot-purple { background: var(--purple); }
+    .log-line { padding: 5px 14px; font-size: 12px; line-height: 1.6; font-family: 'Fira Code', 'JetBrains Mono', monospace; border-left: 3px solid transparent; }
+    .log-info    { border-color: var(--blue); color: #94a3b8; }
+    .log-error   { border-color: var(--red); color: #fca5a5; background: rgba(239,68,68,.04); }
+    .log-warning { border-color: var(--yellow); color: #fde68a; background: rgba(234,179,8,.04); }
+    .log-debug   { border-color: var(--muted); color: var(--muted); }
+    .log-tool    { border-color: var(--purple); color: #d8b4fe; }
+    .log-model   { border-color: var(--cyan); color: #67e8f9; }
+    .log-final   { border-color: var(--green); color: #86efac; background: rgba(34,197,94,.04); }
+    .timeline-item { display: flex; gap: 12px; padding: 10px 0; position: relative; }
+    .timeline-line { position: absolute; left: 14px; top: 30px; bottom: -10px; width: 2px; background: var(--border); }
+    .timeline-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 700; border: 2px solid var(--border); }
+    .timeline-dot-completed { background: rgba(34,197,94,.2); border-color: var(--green); color: var(--green); }
+    .timeline-dot-running   { background: rgba(99,102,241,.2); border-color: var(--accent); color: var(--accent2); }
+    .timeline-dot-failed    { background: rgba(239,68,68,.2); border-color: var(--red); color: var(--red); }
+    .timeline-dot-pending   { background: rgba(100,116,139,.1); border-color: var(--border); color: var(--muted); }
+    .metric-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .metric-value { font-size: 28px; font-weight: 700; line-height: 1; }
+    .metric-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .chat-bubble { border-radius: 12px; padding: 12px 16px; max-width: 85%; position: relative; }
+    .chat-bubble-left  { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 2px; }
+    .chat-bubble-right { background: rgba(99,102,241,.15); border: 1px solid rgba(99,102,241,.3); border-top-right-radius: 2px; }
+    .dep-arrow { color: var(--muted); font-size: 11px; margin: 2px 0 2px 36px; display: flex; align-items: center; gap: 4px; }
+    .section-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; }
+    .tab-btn { padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all .2s; color: var(--muted); background: transparent; }
+    .tab-btn.active { background: rgba(99,102,241,.2); border-color: rgba(99,102,241,.4); color: var(--accent2); }
+    .tab-btn:hover:not(.active) { color: var(--text); background: var(--surface2); }
+    .input-field { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px; outline: none; transition: border-color .2s; width: 100%; }
+    .input-field:focus { border-color: var(--accent); }
+    .input-field::placeholder { color: var(--muted); }
+    .btn-primary { background: var(--accent); color: white; border: none; border-radius: 10px; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s; white-space: nowrap; }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent2); }
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: var(--muted); gap: 8px; }
+    .empty-icon { font-size: 32px; opacity: .4; }
+    .empty-text { font-size: 13px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    select.input-field { cursor: pointer; }
+    option { background: var(--surface2); }
+    .glow { box-shadow: 0 0 0 1px rgba(99,102,241,.4), 0 0 20px rgba(99,102,241,.15); }
+    .confidence-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .confidence-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple)); border-radius: 3px; transition: width .6s ease; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    .fade-in { animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    .response-dep-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; padding: 2px 7px; border-radius: 999px; background: rgba(168,85,247,.1); border: 1px solid rgba(168,85,247,.3); color: #d8b4fe; }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header style="background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;">🤖</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:var(--text);">ADK Orchestrator</div>
+      <div style="font-size:11px;color:var(--muted);" id="contract-version">orchestrator.execution.v1</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div id="api-status" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);">
+      <div class="dot dot-muted"></div> Checking…
+    </div>
+  </div>
+</header>
+
+<!-- INPUT BAR -->
+<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;">
+  <div style="max-width:1400px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <input id="objective-input" class="input-field" placeholder="Enter objective for the orchestrator…" style="flex:1;min-width:260px;" />
+    <select id="workflow-select" class="input-field" style="width:220px;">
+      <option value="">Auto (root agent decides)</option>
+      <option value="sequential">Sequential Workflow</option>
+      <option value="parallel">Parallel Workflow</option>
+      <option value="review_critic">Review & Critic</option>
+      <option value="iterative_refinement">Iterative Refinement</option>
+      <option value="human_in_the_loop">Human in the Loop</option>
+      <option value="progressive_multi_agent_response">Progressive Multi-Agent</option>
+    </select>
+    <button class="btn-secondary" onclick="loadDemo()" id="demo-btn">Load Demo</button>
+    <button class="btn-primary" onclick="runObjective()" id="run-btn">
+      <span id="run-label">▶ Run</span>
+    </button>
+  </div>
+</div>
+
+<!-- TASK HEADER (shown after run) -->
+<div id="task-header" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:16px 24px;">
+  <div style="max-width:1400px;margin:0 auto;">
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+          <span id="task-status-badge" class="badge badge-pending">pending</span>
+          <span style="font-size:12px;color:var(--muted);" id="task-session">session —</span>
+          <span style="font-size:12px;color:var(--muted);" id="task-timing">—</span>
+        </div>
+        <div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;" id="task-objective">—</div>
+        <div id="final-response-box" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;border-left:3px solid var(--green);">
+          <div style="font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:600;">Final Response</div>
+          <div style="font-size:13px;line-height:1.7;color:var(--text);" id="final-response-text"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<main style="max-width:1400px;margin:0 auto;padding:20px 24px;display:grid;grid-template-columns:340px 1fr 320px;gap:16px;align-items:start;">
+
+  <!-- LEFT: Subtasks Timeline -->
+  <div>
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header">
+        <div class="section-icon" style="background:rgba(99,102,241,.15);">📋</div>
+        <span class="card-title">Subtasks</span>
+        <span id="subtask-count" style="font-size:11px;color:var(--muted);margin-left:auto;">0 steps</span>
+      </div>
+      <!-- Tabs: Timeline / Kanban -->
+      <div style="padding:10px 14px;display:flex;gap:6px;border-bottom:1px solid var(--border);">
+        <button class="tab-btn active" onclick="switchSubtaskView('timeline')" id="tab-timeline">Timeline</button>
+        <button class="tab-btn" onclick="switchSubtaskView('kanban')" id="tab-kanban">Kanban</button>
+      </div>
+      <div style="padding:14px;" id="subtask-container">
+        <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No subtasks yet</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: Events + Progressive Responses -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Progressive Responses (shown only for progressive workflow) -->
+    <div id="progressive-section" style="display:none;" class="card">
+      <div class="card-header">
+        <div class="section-icon" style="background:rgba(168,85,247,.15);">💬</div>
+        <span class="card-title">Progressive Agent Responses</span>
+        <span id="prog-count" style="font-size:11px;color:var(--muted);margin-left:auto;">0 responses</span>
+      </div>
+      <div style="padding:14px;display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto;" id="progressive-container">
+        <div class="empty-state"><div class="empty-icon">💬</div><div class="empty-text">No responses yet</div></div>
+      </div>
+    </div>
+
+    <!-- Events Log -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon" style="background:rgba(59,130,246,.15);">📡</div>
+        <span class="card-title">Event Log</span>
+        <div style="display:flex;gap:6px;margin-left:auto;align-items:center;">
+          <span id="event-count" style="font-size:11px;color:var(--muted);">0 events</span>
+          <button class="tab-btn" onclick="toggleAutoScroll()" id="autoscroll-btn" title="Auto-scroll">↓</button>
+        </div>
+      </div>
+      <!-- Filter tabs -->
+      <div style="padding:8px 14px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
+        <button class="tab-btn active" onclick="filterEvents('all')" id="filter-all">All</button>
+        <button class="tab-btn" onclick="filterEvents('model')" id="filter-model">Model</button>
+        <button class="tab-btn" onclick="filterEvents('tool_call')" id="filter-tool_call">Tools</button>
+        <button class="tab-btn" onclick="filterEvents('error')" id="filter-error">Errors</button>
+      </div>
+      <div style="font-family:monospace;font-size:12px;max-height:500px;overflow-y:auto;" id="events-container">
+        <div class="empty-state"><div class="empty-icon">📡</div><div class="empty-text">No events yet</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Metrics + Decision Metadata + Artifacts -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Metrics -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon" style="background:rgba(234,179,8,.15);">📊</div>
+        <span class="card-title">Metrics</span>
+      </div>
+      <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="metrics-container">
+        <div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📊</div><div class="empty-text">No metrics yet</div></div>
+      </div>
+    </div>
+
+    <!-- Decision Metadata -->
+    <div class="card">
+      <div class="card-header">
+        <div class="section-icon" style="background:rgba(6,182,212,.15);">🧭</div>
+        <span class="card-title">Decision Audit</span>
+      </div>
+      <div style="padding:14px;" id="decision-container">
+        <div class="empty-state"><div class="empty-icon">🧭</div><div class="empty-text">No decision data yet</div></div>
+      </div>
+    </div>
+
+    <!-- Artifacts -->
+    <div class="card" id="artifacts-card" style="display:none;">
+      <div class="card-header">
+        <div class="section-icon" style="background:rgba(34,197,94,.15);">📎</div>
+        <span class="card-title">Artifacts</span>
+      </div>
+      <div style="padding:14px;" id="artifacts-container"></div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let currentContract = null;
+let subtaskView = 'timeline';
+let eventFilter = 'all';
+let autoScroll = true;
+let allEvents = [];
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkApiStatus();
+  document.getElementById('objective-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) runObjective();
+  });
+});
+
+async function checkApiStatus() {
+  const el = document.getElementById('api-status');
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      const data = await res.json();
+      el.innerHTML = `<div class="dot dot-green"></div> Ready &mdash; ADK ${data.adk_installed ? '✓' : '⚠ not installed'}`;
+      document.getElementById('contract-version').textContent = data.contract_version;
+    } else {
+      el.innerHTML = `<div class="dot dot-red"></div> API error`;
+    }
+  } catch {
+    el.innerHTML = `<div class="dot dot-yellow"></div> Connecting…`;
+    setTimeout(checkApiStatus, 3000);
+  }
+}
+
+// ─── RUN ───────────────────────────────────────────────────────────────────
+async function runObjective() {
+  const objective = document.getElementById('objective-input').value.trim();
+  if (!objective) { alert('Please enter an objective.'); return; }
+  const workflow = document.getElementById('workflow-select').value;
+  setLoading(true);
+  try {
+    const res = await fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ objective, workflow: workflow || null }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert('Error: ' + (err.detail || res.statusText));
+      return;
+    }
+    const contract = await res.json();
+    renderContract(contract);
+  } catch (err) {
+    alert('Network error: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function loadDemo() {
+  const objective = document.getElementById('objective-input').value.trim() || 'Build a production-ready ADK agent orchestrator';
+  const workflow = document.getElementById('workflow-select').value || 'sequential';
+  setLoading(true);
+  try {
+    const res = await fetch('/api/run/demo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ objective, workflow }),
+    });
+    const contract = await res.json();
+    renderContract(contract);
+  } catch (err) {
+    alert('Demo error: ' + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function setLoading(loading) {
+  const btn = document.getElementById('run-btn');
+  const label = document.getElementById('run-label');
+  const demoBtn = document.getElementById('demo-btn');
+  btn.disabled = loading;
+  demoBtn.disabled = loading;
+  label.innerHTML = loading
+    ? '<div class="spinner" style="display:inline-block;vertical-align:middle;"></div>'
+    : '▶ Run';
+}
+
+// ─── RENDER CONTRACT ───────────────────────────────────────────────────────
+function renderContract(contract) {
+  currentContract = contract;
+  allEvents = contract.events || [];
+
+  renderTaskHeader(contract.task, contract.metrics);
+  renderSubtasks(contract.subtasks || []);
+  renderEvents(allEvents);
+  renderMetrics(contract.metrics);
+  renderDecisionMetadata(contract.decision_metadata);
+  renderArtifacts(contract.artifacts || []);
+  renderProgressiveResponses(contract.progressive_agent_responses || [], contract.decision_metadata);
+}
+
+// ─── TASK HEADER ───────────────────────────────────────────────────────────
+function renderTaskHeader(task, metrics) {
+  if (!task) return;
+  document.getElementById('task-header').style.display = 'block';
+
+  const badge = document.getElementById('task-status-badge');
+  badge.textContent = task.status;
+  badge.className = 'badge badge-' + (task.status || 'pending');
+
+  document.getElementById('task-objective').textContent = task.objective || '—';
+  document.getElementById('task-session').textContent = 'session: ' + (task.session_id || '—').slice(-12);
+
+  const ms = metrics?.duration_ms;
+  document.getElementById('task-timing').textContent = ms != null ? `${(ms / 1000).toFixed(2)}s` : '';
+
+  const respBox = document.getElementById('final-response-box');
+  const respText = document.getElementById('final-response-text');
+  if (task.final_response) {
+    respBox.style.display = 'block';
+    respText.textContent = task.final_response;
+  } else {
+    respBox.style.display = 'none';
+  }
+}
+
+// ─── SUBTASKS ──────────────────────────────────────────────────────────────
+function switchSubtaskView(view) {
+  subtaskView = view;
+  ['timeline', 'kanban'].forEach(v => {
+    document.getElementById('tab-' + v).classList.toggle('active', v === view);
+  });
+  if (currentContract) renderSubtasks(currentContract.subtasks || []);
+}
+
+function renderSubtasks(subtasks) {
+  const el = document.getElementById('subtask-container');
+  document.getElementById('subtask-count').textContent = subtasks.length + ' steps';
+
+  if (!subtasks.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No subtasks</div></div>';
+    return;
+  }
+
+  if (subtaskView === 'timeline') {
+    el.innerHTML = subtasks.map((s, i) => `
+      <div class="timeline-item">
+        ${i < subtasks.length - 1 ? '<div class="timeline-line"></div>' : ''}
+        <div class="timeline-dot timeline-dot-${s.status || 'pending'}">${i + 1}</div>
+        <div style="flex:1;min-width:0;padding-top:4px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;color:var(--text);">${esc(s.name)}</span>
+            <span class="badge badge-${s.status || 'pending'}" style="font-size:10px;padding:1px 7px;">${s.status || 'pending'}</span>
+          </div>
+          ${s.agent_name ? `<div style="font-size:11px;color:var(--muted);margin-bottom:3px;">🤖 ${esc(s.agent_name)}</div>` : ''}
+          ${s.workflow ? `<div style="font-size:11px;color:var(--accent2);margin-bottom:3px;">⚡ ${esc(s.workflow)}</div>` : ''}
+          ${s.output_summary ? `<div style="font-size:12px;color:#94a3b8;line-height:1.5;background:var(--surface2);padding:6px 10px;border-radius:6px;margin-top:4px;border:1px solid var(--border);">${esc(s.output_summary)}</div>` : ''}
+          ${s.error ? `<div style="font-size:12px;color:var(--red);margin-top:4px;">⚠ ${esc(s.error)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } else {
+    // Kanban by status
+    const cols = ['pending', 'running', 'completed', 'failed', 'skipped', 'blocked'];
+    const groups = {};
+    cols.forEach(c => groups[c] = []);
+    subtasks.forEach(s => { (groups[s.status] || groups['pending']).push(s); });
+    const active = cols.filter(c => groups[c].length > 0);
+    el.innerHTML = `<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
+      ${active.map(col => `
+        <div style="min-width:150px;flex:1;">
+          <div class="badge badge-${col}" style="width:100%;justify-content:center;margin-bottom:8px;">${col} (${groups[col].length})</div>
+          ${groups[col].map(s => `
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:600;margin-bottom:3px;">${esc(s.name)}</div>
+              ${s.agent_name ? `<div style="font-size:10px;color:var(--muted);">🤖 ${esc(s.agent_name)}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>`;
+  }
+}
+
+// ─── EVENTS ────────────────────────────────────────────────────────────────
+function filterEvents(type) {
+  eventFilter = type;
+  ['all', 'model', 'tool_call', 'error'].forEach(f => {
+    document.getElementById('filter-' + f).classList.toggle('active', f === type);
+  });
+  renderEvents(allEvents);
+}
+
+function toggleAutoScroll() {
+  autoScroll = !autoScroll;
+  document.getElementById('autoscroll-btn').style.color = autoScroll ? 'var(--accent2)' : 'var(--muted)';
+}
+
+function eventClass(ev) {
+  if (ev.severity === 'error') return 'log-error';
+  if (ev.severity === 'warning') return 'log-warning';
+  if (ev.type === 'final_response') return 'log-final';
+  if (ev.type === 'model') return 'log-model';
+  if (ev.type === 'tool_call' || ev.type === 'tool_response') return 'log-tool';
+  if (ev.severity === 'debug') return 'log-debug';
+  return 'log-info';
+}
+
+function eventPrefix(ev) {
+  if (ev.type === 'tool_call') return '[TOOL↑]';
+  if (ev.type === 'tool_response') return '[TOOL↓]';
+  if (ev.type === 'final_response') return '[FINAL]';
+  if (ev.type === 'model') return '[MODEL]';
+  return '[EVENT]';
+}
+
+function renderEvents(events) {
+  const el = document.getElementById('events-container');
+  let filtered = events;
+  if (eventFilter === 'model') filtered = events.filter(e => e.type === 'model' || e.type === 'final_response');
+  else if (eventFilter === 'tool_call') filtered = events.filter(e => e.type === 'tool_call' || e.type === 'tool_response');
+  else if (eventFilter === 'error') filtered = events.filter(e => e.severity === 'error' || e.severity === 'warning');
+
+  document.getElementById('event-count').textContent = filtered.length + ' events';
+
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📡</div><div class="empty-text">No events match the filter</div></div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(ev => `
+    <div class="log-line ${eventClass(ev)}">
+      <span style="color:var(--muted);margin-right:8px;">${fmtTime(ev.timestamp)}</span>
+      <span style="font-weight:700;margin-right:6px;">${eventPrefix(ev)}</span>
+      <span style="color:var(--cyan);margin-right:6px;">${esc(ev.source)}</span>
+      <span>${esc(ev.message)}</span>
+    </div>
+  `).join('');
+
+  if (autoScroll) el.scrollTop = el.scrollHeight;
+}
+
+// ─── METRICS ───────────────────────────────────────────────────────────────
+function renderMetrics(metrics) {
+  if (!metrics) return;
+  const el = document.getElementById('metrics-container');
+
+  const items = [
+    { label: 'Duration', value: metrics.duration_ms != null ? (metrics.duration_ms / 1000).toFixed(2) + 's' : '—', color: 'var(--accent2)' },
+    { label: 'Events', value: metrics.event_count ?? 0, color: 'var(--blue)' },
+    { label: 'Subtasks', value: metrics.subtask_count ?? 0, color: 'var(--purple)' },
+    { label: 'Artifacts', value: metrics.artifact_count ?? 0, color: 'var(--cyan)' },
+    { label: 'Tool Calls', value: metrics.tool_call_count ?? 0, color: 'var(--yellow)' },
+    { label: 'Model Events', value: metrics.model_event_count ?? 0, color: 'var(--green)' },
+    { label: 'Errors', value: metrics.error_count ?? 0, color: metrics.error_count ? 'var(--red)' : 'var(--muted)' },
+  ];
+
+  el.innerHTML = items.map(m => `
+    <div class="metric-card">
+      <div class="metric-value" style="color:${m.color};">${m.value}</div>
+      <div class="metric-label">${m.label}</div>
+    </div>
+  `).join('');
+
+  if (metrics.custom) {
+    const custom = Object.entries(metrics.custom).filter(([, v]) => v != null);
+    if (custom.length) {
+      el.innerHTML += `<div style="grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600;">Custom</div>
+        ${custom.map(([k, v]) => `
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">
+            <span style="color:var(--muted);">${esc(k)}</span>
+            <span style="color:var(--text);">${esc(String(v))}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+  }
+}
+
+// ─── DECISION METADATA ─────────────────────────────────────────────────────
+function renderDecisionMetadata(dm) {
+  const el = document.getElementById('decision-container');
+  if (!dm) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🧭</div><div class="empty-text">No decision data</div></div>';
+    return;
+  }
+
+  const confidence = dm.confidence != null ? Math.round(dm.confidence * 100) : null;
+
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${dm.selected_workflow ? `
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600;">Selected Workflow</div>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:8px;padding:6px 12px;">
+            <span style="font-size:14px;">⚡</span>
+            <span style="font-size:13px;font-weight:600;color:var(--accent2);">${esc(dm.selected_workflow)}</span>
+          </div>
+        </div>
+      ` : ''}
+
+      ${dm.rationale ? `
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600;">Rationale</div>
+          <div style="font-size:12px;line-height:1.6;color:#94a3b8;background:var(--surface2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">${esc(dm.rationale)}</div>
+        </div>
+      ` : ''}
+
+      ${confidence != null ? `
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;">Confidence</div>
+            <span style="font-size:12px;font-weight:700;color:${confidence >= 80 ? 'var(--green)' : confidence >= 50 ? 'var(--yellow)' : 'var(--red)'};">${confidence}%</span>
+          </div>
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${confidence}%;"></div></div>
+        </div>
+      ` : ''}
+
+      ${dm.alternatives && dm.alternatives.length ? `
+        <div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;font-weight:600;">Alternatives</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${dm.alternatives.map(a => `<span style="font-size:11px;padding:2px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);">${esc(a)}</span>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      ${dm.policy_version ? `
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding-top:6px;border-top:1px solid var(--border);">
+          <span style="color:var(--muted);">Policy</span>
+          <span style="color:var(--text);font-weight:600;">${esc(dm.policy_version)}</span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ─── ARTIFACTS ─────────────────────────────────────────────────────────────
+function renderArtifacts(artifacts) {
+  const card = document.getElementById('artifacts-card');
+  if (!artifacts.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const el = document.getElementById('artifacts-container');
+  el.innerHTML = artifacts.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+      <span style="font-size:18px;">📎</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(a.name)}</div>
+        ${a.mime_type ? `<div style="font-size:11px;color:var(--muted);">${esc(a.mime_type)}</div>` : ''}
+      </div>
+      ${a.uri ? `<a href="${esc(a.uri)}" target="_blank" style="color:var(--accent2);font-size:11px;flex-shrink:0;">Open ↗</a>` : ''}
+    </div>
+  `).join('');
+}
+
+// ─── PROGRESSIVE RESPONSES ─────────────────────────────────────────────────
+function renderProgressiveResponses(responses, decisionMeta) {
+  const section = document.getElementById('progressive-section');
+  const isProgressive =
+    (decisionMeta?.selected_workflow === 'progressive_multi_agent_response') ||
+    responses.length > 0;
+
+  section.style.display = isProgressive ? 'block' : 'none';
+  if (!isProgressive) return;
+
+  const el = document.getElementById('progressive-container');
+  document.getElementById('prog-count').textContent = responses.length + ' responses';
+
+  if (!responses.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><div class="empty-text">No responses yet</div></div>';
+    return;
+  }
+
+  // Build ID → index map for dependency labels
+  const idToAgent = {};
+  const idToIndex = {};
+  responses.forEach((r, i) => {
+    idToAgent[r.response_id] = r.agent_name;
+    idToIndex[r.response_id] = i;
+  });
+
+  const agentColors = {};
+  const palette = ['var(--accent)', 'var(--purple)', 'var(--cyan)', 'var(--green)', 'var(--yellow)', 'var(--blue)'];
+  const agentNames = [...new Set(responses.map(r => r.agent_name))];
+  agentNames.forEach((name, i) => { agentColors[name] = palette[i % palette.length]; });
+
+  el.innerHTML = responses.map((r, i) => {
+    const isRight = i % 2 === 1;
+    const depHtml = r.depends_on_response_ids && r.depends_on_response_ids.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+          <span style="font-size:10px;color:var(--muted);">depends on:</span>
+          ${r.depends_on_response_ids.map(depId => `
+            <span class="response-dep-badge">
+              🔗 ${esc(idToAgent[depId] || depId.slice(-6))} #${(idToIndex[depId] ?? '?') + 1}
+            </span>
+          `).join('')}
+        </div>`
+      : '';
+
+    return `
+      <div class="fade-in" style="display:flex;flex-direction:column;align-items:${isRight ? 'flex-end' : 'flex-start'};">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;${isRight ? 'flex-direction:row-reverse;' : ''}">
+          <div style="width:24px;height:24px;border-radius:50%;background:${agentColors[r.agent_name]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;">${r.agent_name.charAt(0).toUpperCase()}</div>
+          <span style="font-size:11px;font-weight:600;color:${agentColors[r.agent_name]};">${esc(r.agent_name)}</span>
+          <span style="font-size:10px;color:var(--muted);">#${i + 1}</span>
+          <span style="font-size:10px;color:var(--muted);">${fmtTime(r.timestamp)}</span>
+        </div>
+        <div class="chat-bubble ${isRight ? 'chat-bubble-right' : 'chat-bubble-left'}">
+          ${depHtml}
+          <div style="font-size:13px;line-height:1.6;color:var(--text);"><pre>${esc(r.content)}</pre></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── UTILITIES ─────────────────────────────────────────────────────────────
+function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString('en', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch { return iso.slice(11, 19) || '—'; }
+}
+</script>
+</body>
+</html>
