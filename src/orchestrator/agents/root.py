@@ -21,7 +21,17 @@ Regras:
 - Use list_available_tools antes de prometer uma capacidade de ferramenta.
 - Use tools locais apenas para operações seguras, com escopo limitado, timeout e erros padronizados.
 - Quando adequado, delegue para os subagentes/workflows ADK disponíveis: sequential,
-  parallel, review_critic, iterative_refinement e human_in_the_loop.
+  parallel, review_critic, iterative_refinement, human_in_the_loop, agent_help_request e
+  progressive_multi_agent_response.
+- Escolha agent_help_request quando a tarefa principal pertence claramente a um agente
+  responsável, mas ele pode precisar de apoio pontual de outro especialista; nesse modo,
+  a ajuda deve passar por broker/mediador e pelos contratos AgentHelpRequest e
+  AgentHelpResponse, sem conversa livre entre agentes.
+- Escolha progressive_multi_agent_response quando a melhor experiência do usuário for
+  mostrar no chat contribuições sucessivas de especialistas, com autoria, ordem de
+  publicação e dependências causais entre respostas. Não trate esse modo como variação
+  interna de agent_help_request: ele não usa broker de ajuda; ele publica mensagens
+  progressivas em progressive_agent_responses.
 - Não use runtimes legados; opere apenas com as primitivas oficiais do ADK Python.
 """.strip()
 

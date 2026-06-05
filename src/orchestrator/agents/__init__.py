@@ -12,16 +12,19 @@ from orchestrator.agents.specialists import (
 )
 from orchestrator.agents.workflows import (
     PHASE_2_WORKFLOW_NAMES,
+    create_agent_help_request_workflow,
     create_human_in_the_loop_workflow,
     create_iterative_refinement_workflow,
     create_parallel_workflow,
     create_phase2_workflows,
+    create_progressive_multi_agent_response_workflow,
     create_review_critic_workflow,
     create_sequential_workflow,
 )
 
 __all__ = [
     "PHASE_2_WORKFLOW_NAMES",
+    "create_agent_help_request_workflow",
     "create_approval_agent",
     "create_critic_agent",
     "create_executor_agent",
@@ -32,6 +35,7 @@ __all__ = [
     "create_human_in_the_loop_workflow",
     "create_iterative_refinement_workflow",
     "create_parallel_workflow",
+    "create_progressive_multi_agent_response_workflow",
     "create_phase2_workflows",
     "create_review_critic_workflow",
     "create_root_agent",

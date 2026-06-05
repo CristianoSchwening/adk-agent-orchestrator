@@ -12,6 +12,83 @@ TaskStatus = Literal["pending", "running", "completed", "failed", "cancelled", "
 SubtaskStatus = Literal["pending", "running", "completed", "failed", "skipped", "blocked"]
 EventSeverity = Literal["debug", "info", "warning", "error"]
 
+AgentHelpStatus = Literal[
+    "requested",
+    "accepted",
+    "rejected",
+    "completed",
+    "failed",
+]
+AgentVisibleResponseVisibility = Literal["internal", "user_visible", "hidden"]
+AgentVisibleResponseStatus = Literal["draft", "published", "superseded", "failed"]
+
+
+@dataclass(frozen=True)
+class AgentHelpRequest:
+    """Internal brokered request for point-in-time help between specialists."""
+
+    request_id: str
+    requester_agent: str
+    provider_agent: str
+    requested_capability: str
+    reason: str
+    payload: dict[str, Any] = field(default_factory=dict)
+    status: AgentHelpStatus = "requested"
+    response: dict[str, Any] | str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the request into a JSON-compatible dictionary."""
+
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class AgentHelpResponse:
+    """Internal brokered response to a point-in-time specialist help request."""
+
+    request_id: str
+    requester_agent: str
+    provider_agent: str
+    requested_capability: str
+    reason: str
+    payload: dict[str, Any] = field(default_factory=dict)
+    status: AgentHelpStatus = "completed"
+    response: dict[str, Any] | str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the response into a JSON-compatible dictionary."""
+
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class AgentVisibleResponse:
+    """Specialist response that can be shown as an authored chat message.
+
+    This internal entity is stored in ADK session state under
+    ``progressive_agent_responses`` and projected into the public execution
+    contract so UI/API clients can render successive specialist contributions
+    with authorship, ordering and causal dependencies.
+    """
+
+    response_id: str
+    agent_name: str
+    agent_role: str
+    content: str
+    depends_on_response_ids: list[str] = field(default_factory=list)
+    visibility: AgentVisibleResponseVisibility = "user_visible"
+    status: AgentVisibleResponseStatus = "published"
+    publication_order: int = 0
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the progressive response into a JSON-compatible dictionary."""
+
+        return asdict(self)
+
 
 def utc_now_iso() -> str:
     """Return a timezone-aware UTC timestamp for contract DTOs."""
@@ -102,18 +179,6 @@ class MetricsDTO:
 
 
 @dataclass(frozen=True)
-class ProgressiveAgentResponseDTO:
-    """One agent contribution in a progressive multi-agent response workflow."""
-
-    response_id: str
-    agent_name: str
-    content: str
-    timestamp: str
-    depends_on_response_ids: list[str] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass(frozen=True)
 class ExecutionContractDTO:
     """Complete versioned execution view consumed by clients."""
 
@@ -124,7 +189,7 @@ class ExecutionContractDTO:
     metrics: MetricsDTO
     decision_metadata: DecisionMetadataDTO
     artifacts: list[ArtifactDTO] = field(default_factory=list)
-    progressive_agent_responses: list[ProgressiveAgentResponseDTO] = field(default_factory=list)
+    progressive_agent_responses: list[AgentVisibleResponse] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the contract into a JSON-compatible dictionary."""

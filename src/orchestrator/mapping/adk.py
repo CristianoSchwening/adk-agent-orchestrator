@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from time import perf_counter
 from typing import Any
@@ -10,6 +11,7 @@ from uuid import uuid4
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts import (
     CONTRACT_VERSION,
+    AgentVisibleResponse,
     ArtifactDTO,
     DecisionMetadataDTO,
     EventDTO,
@@ -37,6 +39,11 @@ WORKFLOW_STATE_KEYS: dict[str, tuple[str, str]] = {
     "human_review_context": ("human_in_the_loop", "context"),
     "human_approval_decision": ("human_in_the_loop", "approval"),
     "human_followup": ("human_in_the_loop", "followup"),
+    "progressive_response_a": ("progressive_multi_agent_response", "response-a"),
+    "progressive_response_b": ("progressive_multi_agent_response", "response-b"),
+    "progressive_response_c": ("progressive_multi_agent_response", "response-c"),
+    "progressive_agent_responses": ("progressive_multi_agent_response", "publish"),
+    "progressive_final_response": ("progressive_multi_agent_response", "finalize"),
 }
 
 
@@ -70,6 +77,9 @@ def map_adk_execution(
 
     event_dtos = [_map_event(event, index) for index, event in enumerate(events, start=1)]
     artifact_dtos = _map_artifacts(artifacts)
+    progressive_responses = _map_progressive_agent_responses(
+        state.get("progressive_agent_responses")
+    )
     subtasks = _map_subtasks(
         state,
         event_dtos,
@@ -107,6 +117,7 @@ def map_adk_execution(
                 "phase": state.get("phase"),
                 "tool_timeout_seconds": state.get("tool_timeout_seconds"),
                 "mcp_server_count": state.get("mcp_server_count"),
+                "progressive_agent_response_count": len(progressive_responses),
             },
         ),
         decision_metadata=DecisionMetadataDTO(
@@ -117,6 +128,7 @@ def map_adk_execution(
             policy_version=_optional_string(state.get("policy_version")),
         ),
         artifacts=artifact_dtos,
+        progressive_agent_responses=progressive_responses,
     )
 
 
@@ -259,6 +271,61 @@ def _map_subtasks(
             )
         )
     return subtasks
+
+
+def _map_progressive_agent_responses(value: Any) -> list[AgentVisibleResponse]:
+    """Map progressive response state into typed UI/API contract entries."""
+
+    if value is None:
+        return []
+    raw_items: Any = value
+    if isinstance(value, str):
+        try:
+            raw_items = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+    if isinstance(raw_items, dict):
+        raw_items = raw_items.get("progressive_agent_responses") or raw_items.get("responses") or []
+    if not isinstance(raw_items, list):
+        return []
+
+    responses: list[AgentVisibleResponse] = []
+    for index, item in enumerate(raw_items, start=1):
+        if isinstance(item, AgentVisibleResponse):
+            responses.append(item)
+            continue
+        if not isinstance(item, dict):
+            continue
+        response_id = _optional_string(item.get("response_id"))
+        agent_name = _optional_string(item.get("agent_name"))
+        content = _optional_string(item.get("content"))
+        if not response_id or not agent_name or content is None:
+            continue
+        responses.append(
+            AgentVisibleResponse(
+                response_id=response_id,
+                agent_name=agent_name,
+                agent_role=_optional_string(item.get("agent_role")) or "specialist",
+                content=content,
+                depends_on_response_ids=_string_list(item.get("depends_on_response_ids")),
+                visibility=_normalize_progressive_visibility(item.get("visibility")),
+                status=_normalize_progressive_status(item.get("status")),
+                publication_order=_optional_int(item.get("publication_order")) or index,
+                created_at=_optional_string(item.get("created_at")) or utc_now_iso(),
+                metadata=dict(item.get("metadata") or {}),
+            )
+        )
+    return sorted(responses, key=lambda response: response.publication_order)
+
+
+def _normalize_progressive_visibility(value: Any) -> str:
+    visibility = _optional_string(value) or "user_visible"
+    return visibility if visibility in {"internal", "user_visible", "hidden"} else "user_visible"
+
+
+def _normalize_progressive_status(value: Any) -> str:
+    status = _optional_string(value) or "published"
+    return status if status in {"draft", "published", "superseded", "failed"} else "published"
 
 
 def _map_artifacts(artifacts: list[Any] | dict[str, Any] | None) -> list[ArtifactDTO]:

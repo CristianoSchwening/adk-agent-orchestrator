@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts.dto import (
     CONTRACT_VERSION,
-    ProgressiveAgentResponseDTO,
+    AgentVisibleResponse,
     utc_now_iso,
 )
 from orchestrator.runner.bootstrap import build_runtime, initial_session_state, run_once_contract
@@ -259,38 +259,67 @@ async def run_demo(body: RunRequest) -> JSONResponse:
         r2 = str(uuid.uuid4())
         r3 = str(uuid.uuid4())
         r4 = str(uuid.uuid4())
+        r5 = str(uuid.uuid4())
         data["progressive_agent_responses"] = [
             {
                 "response_id": r1,
                 "agent_name": "planner_agent",
-                "content": f"I have analyzed the objective: '{objective}'. Here is my plan:\n1. Research the domain\n2. Synthesize findings\n3. Draft the final output",
-                "timestamp": now,
+                "agent_role": "Planner",
+                "content": f"Analyzed objective: '{objective}'.\n\nExecution plan:\n1. Research the problem domain\n2. Synthesize findings in parallel\n3. Draft and validate the final output",
                 "depends_on_response_ids": [],
-                "metadata": {"step": 1, "confidence": 0.95},
+                "visibility": "user_visible",
+                "status": "published",
+                "publication_order": 1,
+                "created_at": now,
+                "metadata": {"confidence": 0.95, "steps_planned": 3},
             },
             {
                 "response_id": r2,
                 "agent_name": "researcher_agent",
-                "content": "Research complete. Key findings:\n- Domain is well-documented\n- Best practices identified\n- 3 relevant patterns found",
-                "timestamp": now,
+                "agent_role": "Researcher",
+                "content": "Research complete. Key findings:\n- Domain is well-documented with established patterns\n- 3 highly relevant prior approaches identified\n- No blocking dependencies found",
                 "depends_on_response_ids": [r1],
-                "metadata": {"step": 2, "sources": 3},
+                "visibility": "user_visible",
+                "status": "published",
+                "publication_order": 2,
+                "created_at": now,
+                "metadata": {"sources": 3, "coverage": "high"},
             },
             {
                 "response_id": r3,
                 "agent_name": "executor_agent",
-                "content": "Based on the research, I have executed the synthesis phase. All 3 patterns applied successfully.",
-                "timestamp": now,
-                "depends_on_response_ids": [r1, r2],
-                "metadata": {"step": 3, "patterns_applied": 3},
+                "agent_role": "Executor",
+                "content": "Internal validation log:\n- Pattern A applied ✓\n- Pattern B applied ✓\n- Pattern C applied ✓\nAll checks passed.",
+                "depends_on_response_ids": [r1],
+                "visibility": "internal",
+                "status": "published",
+                "publication_order": 3,
+                "created_at": now,
+                "metadata": {"patterns_applied": 3, "validation": "passed"},
             },
             {
                 "response_id": r4,
-                "agent_name": "summarizer_agent",
-                "content": f"Final consolidated response for '{objective}':\nAll agents completed their contributions. The objective has been fulfilled with high confidence.",
-                "timestamp": now,
+                "agent_name": "critic_agent",
+                "agent_role": "Critic",
+                "content": "⚠ Initial draft flagged for revision — confidence below threshold. Requesting refinement.",
                 "depends_on_response_ids": [r2, r3],
-                "metadata": {"step": 4, "final": True},
+                "visibility": "user_visible",
+                "status": "superseded",
+                "publication_order": 4,
+                "created_at": now,
+                "metadata": {"revision_reason": "confidence_below_threshold"},
+            },
+            {
+                "response_id": r5,
+                "agent_name": "summarizer_agent",
+                "agent_role": "Summarizer",
+                "content": f"✅ Final consolidated response for '{objective}':\n\nAll agent contributions have been reviewed and integrated. The objective has been fulfilled with high confidence. The approach is grounded in 3 validated patterns and passed all quality checks.",
+                "depends_on_response_ids": [r2, r3, r4],
+                "visibility": "user_visible",
+                "status": "published",
+                "publication_order": 5,
+                "created_at": now,
+                "metadata": {"final": True, "confidence": 0.97},
             },
         ]
 
@@ -298,19 +327,35 @@ async def run_demo(body: RunRequest) -> JSONResponse:
 
 
 def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
+    """Map contract subtasks → AgentVisibleResponse-shaped dicts."""
     import uuid
+
+    ROLE_MAP = {
+        "plan": "Planner",
+        "execute": "Executor",
+        "critique": "Critic",
+        "summarize": "Summarizer",
+        "research": "Researcher",
+        "refine": "Refiner",
+        "approval": "Approver",
+    }
 
     responses = []
     prev_id: str | None = None
-    for subtask in contract.subtasks:
+    for order, subtask in enumerate(contract.subtasks, start=1):
         rid = str(uuid.uuid4())
+        role = ROLE_MAP.get(subtask.name, subtask.name.capitalize())
         responses.append(
             {
                 "response_id": rid,
                 "agent_name": subtask.agent_name or subtask.name,
+                "agent_role": role,
                 "content": subtask.output_summary or subtask.name,
-                "timestamp": subtask.finished_at or utc_now_iso(),
                 "depends_on_response_ids": [prev_id] if prev_id else [],
+                "visibility": "user_visible",
+                "status": "published" if subtask.status == "completed" else subtask.status,
+                "publication_order": order,
+                "created_at": subtask.finished_at or utc_now_iso(),
                 "metadata": {"subtask_id": subtask.subtask_id, "workflow": subtask.workflow},
             }
         )
