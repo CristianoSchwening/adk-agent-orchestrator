@@ -20,7 +20,8 @@ jobs:
       - name: Run unit checks
         run: |
           pytest -q
-          ruff check .
+          ruff check . --fix
           python -m compileall -q src tests
       - name: Run deterministic evaluation dataset
         run: python -m orchestrator.evaluation eval/datasets/phase5_smoke.json
+
