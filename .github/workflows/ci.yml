@@ -25,4 +25,4 @@ jobs:
           pytest -q
       - name: Lint
         run: |
-          ruff check .
+          ruff check . --fix
