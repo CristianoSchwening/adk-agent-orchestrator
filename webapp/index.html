@@ -342,7 +342,10 @@ async function runObjective() {
 
 async function loadDemo() {
   const objective = document.getElementById('objective-input').value.trim() || 'Build a production-ready ADK agent orchestrator';
-  const workflow = document.getElementById('workflow-select').value || 'sequential';
+  const sel = document.getElementById('workflow-select');
+  // Default demo to progressive so the DAG panel is visible right away
+  const workflow = sel.value || 'progressive_multi_agent_response';
+  if (!sel.value) sel.value = 'progressive_multi_agent_response';
   setLoading(true);
   try {
     const res = await fetch('/api/run/demo', {
