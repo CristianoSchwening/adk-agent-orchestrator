@@ -220,27 +220,21 @@
       </div>
     </div>
 
-    <!-- Events Log -->
-    <div class="card">
-      <div class="card-header">
-        <div class="section-icon" style="background:rgba(59,130,246,.15);">📡</div>
-        <span class="card-title">Event Log</span>
-        <div style="display:flex;gap:6px;margin-left:auto;align-items:center;">
-          <span id="event-count" style="font-size:11px;color:var(--muted);">0 events</span>
-          <button class="tab-btn" onclick="toggleAutoScroll()" id="autoscroll-btn" title="Auto-scroll">↓</button>
+    <!-- Events Log (React island — Estágio 2) -->
+    <div id="event-log-root">
+      <div class="card">
+        <div class="card-header">
+          <div class="section-icon" style="background:rgba(59,130,246,.15);">📡</div>
+          <span class="card-title">Event Log</span>
+        </div>
+        <div style="padding:14px;" class="empty-state">
+          <div class="empty-icon">📡</div>
+          <div class="empty-text">Event Log unavailable — run <code>npm run build</code> in webapp/ui</div>
         </div>
       </div>
-      <!-- Filter tabs -->
-      <div style="padding:8px 14px;display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--border);">
-        <button class="tab-btn active" onclick="filterEvents('all')" id="filter-all">All</button>
-        <button class="tab-btn" onclick="filterEvents('model')" id="filter-model">Model</button>
-        <button class="tab-btn" onclick="filterEvents('tool_call')" id="filter-tool_call">Tools</button>
-        <button class="tab-btn" onclick="filterEvents('error')" id="filter-error">Errors</button>
-      </div>
-      <div style="font-family:monospace;font-size:12px;max-height:500px;overflow-y:auto;" id="events-container">
-        <div class="empty-state"><div class="empty-icon">📡</div><div class="empty-text">No events yet</div></div>
-      </div>
     </div>
+    <link rel="stylesheet" href="/static/event-log.css" />
+    <script type="module" src="/static/event-log.js"></script>
 
   </div>
 
@@ -285,8 +279,6 @@
 // ─── STATE ─────────────────────────────────────────────────────────────────
 let currentContract = null;
 let subtaskView = 'timeline';
-let eventFilter = 'all';
-let autoScroll = true;
 let allEvents = [];
 
 // ─── INIT ──────────────────────────────────────────────────────────────────
@@ -380,7 +372,7 @@ function renderContract(contract) {
 
   renderTaskHeader(contract.task, contract.metrics);
   renderSubtasks(contract.subtasks || []);
-  renderEvents(allEvents);
+  renderEventLog(allEvents);
   renderMetrics(contract.metrics);
   renderDecisionMetadata(contract.decision_metadata);
   renderArtifacts(contract.artifacts || []);
@@ -471,61 +463,16 @@ function renderSubtasks(subtasks) {
 }
 
 // ─── EVENTS ────────────────────────────────────────────────────────────────
-function filterEvents(type) {
-  eventFilter = type;
-  ['all', 'model', 'tool_call', 'error'].forEach(f => {
-    document.getElementById('filter-' + f).classList.toggle('active', f === type);
-  });
-  renderEvents(allEvents);
-}
-
-function toggleAutoScroll() {
-  autoScroll = !autoScroll;
-  document.getElementById('autoscroll-btn').style.color = autoScroll ? 'var(--accent2)' : 'var(--muted)';
-}
-
-function eventClass(ev) {
-  if (ev.severity === 'error') return 'log-error';
-  if (ev.severity === 'warning') return 'log-warning';
-  if (ev.type === 'final_response') return 'log-final';
-  if (ev.type === 'model') return 'log-model';
-  if (ev.type === 'tool_call' || ev.type === 'tool_response') return 'log-tool';
-  if (ev.severity === 'debug') return 'log-debug';
-  return 'log-info';
-}
-
-function eventPrefix(ev) {
-  if (ev.type === 'tool_call') return '[TOOL↑]';
-  if (ev.type === 'tool_response') return '[TOOL↓]';
-  if (ev.type === 'final_response') return '[FINAL]';
-  if (ev.type === 'model') return '[MODEL]';
-  return '[EVENT]';
-}
-
-function renderEvents(events) {
-  const el = document.getElementById('events-container');
-  let filtered = events;
-  if (eventFilter === 'model') filtered = events.filter(e => e.type === 'model' || e.type === 'final_response');
-  else if (eventFilter === 'tool_call') filtered = events.filter(e => e.type === 'tool_call' || e.type === 'tool_response');
-  else if (eventFilter === 'error') filtered = events.filter(e => e.severity === 'error' || e.severity === 'warning');
-
-  document.getElementById('event-count').textContent = filtered.length + ' events';
-
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📡</div><div class="empty-text">No events match the filter</div></div>';
+// ─── EVENT LOG (React island) ──────────────────────────────────────────────
+function renderEventLog(events) {
+  if (window.EventLogBridge?.render) {
+    window.EventLogBridge.render(events);
     return;
   }
-
-  el.innerHTML = filtered.map(ev => `
-    <div class="log-line ${eventClass(ev)}">
-      <span style="color:var(--muted);margin-right:8px;">${fmtTime(ev.timestamp)}</span>
-      <span style="font-weight:700;margin-right:6px;">${eventPrefix(ev)}</span>
-      <span style="color:var(--cyan);margin-right:6px;">${esc(ev.source)}</span>
-      <span>${esc(ev.message)}</span>
-    </div>
-  `).join('');
-
-  if (autoScroll) el.scrollTop = el.scrollHeight;
+  const root = document.getElementById('event-log-root');
+  if (root && !root.querySelector('.card-title')) {
+    root.innerHTML = '<div class="card"><div class="card-header"><span class="card-title">Event Log</span></div><div class="empty-state"><div class="empty-text">Event Log unavailable — run npm run build in webapp/ui</div></div></div>';
+  }
 }
 
 // ─── METRICS ───────────────────────────────────────────────────────────────

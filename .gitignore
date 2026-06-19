@@ -22,3 +22,8 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# Webapp React build output
+webapp/static/*
+!webapp/static/.gitkeep
+webapp/ui/node_modules/

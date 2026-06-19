@@ -141,6 +141,33 @@ adk-orchestrator-smoke --contract-json "Validar contrato Fase 4"
 
 A versão atual do contrato é `orchestrator.execution.v1` e inclui `task`, `subtasks`, `events`, `metrics`, `decision_metadata` e `artifacts`. Consulte [`docs/contracts/README.md`](docs/contracts/README.md) e o snapshot [`docs/contracts/execution_contract_v1.example.json`](docs/contracts/execution_contract_v1.example.json).
 
+## Webapp UI (Event Log — Estágio 2)
+
+A webapp em [`webapp/index.html`](webapp/index.html) consome o contrato via FastAPI. O painel **Event Log** usa React + [AI Elements Tool](https://elements.ai-sdk.dev/components/tool) como island embutido; os demais painéis permanecem em HTML vanilla.
+
+Build do bundle React (obrigatório antes de servir o Event Log rico):
+
+```bash
+cd webapp/ui
+npm install
+npm run build
+```
+
+Subir o servidor:
+
+```bash
+python run_server.py
+```
+
+Abra `http://localhost:5000` e use **Load Demo** para validar cards expansíveis de tool calls e cards simples para eventos `model`/`error`.
+
+Desenvolvimento isolado do painel:
+
+```bash
+cd webapp/ui
+npm run dev
+```
+
 ## Executar via CLI própria
 
 ```bash
