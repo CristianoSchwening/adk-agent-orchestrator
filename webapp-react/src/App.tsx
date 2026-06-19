@@ -1,147 +1,183 @@
-import { CheckCircle2, Circle, ArrowLeft, Box } from 'lucide-react'
+import { useState } from 'react'
+import { Loader2, ArrowLeft, Play, Zap } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ProgressivePanel } from '@/components/progressive/ProgressivePanel'
+import { useContract } from '@/hooks/useContract'
 import { cn } from '@/lib/utils'
 
-const STACK = [
-  { label: 'React',       version: '18.3',  status: 'ready', icon: '⚛️'  },
-  { label: 'TypeScript',  version: '5.6',   status: 'ready', icon: '🔷'  },
-  { label: 'Vite',        version: '5.4',   status: 'ready', icon: '⚡'  },
-  { label: 'Tailwind',    version: '3.4',   status: 'ready', icon: '🎨'  },
-  { label: 'shadcn/ui',   version: 'ready', status: 'ready', icon: '🧩'  },
-  { label: 'AI Elements', version: 'next',  status: 'next',  icon: '🤖'  },
-]
-
-const STAGES = [
-  { n: 0, label: 'Foundation',             status: 'done',    desc: 'React + Vite + Tailwind + shadcn/ui' },
-  { n: 1, label: 'Progressive Responses',  status: 'pending', desc: 'AI Elements Message + DAG hover cards' },
-  { n: 2, label: 'Event Log',              status: 'pending', desc: 'AI Elements Tool components' },
-  { n: 3, label: 'Artifacts panel',        status: 'pending', desc: 'AI Elements Attachments' },
-  { n: 4, label: 'Input bar',              status: 'pending', desc: 'AI Elements PromptInput' },
-  { n: 5, label: 'Full shell migration',   status: 'pending', desc: 'shadcn layout + decommission HTML' },
+const WORKFLOWS = [
+  { value: 'progressive_multi_agent_response', label: 'Progressive Multi-Agent' },
+  { value: 'sequential',                       label: 'Sequential' },
+  { value: 'parallel',                         label: 'Parallel' },
+  { value: 'review_critic',                    label: 'Review & Critic' },
+  { value: 'iterative_refinement',             label: 'Iterative Refinement' },
 ]
 
 export default function App() {
+  const [objective, setObjective] = useState('')
+  const [workflow,  setWorkflow]  = useState('progressive_multi_agent_response')
+  const { contract, loading, error, loadDemo, run } = useContract()
+
+  const handleDemo = () => {
+    const obj = objective.trim() || 'Build a production-ready ADK agent orchestrator'
+    loadDemo(obj, workflow)
+  }
+
+  const handleRun = () => {
+    const obj = objective.trim()
+    if (!obj) return
+    run(obj, workflow)
+  }
+
+  const responses = contract?.progressive_agent_responses ?? []
+  const hasProgressive = responses.length > 0
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
 
-      {/* Header */}
-      <header className="border-b border-border px-6 h-14 flex items-center justify-between sticky top-0 bg-card z-50">
+      {/* ── Topbar ───────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 border-b border-border bg-card px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-base">🤖</div>
           <div>
-            <div className="text-sm font-bold">ADK Orchestrator</div>
-            <div className="text-[11px] text-muted-foreground">React — Stage 0</div>
+            <div className="text-sm font-bold leading-none">ADK Orchestrator</div>
+            <div className="text-[11px] text-muted-foreground leading-none mt-0.5">
+              React — Stage 1 · AI Elements Messages
+            </div>
           </div>
         </div>
-        <a
-          href="/"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to current app
-        </a>
+
+        <div className="flex items-center gap-3">
+          {/* Stage badge */}
+          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+            Estágio 1
+          </span>
+          <a
+            href="/"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            App atual
+          </a>
+        </div>
       </header>
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-12 flex flex-col gap-8">
-
-        {/* Hero */}
-        <div className="text-center flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center text-3xl">
-            ✅
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Estágio 0 — Fundação pronta</h1>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-md">
-              Pipeline React + Vite configurado e servido pelo FastAPI em{' '}
-              <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/app</code>.
-              O app vanilla HTML original continua intacto em{' '}
-              <code className="text-primary bg-primary/10 px-1.5 py-0.5 rounded text-xs">/</code>.
-            </p>
-          </div>
+      {/* ── Input bar ────────────────────────────────────────────────── */}
+      <div className="border-b border-border bg-card px-6 py-3">
+        <div className="max-w-4xl mx-auto flex gap-2 flex-wrap items-center">
+          <input
+            value={objective}
+            onChange={e => setObjective(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleRun()}
+            placeholder="Enter objective for the orchestrator…"
+            className={cn(
+              'flex-1 min-w-[240px] h-9 px-3 rounded-lg border border-border bg-secondary',
+              'text-sm text-foreground placeholder:text-muted-foreground',
+              'focus:outline-none focus:border-primary/60 transition-colors',
+            )}
+          />
+          <select
+            value={workflow}
+            onChange={e => setWorkflow(e.target.value)}
+            className={cn(
+              'h-9 px-3 rounded-lg border border-border bg-secondary',
+              'text-sm text-foreground cursor-pointer',
+              'focus:outline-none focus:border-primary/60',
+            )}
+          >
+            {WORKFLOWS.map(w => (
+              <option key={w.value} value={w.value} className="bg-card">
+                {w.label}
+              </option>
+            ))}
+          </select>
+          <Button variant="secondary" size="sm" onClick={handleDemo} disabled={loading} className="h-9">
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+            Load Demo
+          </Button>
+          <Button size="sm" onClick={handleRun} disabled={loading || !objective.trim()} className="h-9">
+            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+            Run
+          </Button>
         </div>
+      </div>
 
-        {/* Stack cards */}
-        <section>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-            Stack instalada
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {STACK.map(s => (
-              <div
-                key={s.label}
-                className={cn(
-                  'rounded-xl border p-4 flex items-center gap-3 transition-colors',
-                  s.status === 'ready'
-                    ? 'border-border bg-card'
-                    : 'border-dashed border-border/50 bg-card/50 opacity-60',
-                )}
-              >
-                <span className="text-xl">{s.icon}</span>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold truncate">{s.label}</div>
-                  <div className="text-[11px] text-muted-foreground">v{s.version}</div>
-                </div>
-                {s.status === 'ready' ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto flex-shrink-0" />
-                ) : (
-                  <Circle className="w-4 h-4 text-muted-foreground/40 ml-auto flex-shrink-0" />
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
+      {/* ── Main content ─────────────────────────────────────────────── */}
+      <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-8 flex flex-col gap-6">
 
-        {/* Roadmap */}
-        <section>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-            Roadmap de migração
-          </h2>
-          <div className="flex flex-col gap-2">
-            {STAGES.map((s, i) => (
-              <div
-                key={s.n}
-                className={cn(
-                  'flex items-start gap-4 rounded-xl border p-4 transition-colors',
-                  s.status === 'done'
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-border bg-card opacity-70',
-                )}
-              >
-                <div className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5',
-                  s.status === 'done'
-                    ? 'bg-primary text-white'
-                    : 'bg-muted text-muted-foreground',
-                )}>
-                  {s.status === 'done' ? '✓' : s.n}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">{s.label}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{s.desc}</div>
-                </div>
-                {s.status === 'done' && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 flex-shrink-0">
-                    done
-                  </span>
-                )}
-                {s.status === 'pending' && i === 1 && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 flex-shrink-0">
-                    next
-                  </span>
-                )}
-              </div>
-            ))}
+        {/* Error */}
+        {error && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+            ⚠ {error}
           </div>
-        </section>
+        )}
 
-        {/* Infra detail */}
-        <section className="rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground space-y-2">
-          <div className="font-semibold text-foreground text-sm mb-3 flex items-center gap-2">
-            <Box className="w-4 h-4" /> Como funciona
+        {/* Task summary */}
+        {contract?.task && (
+          <div className="rounded-xl border border-border bg-card px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Objective</div>
+              <div className="text-sm font-semibold">{contract.task.objective}</div>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className={cn(
+                'text-[11px] font-semibold px-2 py-1 rounded-full border',
+                contract.task.status === 'completed'
+                  ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                  : 'bg-primary/10 text-primary border-primary/30',
+              )}>
+                {contract.task.status}
+              </span>
+              {contract.metrics?.duration_ms != null && (
+                <span className="text-[11px] text-muted-foreground">
+                  {(contract.metrics.duration_ms / 1000).toFixed(2)}s
+                </span>
+              )}
+              <span className="text-[11px] text-muted-foreground">
+                {contract.decision_metadata?.selected_workflow}
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2"><span className="text-primary font-mono">GET /</span><span>→ vanilla HTML (webapp/index.html) — inalterado</span></div>
-          <div className="flex gap-2"><span className="text-primary font-mono">GET /app/*</span><span>→ este app React (webapp-react/dist/) — em paralelo</span></div>
-          <div className="flex gap-2"><span className="text-primary font-mono">POST /api/*</span><span>→ FastAPI backend Python — compartilhado por ambos</span></div>
-        </section>
+        )}
+
+        {/* Progressive Responses panel */}
+        {hasProgressive ? (
+          <ProgressivePanel responses={responses} />
+        ) : !loading && !contract ? (
+          /* Empty state */
+          <div className="flex-1 flex flex-col items-center justify-center py-20 gap-6 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-4xl">
+              💬
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold mb-2">Stage 1 — AI Elements Messages</h2>
+              <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
+                Clique em <strong>Load Demo</strong> para carregar 5 respostas de agentes com{' '}
+                <code className="text-primary text-xs bg-primary/10 px-1 rounded">visibility</code>,{' '}
+                <code className="text-primary text-xs bg-primary/10 px-1 rounded">status</code> e{' '}
+                <code className="text-primary text-xs bg-primary/10 px-1 rounded">agent_role</code>.
+                Depois alterne entre <strong>Chat</strong> e <strong>DAG</strong> (com hover cards).
+              </p>
+            </div>
+            <Button onClick={handleDemo} disabled={loading} className="gap-2">
+              <Zap className="w-4 h-4" />
+              Load Demo
+            </Button>
+          </div>
+        ) : loading ? (
+          <div className="flex-1 flex items-center justify-center py-20">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Running orchestrator…</span>
+            </div>
+          </div>
+        ) : (
+          /* Contract loaded but no progressive responses */
+          <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground text-sm">
+            Este workflow não gerou respostas progressivas.
+            Selecione <strong>Progressive Multi-Agent</strong> e clique em Load Demo.
+          </div>
+        )}
 
       </main>
     </div>

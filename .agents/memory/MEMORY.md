@@ -1,0 +1,2 @@
+- [ai-elements CLI bug](ai-elements-cli.md) — CLI v1.9.0 crashes with ENOENT on `lib/`; build components manually with Radix + CVA instead.
+- [React build pipeline](react-build.md) — `npm --prefix webapp-react run build` then restart workflow; `/app` route served via FastAPI StaticFiles.
