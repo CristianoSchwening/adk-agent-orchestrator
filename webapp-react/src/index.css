@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark theme — mirrors the vanilla HTML palette */
+    --background: 235 30% 8%;
+    --foreground: 215 20% 85%;
+
+    --card: 235 25% 11%;
+    --card-foreground: 215 20% 85%;
+
+    --popover: 235 25% 11%;
+    --popover-foreground: 215 20% 85%;
+
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 235 20% 17%;
+    --secondary-foreground: 215 20% 75%;
+
+    --muted: 235 20% 17%;
+    --muted-foreground: 215 15% 50%;
+
+    --accent: 239 84% 67%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 235 20% 18%;
+    --input: 235 20% 18%;
+    --ring: 239 84% 67%;
+
+    --radius: 0.625rem;
+
+    /* Extra semantic tokens */
+    --color-green:  142 71% 45%;
+    --color-yellow: 38 92% 50%;
+    --color-purple: 270 84% 60%;
+    --color-cyan:   189 85% 43%;
+    --color-red:    0 72% 51%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-background; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded; }
+}

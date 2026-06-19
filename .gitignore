@@ -22,3 +22,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+# React app (webapp-react)
+webapp-react/node_modules/
+webapp-react/dist/
