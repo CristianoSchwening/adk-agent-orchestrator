@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -86,8 +87,6 @@ async def run_demo(body: RunRequest) -> JSONResponse:
     now = utc_now_iso()
     workflow = body.workflow or "sequential"
 
-    import uuid
-
     session_id = f"demo-{uuid.uuid4()}"
     task_id = str(uuid.uuid4())
 
@@ -103,8 +102,9 @@ async def run_demo(body: RunRequest) -> JSONResponse:
             "created_at": now,
             "updated_at": now,
             "final_response": (
-                f"Objective '{objective}' completed successfully via the {workflow} workflow. "
-                "All sub-agents finished their assigned tasks and the result has been consolidated."
+                f"Objective '{objective}' completed successfully via the {workflow} "
+                "workflow. All sub-agents finished their assigned tasks and the "
+                "result has been consolidated."
             ),
         },
         "subtasks": [
@@ -245,7 +245,10 @@ async def run_demo(body: RunRequest) -> JSONResponse:
         },
         "decision_metadata": {
             "selected_workflow": workflow,
-            "rationale": f"The objective '{objective}' maps best to the {workflow} workflow based on its multi-step nature.",
+            "rationale": (
+                f"The objective '{objective}' maps best to the {workflow} "
+                "workflow based on its multi-step nature."
+            ),
             "confidence": 0.91,
             "alternatives": [w for w in ["sequential", "parallel", "review_critic"] if w != workflow],
             "policy_version": "v1.0",
@@ -265,7 +268,11 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "response_id": r1,
                 "agent_name": "planner_agent",
                 "agent_role": "Planner",
-                "content": f"Analyzed objective: '{objective}'.\n\nExecution plan:\n1. Research the problem domain\n2. Synthesize findings in parallel\n3. Draft and validate the final output",
+                "content": (
+                    f"Analyzed objective: '{objective}'.\n\nExecution plan:\n1. "
+                    "Research the problem domain\n2. Synthesize findings in parallel\n"
+                    "3. Draft and validate the final output"
+                ),
                 "depends_on_response_ids": [],
                 "visibility": "user_visible",
                 "status": "published",
@@ -277,7 +284,11 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "response_id": r2,
                 "agent_name": "researcher_agent",
                 "agent_role": "Researcher",
-                "content": "Research complete. Key findings:\n- Domain is well-documented with established patterns\n- 3 highly relevant prior approaches identified\n- No blocking dependencies found",
+                "content": (
+                    "Research complete. Key findings:\n- Domain is well-documented "
+                    "with established patterns\n- 3 highly relevant prior "
+                    "approaches identified\n- No blocking dependencies found"
+                ),
                 "depends_on_response_ids": [r1],
                 "visibility": "user_visible",
                 "status": "published",
@@ -289,7 +300,10 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "response_id": r3,
                 "agent_name": "executor_agent",
                 "agent_role": "Executor",
-                "content": "Internal validation log:\n- Pattern A applied ✓\n- Pattern B applied ✓\n- Pattern C applied ✓\nAll checks passed.",
+                "content": (
+                    "Internal validation log:\n- Pattern A applied ✓\n- "
+                    "Pattern B applied ✓\n- Pattern C applied ✓\nAll checks passed."
+                ),
                 "depends_on_response_ids": [r1],
                 "visibility": "internal",
                 "status": "published",
@@ -301,7 +315,10 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "response_id": r4,
                 "agent_name": "critic_agent",
                 "agent_role": "Critic",
-                "content": "⚠ Initial draft flagged for revision — confidence below threshold. Requesting refinement.",
+                "content": (
+                    "⚠ Initial draft flagged for revision — confidence below "
+                    "threshold. Requesting refinement."
+                ),
                 "depends_on_response_ids": [r2, r3],
                 "visibility": "user_visible",
                 "status": "superseded",
@@ -313,7 +330,13 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "response_id": r5,
                 "agent_name": "summarizer_agent",
                 "agent_role": "Summarizer",
-                "content": f"✅ Final consolidated response for '{objective}':\n\nAll agent contributions have been reviewed and integrated. The objective has been fulfilled with high confidence. The approach is grounded in 3 validated patterns and passed all quality checks.",
+                "content": (
+                    f"✅ Final consolidated response for '{objective}':\n\n"
+                    "All agent contributions have been reviewed and integrated. "
+                    "The objective has been fulfilled with high confidence. "
+                    "The approach is grounded in 3 validated patterns and "
+                    "passed all quality checks."
+                ),
                 "depends_on_response_ids": [r2, r3, r4],
                 "visibility": "user_visible",
                 "status": "published",
@@ -328,7 +351,6 @@ async def run_demo(body: RunRequest) -> JSONResponse:
 
 def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
     """Map contract subtasks → AgentVisibleResponse-shaped dicts."""
-    import uuid
 
     ROLE_MAP = {
         "plan": "Planner",
