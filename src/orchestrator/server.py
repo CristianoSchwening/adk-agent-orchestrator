@@ -139,7 +139,9 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "agent_name": "sequential_critic_agent",
                 "workflow": workflow,
                 "input_summary": "Review execution output.",
-                "output_summary": "Output meets quality criteria. No revisions needed.",
+                "output_summary": (
+                    "Output meets quality criteria. No revisions needed."
+                ),
                 "started_at": now,
                 "finished_at": now,
                 "error": None,
@@ -250,7 +252,10 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "workflow based on its multi-step nature."
             ),
             "confidence": 0.91,
-            "alternatives": [w for w in ["sequential", "parallel", "review_critic"] if w != workflow],
+            "alternatives": [
+                w for w in ["sequential", "parallel", "review_critic"]
+                if w != workflow
+            ],
             "policy_version": "v1.0",
         },
         "artifacts": [],
@@ -270,8 +275,8 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "agent_role": "Planner",
                 "content": (
                     f"Analyzed objective: '{objective}'.\n\nExecution plan:\n1. "
-                    "Research the problem domain\n2. Synthesize findings in parallel\n"
-                    "3. Draft and validate the final output"
+                    "Research the problem domain\n2. Synthesize findings in "
+                    "parallel\n3. Draft and validate the final output"
                 ),
                 "depends_on_response_ids": [],
                 "visibility": "user_visible",
@@ -285,9 +290,10 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "agent_name": "researcher_agent",
                 "agent_role": "Researcher",
                 "content": (
-                    "Research complete. Key findings:\n- Domain is well-documented "
-                    "with established patterns\n- 3 highly relevant prior "
-                    "approaches identified\n- No blocking dependencies found"
+                    "Research complete. Key findings:\n- Domain is "
+                    "well-documented with established patterns\n- 3 highly "
+                    "relevant prior approaches identified\n- No blocking "
+                    "dependencies found"
                 ),
                 "depends_on_response_ids": [r1],
                 "visibility": "user_visible",
@@ -302,7 +308,8 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "agent_role": "Executor",
                 "content": (
                     "Internal validation log:\n- Pattern A applied ✓\n- "
-                    "Pattern B applied ✓\n- Pattern C applied ✓\nAll checks passed."
+                    "Pattern B applied ✓\n- Pattern C applied ✓\n"
+                    "All checks passed."
                 ),
                 "depends_on_response_ids": [r1],
                 "visibility": "internal",
@@ -375,10 +382,17 @@ def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
                 "content": subtask.output_summary or subtask.name,
                 "depends_on_response_ids": [prev_id] if prev_id else [],
                 "visibility": "user_visible",
-                "status": "published" if subtask.status == "completed" else subtask.status,
+                "status": (
+                    "published"
+                    if subtask.status == "completed"
+                    else subtask.status
+                ),
                 "publication_order": order,
                 "created_at": subtask.finished_at or utc_now_iso(),
-                "metadata": {"subtask_id": subtask.subtask_id, "workflow": subtask.workflow},
+                "metadata": {
+                    "subtask_id": subtask.subtask_id,
+                    "workflow": subtask.workflow,
+                },
             }
         )
         prev_id = rid
