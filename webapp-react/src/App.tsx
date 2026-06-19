@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { Loader2, ArrowLeft, Play, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProgressivePanel } from '@/components/progressive/ProgressivePanel'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { useContract } from '@/hooks/useContract'
+import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
 
 const WORKFLOWS = [
@@ -17,6 +19,7 @@ export default function App() {
   const [objective, setObjective] = useState('')
   const [workflow,  setWorkflow]  = useState('progressive_multi_agent_response')
   const { contract, loading, error, loadDemo, run } = useContract()
+  const { theme, toggle } = useTheme()
 
   const handleDemo = () => {
     const obj = objective.trim() || 'Build a production-ready ADK agent orchestrator'
@@ -48,6 +51,8 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Theme toggle */}
+          <ThemeToggle theme={theme} onToggle={toggle} />
           {/* Stage badge */}
           <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
             Estágio 1

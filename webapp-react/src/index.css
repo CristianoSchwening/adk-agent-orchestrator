@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Dark theme (default) ─────────────────────────────────────── */
   :root {
-    /* Dark theme — mirrors the vanilla HTML palette */
     --background: 235 30% 8%;
     --foreground: 215 20% 85%;
 
@@ -32,14 +32,49 @@
     --border: 235 20% 18%;
     --input: 235 20% 18%;
     --ring: 239 84% 67%;
-
     --radius: 0.625rem;
 
-    /* Extra semantic tokens */
     --color-green:  142 71% 45%;
     --color-yellow: 38 92% 50%;
     --color-purple: 270 84% 60%;
     --color-cyan:   189 85% 43%;
+    --color-red:    0 72% 51%;
+  }
+
+  /* ── Light theme ──────────────────────────────────────────────── */
+  :root.light {
+    --background: 220 20% 97%;
+    --foreground: 224 30% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 30% 15%;
+
+    --primary: 239 84% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 93%;
+    --secondary-foreground: 224 20% 35%;
+
+    --muted: 220 15% 93%;
+    --muted-foreground: 224 15% 52%;
+
+    --accent: 239 84% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 87%;
+    --input: 220 15% 87%;
+    --ring: 239 84% 60%;
+
+    --color-green:  142 60% 38%;
+    --color-yellow: 38 85% 44%;
+    --color-purple: 270 70% 52%;
+    --color-cyan:   189 75% 36%;
     --color-red:    0 72% 51%;
   }
 }
@@ -52,8 +87,14 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { @apply bg-background; }
   ::-webkit-scrollbar-thumb { @apply bg-border rounded; }
+
+  /* Smooth theme transition on all elements */
+  *, *::before, *::after {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+  }
 }
