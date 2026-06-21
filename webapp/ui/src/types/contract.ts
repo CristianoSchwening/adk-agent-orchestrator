@@ -9,6 +9,15 @@ export type EventType =
   | "adk_event"
   | string;
 
+export interface ContractArtifact {
+  artifact_id: string;
+  name: string;
+  mime_type?: string | null;
+  uri?: string | null;
+  size_bytes?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
 export interface ContractEvent {
   event_id: string;
   type: EventType;

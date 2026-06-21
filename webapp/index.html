@@ -263,14 +263,8 @@
       </div>
     </div>
 
-    <!-- Artifacts -->
-    <div class="card" id="artifacts-card" style="display:none;">
-      <div class="card-header">
-        <div class="section-icon" style="background:rgba(34,197,94,.15);">📎</div>
-        <span class="card-title">Artifacts</span>
-      </div>
-      <div style="padding:14px;" id="artifacts-container"></div>
-    </div>
+    <!-- Artifacts (React island — Estágio 3) -->
+    <div id="artifacts-root"></div>
 
   </div>
 </main>
@@ -571,22 +565,11 @@ function renderDecisionMetadata(dm) {
   `;
 }
 
-// ─── ARTIFACTS ─────────────────────────────────────────────────────────────
+// ─── ARTIFACTS (React island) ─────────────────────────────────────────────
 function renderArtifacts(artifacts) {
-  const card = document.getElementById('artifacts-card');
-  if (!artifacts.length) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  const el = document.getElementById('artifacts-container');
-  el.innerHTML = artifacts.map(a => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-      <span style="font-size:18px;">📎</span>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(a.name)}</div>
-        ${a.mime_type ? `<div style="font-size:11px;color:var(--muted);">${esc(a.mime_type)}</div>` : ''}
-      </div>
-      ${a.uri ? `<a href="${esc(a.uri)}" target="_blank" style="color:var(--accent2);font-size:11px;flex-shrink:0;">Open ↗</a>` : ''}
-    </div>
-  `).join('');
+  if (window.ArtifactsBridge?.render) {
+    window.ArtifactsBridge.render(artifacts);
+  }
 }
 
 // ─── PROGRESSIVE RESPONSES ─────────────────────────────────────────────────
