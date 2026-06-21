@@ -143,7 +143,7 @@ A versão atual do contrato é `orchestrator.execution.v1` e inclui `task`, `sub
 
 ## Webapp UI (Event Log — Estágio 2)
 
-A webapp em [`webapp/index.html`](webapp/index.html) consome o contrato via FastAPI. O painel **Event Log** usa React + [AI Elements Tool](https://elements.ai-sdk.dev/components/tool) como island embutido; os demais painéis permanecem em HTML vanilla.
+A webapp agora é uma SPA React em [`webapp/ui`](webapp/ui) compilada para [`webapp/static/index.html`](webapp/static/index.html) e servida pelo FastAPI em `/`. Os painéis **Subtasks**, **Metrics**, **Decision Audit**, **Event Log** e **Artifacts** usam componentes React/shadcn e Tailwind buildado pelo Vite, sem CDN em produção.
 
 Build do bundle React (obrigatório antes de servir o Event Log rico):
 
