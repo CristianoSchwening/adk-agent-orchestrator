@@ -23,7 +23,5 @@ venv/
 .idea/
 .vscode/
 
-# Webapp React build output
-webapp/static/*
-!webapp/static/.gitkeep
+# Webapp dependencies
 webapp/ui/node_modules/

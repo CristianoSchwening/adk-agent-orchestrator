@@ -25,6 +25,7 @@ from orchestrator.contracts.dto import (
 from orchestrator.runner.bootstrap import build_runtime, initial_session_state, run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
+REACT_BUILD_DIR = WEBAPP_DIR / "static"
 
 app = FastAPI(title="ADK Orchestrator UI", version="1.0.0")
 
@@ -432,13 +433,13 @@ def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
     return responses
 
 
-if WEBAPP_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(WEBAPP_DIR / "static")), name="static")
+if REACT_BUILD_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(REACT_BUILD_DIR)), name="static")
 
 
 @app.get("/")
 async def serve_index() -> FileResponse:
-    index = WEBAPP_DIR / "index.html"
+    index = REACT_BUILD_DIR / "index.html"
     if not index.exists():
         raise HTTPException(status_code=404, detail="Frontend not built")
     return FileResponse(str(index))
@@ -446,10 +447,10 @@ async def serve_index() -> FileResponse:
 
 @app.get("/{path:path}")
 async def serve_spa(path: str) -> FileResponse:
-    target = WEBAPP_DIR / path
+    target = REACT_BUILD_DIR / path
     if target.exists() and target.is_file():
         return FileResponse(str(target))
-    index = WEBAPP_DIR / "index.html"
+    index = REACT_BUILD_DIR / "index.html"
     if index.exists():
         return FileResponse(str(index))
     raise HTTPException(status_code=404, detail="Not found")

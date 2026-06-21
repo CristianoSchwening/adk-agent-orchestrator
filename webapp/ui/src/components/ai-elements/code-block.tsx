@@ -10,7 +10,6 @@ export type CodeBlockProps = ComponentProps<"pre"> & {
 
 export function CodeBlock({
   code,
-  language: _language,
   className,
   ...props
 }: CodeBlockProps) {
