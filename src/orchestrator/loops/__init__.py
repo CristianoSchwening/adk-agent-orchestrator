@@ -1,4 +1,4 @@
-"""Loop engineering primitives — Loop 2: Verification."""
+"""Loop engineering primitives — Loop 2: Verification, Loop 3: Event-Driven."""
 
 from orchestrator.loops.rubric import (
     CriterionResult,
@@ -7,6 +7,7 @@ from orchestrator.loops.rubric import (
     STANDARD_QUALITY_RUBRIC,
 )
 from orchestrator.loops.verification import VerificationLoop
+from orchestrator.loops.event_driven import EventLoop, ScheduleConfig, ExecutionSummary
 
 __all__ = [
     "CriterionResult",
@@ -14,4 +15,7 @@ __all__ = [
     "RubricCriterion",
     "STANDARD_QUALITY_RUBRIC",
     "VerificationLoop",
+    "EventLoop",
+    "ScheduleConfig",
+    "ExecutionSummary",
 ]
