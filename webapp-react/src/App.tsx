@@ -8,6 +8,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
 
 const WORKFLOWS = [
+  { value: 'loop2_verification',               label: '🔁 Loop 2 — Verificação' },
   { value: 'progressive_multi_agent_response', label: 'Progressive Multi-Agent' },
   { value: 'sequential',                       label: 'Sequential' },
   { value: 'parallel',                         label: 'Parallel' },
@@ -17,7 +18,7 @@ const WORKFLOWS = [
 
 export default function App() {
   const [objective, setObjective] = useState('')
-  const [workflow,  setWorkflow]  = useState('progressive_multi_agent_response')
+  const [workflow,  setWorkflow]  = useState('loop2_verification')
   const { contract, loading, error, loadDemo, run } = useContract()
   const { theme, toggle } = useTheme()
 
