@@ -23,10 +23,15 @@ from orchestrator.contracts.dto import (
     AgentVisibleResponse,
     utc_now_iso,
 )
+from orchestrator.loops import STANDARD_QUALITY_RUBRIC, VerificationLoop
 from orchestrator.runner.bootstrap import build_runtime, initial_session_state, run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
+<<<<<<< HEAD
+REACT_DIR = Path(__file__).parent.parent.parent / "webapp-react" / "dist"
+=======
 REACT_BUILD_DIR = WEBAPP_DIR / "static"
+>>>>>>> 7a91882d0677cc604e5bee65e3c687fb87e9cf07
 
 app = FastAPI(title="ADK Orchestrator UI", version="1.0.0")
 
@@ -297,6 +302,135 @@ async def run_demo(body: RunRequest) -> JSONResponse:
         "progressive_agent_responses": [],
     }
 
+    if workflow == "loop2_verification":
+        loop = VerificationLoop(rubric=STANDARD_QUALITY_RUBRIC, max_iterations=2)
+
+        # ── Iteration 0 — thin first pass (will fail grading) ──────────────
+        i0_plan_id = str(uuid.uuid4())
+        i0_exec_id = str(uuid.uuid4())
+
+        i0_planner = AgentVisibleResponse(
+            response_id=i0_plan_id,
+            agent_name="planner_agent",
+            agent_role="Planner",
+            content=(
+                f"Plan for '{objective}':\n"
+                "1. Research the problem\n"
+                "2. Execute a solution\n"
+                "3. Summarize"
+            ),
+            depends_on_response_ids=[],
+            visibility="user_visible",
+            status="superseded",
+            publication_order=1,
+            created_at=now,
+            metadata={"loop_iteration": 0, "confidence": 0.52},
+        )
+
+        i0_executor = AgentVisibleResponse(
+            response_id=i0_exec_id,
+            agent_name="executor_agent",
+            agent_role="Executor",
+            content="Execution complete. Results obtained.",
+            depends_on_response_ids=[i0_plan_id],
+            visibility="user_visible",
+            status="superseded",
+            publication_order=2,
+            created_at=now,
+            metadata={"loop_iteration": 0},
+        )
+
+        i0_grade = loop.grade(
+            [i0_planner, i0_executor],
+            iteration=0,
+            criterion_scores={
+                "completeness": 0.42,
+                "clarity":      0.68,
+                "accuracy":     0.55,
+                "actionability": 0.38,
+            },
+        )
+        i0_grader = loop.grader_response(
+            i0_grade,
+            depends_on_ids=[i0_exec_id],
+            publication_order=3,
+        )
+
+        # ── Iteration 1 — refined pass (will pass grading) ─────────────────
+        i1_plan_id = str(uuid.uuid4())
+        i1_exec_id = str(uuid.uuid4())
+
+        i1_planner = AgentVisibleResponse(
+            response_id=i1_plan_id,
+            agent_name="planner_agent",
+            agent_role="Planner",
+            content=(
+                f"Refined plan for '{objective}':\n\n"
+                "1. Deep-dive research into 3 primary domain sources\n"
+                "2. Identify concrete patterns matching the objective constraints\n"
+                "3. Validate each pattern against known failure modes A, B, C\n"
+                "4. Synthesize findings into a 4-milestone execution roadmap\n"
+                "5. Define success criteria: coverage > 85%, error rate < 2%"
+            ),
+            depends_on_response_ids=[i0_grader.response_id],
+            visibility="user_visible",
+            status="published",
+            publication_order=4,
+            created_at=now,
+            metadata={"loop_iteration": 1, "confidence": 0.91},
+        )
+
+        i1_executor = AgentVisibleResponse(
+            response_id=i1_exec_id,
+            agent_name="executor_agent",
+            agent_role="Executor",
+            content=(
+                f"Execution complete for '{objective}':\n\n"
+                "✅ Step 1 — 5 domain sources analysed, 3 validated patterns identified\n"
+                "✅ Step 2 — All patterns checked against failure modes A, B, C\n"
+                "✅ Step 3 — 4-milestone roadmap produced with measurable KPIs\n"
+                "✅ Step 4 — Success criteria met: coverage 91%, error rate 0.8%\n\n"
+                "Ready for final quality check."
+            ),
+            depends_on_response_ids=[i1_plan_id],
+            visibility="user_visible",
+            status="published",
+            publication_order=5,
+            created_at=now,
+            metadata={"loop_iteration": 1},
+        )
+
+        i1_grade = loop.grade(
+            [i1_planner, i1_executor],
+            iteration=1,
+            criterion_scores={
+                "completeness":  0.88,
+                "clarity":       0.85,
+                "accuracy":      0.91,
+                "actionability": 0.83,
+            },
+        )
+        i1_grader = loop.grader_response(
+            i1_grade,
+            depends_on_ids=[i1_exec_id],
+            publication_order=6,
+        )
+
+        data["progressive_agent_responses"] = [
+            r.to_dict() for r in [
+                i0_planner, i0_executor, i0_grader,
+                i1_planner, i1_executor, i1_grader,
+            ]
+        ]
+        data["decision_metadata"]["selected_workflow"] = "loop2_verification"
+        data["decision_metadata"]["rationale"] = (
+            "Verification loop ran 2 iterations. "
+            f"Iteration 1 failed (score {i0_grade.overall_score:.0%} < {loop.threshold:.0%}). "
+            f"Iteration 2 passed (score {i1_grade.overall_score:.0%})."
+        )
+        data["metrics"]["custom"]["verification_iterations"] = 2
+        data["metrics"]["custom"]["verification_passed_at"] = 1
+
     if workflow == "progressive_multi_agent_response":
         r1 = str(uuid.uuid4())
         r2 = str(uuid.uuid4())
@@ -437,6 +571,10 @@ def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
 if REACT_BUILD_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(REACT_BUILD_DIR)), name="static")
 
+# React app (Stage 0+) served at /app — built from webapp-react/
+if REACT_DIR.exists():
+    app.mount("/app", StaticFiles(directory=str(REACT_DIR), html=True), name="react_app")
+
 
 @app.get("/")
 async def serve_index() -> FileResponse:
@@ -448,7 +586,13 @@ async def serve_index() -> FileResponse:
 
 @app.get("/{path:path}")
 async def serve_spa(path: str) -> FileResponse:
+<<<<<<< HEAD
+    # React routes under /app/ are handled by the StaticFiles mount above.
+    # This catch-all handles the vanilla HTML SPA.
+    target = WEBAPP_DIR / path
+=======
     target = REACT_BUILD_DIR / path
+>>>>>>> 7a91882d0677cc604e5bee65e3c687fb87e9cf07
     if target.exists() and target.is_file():
         return FileResponse(str(target))
     index = REACT_BUILD_DIR / "index.html"

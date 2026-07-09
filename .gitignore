@@ -23,8 +23,14 @@ venv/
 .idea/
 .vscode/
 
+<<<<<<< HEAD
+# React app (webapp-react)
+webapp-react/node_modules/
+webapp-react/dist/
+=======
 # Webapp dependencies
 webapp/ui/node_modules/
 # React app (webapp-react)
 webapp-react/node_modules/
 webapp-react/dist/
+>>>>>>> 7a91882d0677cc604e5bee65e3c687fb87e9cf07
