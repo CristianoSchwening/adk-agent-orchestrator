@@ -494,7 +494,7 @@ def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
     return responses
 
 
-if WEBAPP_DIR.exists():
+if (WEBAPP_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(WEBAPP_DIR / "static")), name="static")
 
 # React app (Stage 0+) served at /app — built from webapp-react/
