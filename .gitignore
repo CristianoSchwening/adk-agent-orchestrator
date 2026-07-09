@@ -25,3 +25,6 @@ venv/
 
 # Webapp dependencies
 webapp/ui/node_modules/
+# React app (webapp-react)
+webapp-react/node_modules/
+webapp-react/dist/
