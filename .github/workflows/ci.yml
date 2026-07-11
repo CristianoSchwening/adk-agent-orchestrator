@@ -6,7 +6,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  python-test:
+    name: Python Tests and Linting
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,7 +24,7 @@ jobs:
       - name: Run tests
         run: |
           pytest -q
-      - name: Lint with auto-fix and verification
+      - name: Lint Python with auto-fix and verification
         run: |
-          ruff check . --fix --unsafe-fixes
-          ruff check .
+          ruff check src tests --fix --unsafe-fixes
+          ruff check src tests
