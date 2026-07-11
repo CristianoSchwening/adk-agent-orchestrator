@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sync Replit commits → GitHub.
+# Sync Replit → GitHub (Replit é a fonte da verdade).
 # Execute no Shell do Replit: bash scripts/git_autopush.sh
 
 set -euo pipefail
@@ -12,29 +12,28 @@ fi
 REPO="CristianoSchwening/adk-agent-orchestrator"
 AUTH_REMOTE="https://${GITHUB_TOKEN}@github.com/${REPO}"
 
-echo "→ Commits locais pendentes:"
-git log --oneline HEAD 2>/dev/null | head -8
-echo ""
-
-echo "→ Buscando commits do GitHub que ainda não estão no Replit..."
-git fetch "$AUTH_REMOTE" main:refs/remotes/github/main 2>&1 | grep -v "^$" || true
-
-echo ""
-echo "→ Integrando commits do GitHub (rebase)..."
-git rebase refs/remotes/github/main || {
+# ── Abortar rebase em andamento, se houver ────────────────────────────────────
+if [ -d "$(git rev-parse --git-dir)/rebase-merge" ] || \
+   [ -d "$(git rev-parse --git-dir)/rebase-apply" ]; then
+  echo "⚠ Rebase em andamento detectado — abortando..."
+  git rebase --abort
+  echo "✓ Rebase abortado. Continuando com o push..."
   echo ""
-  echo "⚠ Conflitos de merge detectados!"
-  echo "  Resolva os conflitos nos arquivos marcados, depois execute:"
-  echo "    git add <arquivo>"
-  echo "    git rebase --continue"
-  echo "  E então rode este script novamente."
-  exit 1
-}
+fi
+
+# ── Mostrar commits pendentes ─────────────────────────────────────────────────
+echo "→ Commits locais que serão enviados ao GitHub:"
+git log --oneline HEAD 2>/dev/null | head -10
+echo ""
+
+# ── Force push: Replit é a fonte da verdade ───────────────────────────────────
+echo "→ Enviando para GitHub (--force)..."
+git push --force "$AUTH_REMOTE" main
 
 echo ""
-echo "→ Enviando para GitHub..."
-git push "$AUTH_REMOTE" main
-
-echo ""
-echo "✅ Push concluído!"
+echo "✅ Push concluído! GitHub agora está sincronizado com o Replit."
 echo "   Veja em: https://github.com/${REPO}/commits/main"
+echo ""
+echo "⚠ Se você tiver uma cópia local no Windows, sincronize assim:"
+echo "   git fetch origin"
+echo "   git reset --hard origin/main"
