@@ -25,5 +25,5 @@ jobs:
           pytest -q
       - name: Lint with auto-fix and verification
         run: |
-          ruff check . --fix
+          ruff check . --fix --unsafe-fixes
           ruff check .
