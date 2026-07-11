@@ -27,11 +27,6 @@ from orchestrator.loops import STANDARD_QUALITY_RUBRIC, VerificationLoop
 from orchestrator.runner.bootstrap import build_runtime, initial_session_state, run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
-<<<<<<< HEAD
-REACT_DIR = Path(__file__).parent.parent.parent / "webapp-react" / "dist"
-=======
-REACT_BUILD_DIR = WEBAPP_DIR / "static"
->>>>>>> 7a91882d0677cc604e5bee65e3c687fb87e9cf07
 
 app = FastAPI(title="ADK Orchestrator UI", version="1.0.0")
 
@@ -568,8 +563,8 @@ def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
     return responses
 
 
-if REACT_BUILD_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(REACT_BUILD_DIR)), name="static")
+if WEBAPP_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(WEBAPP_DIR / "static")), name="static")
 
 # React app (Stage 0+) served at /app — built from webapp-react/
 if REACT_DIR.exists():
@@ -586,9 +581,6 @@ async def serve_index() -> FileResponse:
 
 @app.get("/{path:path}")
 async def serve_spa(path: str) -> FileResponse:
-<<<<<<< HEAD
-    # React routes under /app/ are handled by the StaticFiles mount above.
-    # This catch-all handles the vanilla HTML SPA.
     target = WEBAPP_DIR / path
 =======
     target = REACT_BUILD_DIR / path
