@@ -92,10 +92,8 @@ export function EventLoopPanel() {
   const handleScheduleToggle = async () => {
     if (config?.schedule?.active) {
       await stopSchedule()
-      setSchedActive(false)
     } else {
       await setSchedule({ objective, workflow, interval_seconds: interval, active: true })
-      setSchedActive(true)
     }
   }
 
