@@ -8,6 +8,11 @@ from orchestrator.loops.rubric import (
 )
 from orchestrator.loops.verification import VerificationLoop
 from orchestrator.loops.event_driven import EventLoop, ScheduleConfig, ExecutionSummary
+from orchestrator.loops.stop_condition import (
+    QualityStopCondition,
+    StopReason,
+    make_quality_stop_callback,
+)
 
 __all__ = [
     "CriterionResult",
@@ -18,4 +23,7 @@ __all__ = [
     "EventLoop",
     "ScheduleConfig",
     "ExecutionSummary",
+    "QualityStopCondition",
+    "StopReason",
+    "make_quality_stop_callback",
 ]

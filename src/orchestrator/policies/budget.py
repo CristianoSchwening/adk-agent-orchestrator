@@ -12,6 +12,7 @@ class BudgetPolicy:
     max_iterations: int = 3
     max_model_calls: int = 12
     max_elapsed_ms: int = 120_000
+    quality_threshold: float = 0.70
 
     def should_continue(self, *, iterations: int, model_calls: int, elapsed_ms: int) -> bool:
         """Return whether an execution can proceed under the configured budget."""

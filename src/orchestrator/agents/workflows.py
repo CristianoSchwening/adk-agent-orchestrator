@@ -8,9 +8,13 @@ assembles official ADK workflow primitives: ``SequentialAgent``,
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 from orchestrator.adk_compat import load_symbol
+from orchestrator.loops.rubric import STANDARD_QUALITY_RUBRIC
+from orchestrator.loops.verification import VerificationLoop
+from orchestrator.loops.stop_condition import make_quality_stop_callback
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_context_agent,
@@ -139,6 +143,32 @@ def create_parallel_workflow(settings: OrchestratorSettings | None = None) -> An
     )
 
 
+def _build_loop_agent_kwargs(
+    base_kwargs: dict[str, Any],
+    stop_callback: Any,
+) -> dict[str, Any]:
+    """Conditionally inject should_stop_loop into LoopAgent kwargs.
+
+    Probes the installed ADK LoopAgent signature. If it accepts
+    ``should_stop_loop``, injects the callback. Falls back gracefully
+    on older ADK versions that do not expose this parameter.
+    """
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+    try:
+        LoopAgent = load_symbol("google.adk.agents.loop_agent", "LoopAgent")
+        sig = inspect.signature(LoopAgent.__init__)
+        if "should_stop_loop" in sig.parameters:
+            return {**base_kwargs, "should_stop_loop": stop_callback}
+        _log.warning(
+            "LoopAgent does not support 'should_stop_loop'; "
+            "falling back to max_iterations-only termination."
+        )
+    except (ImportError, AttributeError):
+        pass
+    return base_kwargs
+
+
 def create_review_critic_workflow(
     settings: OrchestratorSettings | None = None,
     *,
@@ -150,25 +180,40 @@ def create_review_critic_workflow(
     policy = budget_policy or BudgetPolicy()
     _, _, LoopAgent = _load_adk_workflow_primitives()
 
-    return LoopAgent(
-        name="review_critic_workflow",
-        description=(
-            "ADK LoopAgent that alternates authoring and critique within the iteration budget."
-        ),
+    v_loop = VerificationLoop(
+        rubric=STANDARD_QUALITY_RUBRIC,
         max_iterations=policy.max_iterations,
-        sub_agents=[
-            create_executor_agent(
-                resolved_settings,
-                name="review_author_agent",
-                output_key="review_candidate",
-            ),
-            create_critic_agent(
-                resolved_settings,
-                name="review_critic_agent",
-                output_key="review_critique",
-            ),
-        ],
+        threshold=policy.quality_threshold,
     )
+    stop_callback = make_quality_stop_callback(
+        verification_loop=v_loop,
+        budget_policy=policy,
+        output_key="review_candidate",
+    )
+
+    loop_kwargs = _build_loop_agent_kwargs(
+        {
+            "name": "review_critic_workflow",
+            "description": (
+                "ADK LoopAgent that alternates authoring and critique within the iteration budget."
+            ),
+            "max_iterations": policy.max_iterations,
+            "sub_agents": [
+                create_executor_agent(
+                    resolved_settings,
+                    name="review_author_agent",
+                    output_key="review_candidate",
+                ),
+                create_critic_agent(
+                    resolved_settings,
+                    name="review_critic_agent",
+                    output_key="review_critique",
+                ),
+            ],
+        },
+        stop_callback,
+    )
+    return LoopAgent(**loop_kwargs)
 
 
 def create_iterative_refinement_workflow(

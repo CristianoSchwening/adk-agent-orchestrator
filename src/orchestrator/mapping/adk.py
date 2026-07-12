@@ -44,6 +44,7 @@ WORKFLOW_STATE_KEYS: dict[str, tuple[str, str]] = {
     "progressive_response_c": ("progressive_multi_agent_response", "response-c"),
     "progressive_agent_responses": ("progressive_multi_agent_response", "publish"),
     "progressive_final_response": ("progressive_multi_agent_response", "finalize"),
+    "grader_result": ("loop", "grade"),
 }
 
 
@@ -118,6 +119,9 @@ def map_adk_execution(
                 "tool_timeout_seconds": state.get("tool_timeout_seconds"),
                 "mcp_server_count": state.get("mcp_server_count"),
                 "progressive_agent_response_count": len(progressive_responses),
+                "loop_stop_reason": state.get("loop_stop_reason"),
+                "loop_final_score": state.get("loop_final_score"),
+                "loop_iterations_used": state.get("loop_iterations_used"),
             },
         ),
         decision_metadata=DecisionMetadataDTO(

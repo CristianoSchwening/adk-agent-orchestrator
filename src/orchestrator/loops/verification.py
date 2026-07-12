@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Literal
+from typing import Any, Literal
 
 from orchestrator.contracts.dto import AgentVisibleResponse, utc_now_iso
 from orchestrator.loops.rubric import CriterionResult, GraderResult, RubricCriterion
@@ -92,6 +92,43 @@ class VerificationLoop:
             results=results,
             overall_feedback=summary,
         )
+
+    def grade_from_state(
+        self,
+        session_state: dict[str, Any],
+        output_key: str,
+        iteration: int,
+        criterion_scores: dict[str, float] | None = None,
+    ) -> GraderResult:
+        """Extract responses from session_state[output_key] and grade them.
+
+        Falls back gracefully if the key is absent or the value is not a
+        recognised response format — scores all criteria at 0.0 so the loop
+        can still make a deterministic stop decision.
+
+        No ADK symbol is imported or referenced by this method.
+        """
+        raw = session_state.get(output_key)
+
+        if isinstance(raw, str):
+            responses: list[AgentVisibleResponse] = [
+                AgentVisibleResponse(
+                    response_id="synthetic-0",
+                    agent_name="agent",
+                    agent_role="worker",
+                    content=raw,
+                    depends_on_response_ids=[],
+                )
+            ]
+        elif isinstance(raw, list) and all(
+            isinstance(item, AgentVisibleResponse) for item in raw
+        ):
+            responses = raw
+        else:
+            # None, absent, or unrecognised type → graceful degradation
+            responses = []
+
+        return self.grade(responses, iteration, criterion_scores)
 
     def grader_response(
         self,
