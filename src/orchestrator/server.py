@@ -13,7 +13,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from orchestrator.loops import STANDARD_QUALITY_RUBRIC, VerificationLoop
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -27,6 +26,8 @@ from orchestrator.loops import STANDARD_QUALITY_RUBRIC, VerificationLoop
 from orchestrator.runner.bootstrap import build_runtime, initial_session_state, run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
+REACT_DIR = Path(__file__).parent.parent.parent / "webapp-react" / "dist"
+REACT_BUILD_DIR = REACT_DIR
 
 app = FastAPI(title="ADK Orchestrator UI", version="1.0.0")
 
@@ -340,8 +341,8 @@ async def run_demo(body: RunRequest) -> JSONResponse:
             iteration=0,
             criterion_scores={
                 "completeness": 0.42,
-                "clarity":      0.68,
-                "accuracy":     0.55,
+                "clarity": 0.68,
+                "accuracy": 0.55,
                 "actionability": 0.38,
             },
         )
@@ -399,9 +400,9 @@ async def run_demo(body: RunRequest) -> JSONResponse:
             [i1_planner, i1_executor],
             iteration=1,
             criterion_scores={
-                "completeness":  0.88,
-                "clarity":       0.85,
-                "accuracy":      0.91,
+                "completeness": 0.88,
+                "clarity": 0.85,
+                "accuracy": 0.91,
                 "actionability": 0.83,
             },
         )
@@ -412,9 +413,14 @@ async def run_demo(body: RunRequest) -> JSONResponse:
         )
 
         data["progressive_agent_responses"] = [
-            r.to_dict() for r in [
-                i0_planner, i0_executor, i0_grader,
-                i1_planner, i1_executor, i1_grader,
+            r.to_dict()
+            for r in [
+                i0_planner,
+                i0_executor,
+                i0_grader,
+                i1_planner,
+                i1_executor,
+                i1_grader,
             ]
         ]
         data["decision_metadata"]["selected_workflow"] = "loop2_verification"
@@ -581,10 +587,7 @@ async def serve_index() -> FileResponse:
 
 @app.get("/{path:path}")
 async def serve_spa(path: str) -> FileResponse:
-    target = WEBAPP_DIR / path
-=======
     target = REACT_BUILD_DIR / path
->>>>>>> 7a91882d0677cc604e5bee65e3c687fb87e9cf07
     if target.exists() and target.is_file():
         return FileResponse(str(target))
     index = REACT_BUILD_DIR / "index.html"
