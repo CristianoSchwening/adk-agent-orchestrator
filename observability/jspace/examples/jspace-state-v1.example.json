@@ -1,0 +1,81 @@
+{
+  "agent": {
+    "name": "sequential_executor_agent",
+    "role": "executor",
+    "workflow": "sequential"
+  },
+  "causality": {
+    "depends_on_trace_ids": [],
+    "parent_trace_id": null
+  },
+  "execution": {
+    "output_state_key": "sequential_execution"
+  },
+  "integrity": {
+    "reasoning_capture": {
+      "is_hidden_chain_of_thought": false,
+      "type": "structured_deliberation"
+    },
+    "redacted": false,
+    "validation_status": "valid"
+  },
+  "invocation_id": "invocation-example",
+  "jspace": {
+    "assumptions": [],
+    "blockers": [],
+    "criticisms": [],
+    "current_step": "Validate the execution contract",
+    "decisions": [
+      {
+        "alternatives_considered": ["Create an unversioned payload"],
+        "confidence": 0.95,
+        "decision": "Use the versioned contract",
+        "evidence_ids": ["evidence-1"],
+        "rationale": "Existing consumers already depend on versioned DTOs."
+      }
+    ],
+    "evidence": [
+      {
+        "id": "evidence-1",
+        "reference": "src/orchestrator/contracts/dto.py",
+        "summary": "The public execution contract is versioned.",
+        "type": "repository_file"
+      }
+    ],
+    "hypotheses": [],
+    "interpretation": "Add traceability without breaking the public contract.",
+    "next_action": "Persist the validated snapshot.",
+    "objective": "Monitor intermediate agent steps",
+    "plan": [
+      {
+        "description": "Validate the execution contract",
+        "id": "step-1",
+        "status": "running"
+      }
+    ],
+    "uncertainties": []
+  },
+  "lifecycle": {
+    "iteration": null,
+    "phase": "progress",
+    "status": "running"
+  },
+  "prompt_capture": {
+    "agent_instruction": "Execute the planned steps.",
+    "input_messages": [
+      {
+        "content": "Monitor intermediate agent steps",
+        "role": "user"
+      }
+    ],
+    "model_output": "Execution update",
+    "session_context": {},
+    "system_instruction": null,
+    "tool_definitions": []
+  },
+  "schema_version": "orchestrator.jspace.v1",
+  "sequence": 2,
+  "session_id": "session-example",
+  "timestamp": "2026-07-28T12:00:00+00:00",
+  "trace_id": "trace-example"
+}

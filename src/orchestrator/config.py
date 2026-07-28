@@ -15,6 +15,7 @@ ProgressiveFinalResponseStrategy = Literal[
     "root_selected_response",
     "all_visible_responses",
 ]
+JSpaceEnforcementMode = Literal["audit", "strict"]
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,36 @@ def _parse_positive_float(raw_value: str | None, default: float, env_name: str) 
     if value <= 0:
         raise ValueError(f"{env_name} must be greater than zero.")
     return value
+
+
+def _parse_positive_int(raw_value: str | None, default: int, env_name: str) -> int:
+    if raw_value is None or not raw_value.strip():
+        return default
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"{env_name} must be an integer.") from exc
+    if value <= 0:
+        raise ValueError(f"{env_name} must be greater than zero.")
+    return value
+
+
+def _parse_bool(raw_value: str | None, default: bool, env_name: str) -> bool:
+    if raw_value is None or not raw_value.strip():
+        return default
+    normalized = raw_value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{env_name} must be a boolean.")
+
+
+def _parse_jspace_mode(raw_value: str | None) -> JSpaceEnforcementMode:
+    normalized = (raw_value or "strict").strip().lower()
+    if normalized not in {"audit", "strict"}:
+        raise ValueError("ADK_JSPACE_MODE must be either audit or strict.")
+    return normalized  # type: ignore[return-value]
 
 
 def _parse_mcp_servers(raw_value: str | None) -> tuple[MCPServerSettings, ...]:
@@ -177,6 +208,10 @@ class OrchestratorSettings:
     model: str = "gemini-flash-latest"
     tool_timeout_seconds: float = 10.0
     mcp_servers: tuple[MCPServerSettings, ...] = ()
+    jspace_enabled: bool = True
+    jspace_mode: JSpaceEnforcementMode = "strict"
+    jspace_root: str = "observability/jspace/traces"
+    jspace_max_bytes: int = 65_536
     progressive_multi_agent_response: ProgressiveMultiAgentResponseSettings = field(
         default_factory=ProgressiveMultiAgentResponseSettings
     )
@@ -195,5 +230,17 @@ class OrchestratorSettings:
                 "ADK_TOOL_TIMEOUT_SECONDS",
             ),
             mcp_servers=_parse_mcp_servers(os.getenv("ADK_MCP_SERVERS")),
+            jspace_enabled=_parse_bool(
+                os.getenv("ADK_JSPACE_ENABLED"), cls.jspace_enabled, "ADK_JSPACE_ENABLED"
+            ),
+            jspace_mode=_parse_jspace_mode(os.getenv("ADK_JSPACE_MODE")),
+            jspace_root=(
+                os.getenv("ADK_JSPACE_ROOT", cls.jspace_root).strip() or cls.jspace_root
+            ),
+            jspace_max_bytes=_parse_positive_int(
+                os.getenv("ADK_JSPACE_MAX_BYTES"),
+                cls.jspace_max_bytes,
+                "ADK_JSPACE_MAX_BYTES",
+            ),
             progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings.from_env(),
         )

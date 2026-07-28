@@ -122,6 +122,9 @@ def map_adk_execution(
                 "loop_stop_reason": state.get("loop_stop_reason"),
                 "loop_final_score": state.get("loop_final_score"),
                 "loop_iterations_used": state.get("loop_iterations_used"),
+                "jspace_trace_count": state.get("jspace_trace_count"),
+                "jspace_violation_count": state.get("jspace_violation_count"),
+                "jspace_enforcement": state.get("jspace_enforcement"),
             },
         ),
         decision_metadata=DecisionMetadataDTO(
@@ -178,7 +181,9 @@ def _map_event(event: Any, index: int) -> EventDTO:
     error = _extract_value(event, "error", "error_message")
     severity = "error" if error else "info"
     message = str(error or content_text or event_type)
+    explicit_metadata = _extract_value(event, "metadata")
     metadata = {
+        **(dict(explicit_metadata) if isinstance(explicit_metadata, dict) else {}),
         "invocation_id": _extract_value(event, "invocation_id"),
         "branch": _extract_value(event, "branch"),
     }

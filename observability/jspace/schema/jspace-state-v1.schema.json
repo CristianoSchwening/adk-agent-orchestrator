@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CristianoSchwening/adk-agent-orchestrator/observability/jspace/schema/jspace-state-v1.schema.json",
+  "title": "Orchestrator J-space state v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trace_id",
+    "session_id",
+    "sequence",
+    "timestamp",
+    "agent",
+    "lifecycle",
+    "jspace",
+    "prompt_capture",
+    "execution",
+    "causality",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": {"const": "orchestrator.jspace.v1"},
+    "trace_id": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "invocation_id": {"type": ["string", "null"]},
+    "sequence": {"type": "integer", "minimum": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "agent": {
+      "type": "object",
+      "required": ["name", "role", "workflow"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "workflow": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": ["phase", "status", "iteration"],
+      "properties": {
+        "phase": {
+          "enum": [
+            "started",
+            "progress",
+            "tool_result",
+            "blocked",
+            "failed",
+            "completed",
+            "violation"
+          ]
+        },
+        "status": {"type": "string"},
+        "iteration": {"type": ["integer", "null"], "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "jspace": {
+      "type": "object",
+      "required": [
+        "objective",
+        "interpretation",
+        "current_step",
+        "plan",
+        "assumptions",
+        "hypotheses",
+        "evidence",
+        "decisions",
+        "uncertainties",
+        "blockers",
+        "criticisms",
+        "next_action"
+      ],
+      "properties": {
+        "objective": {"type": "string", "minLength": 1},
+        "interpretation": {"type": ["string", "null"]},
+        "current_step": {"type": ["string", "null"]},
+        "plan": {"type": "array", "items": {"type": "object"}},
+        "assumptions": {"type": "array", "items": {"type": "string"}},
+        "hypotheses": {"type": "array", "items": {"type": "string"}},
+        "evidence": {"type": "array", "items": {"type": "object"}},
+        "decisions": {"type": "array", "items": {"type": "object"}},
+        "uncertainties": {"type": "array", "items": {"type": "string"}},
+        "blockers": {"type": "array", "items": {"type": "string"}},
+        "criticisms": {"type": "array", "items": {"type": "string"}},
+        "next_action": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "prompt_capture": {
+      "type": "object",
+      "required": [
+        "system_instruction",
+        "agent_instruction",
+        "session_context",
+        "input_messages",
+        "tool_definitions",
+        "model_output"
+      ],
+      "properties": {
+        "system_instruction": {"type": ["string", "null"]},
+        "agent_instruction": {"type": ["string", "null"]},
+        "session_context": {"type": "object"},
+        "input_messages": {"type": "array", "items": {"type": "object"}},
+        "tool_definitions": {"type": "array", "items": {"type": "object"}},
+        "model_output": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "execution": {"type": "object"},
+    "causality": {"type": "object"},
+    "integrity": {
+      "type": "object",
+      "required": ["redacted", "validation_status", "reasoning_capture"],
+      "properties": {
+        "redacted": {"type": "boolean"},
+        "validation_status": {"enum": ["valid", "invalid"]},
+        "reasoning_capture": {
+          "type": "object",
+          "required": ["type", "is_hidden_chain_of_thought"],
+          "properties": {
+            "type": {"const": "structured_deliberation"},
+            "is_hidden_chain_of_thought": {"const": false}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

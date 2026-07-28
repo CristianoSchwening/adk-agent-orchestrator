@@ -13,6 +13,7 @@ from typing import Any
 
 from orchestrator.adk_compat import load_symbol
 from orchestrator.config import OrchestratorSettings
+from orchestrator.jspace import with_jspace_instruction
 from orchestrator.tools import (
     describe_model_request,
     extract_document_outline,
@@ -43,7 +44,7 @@ def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..
             "model": settings.model,
             "name": name,
             "description": description,
-            "instruction": instruction.strip(),
+            "instruction": with_jspace_instruction(instruction),
             "tools": list(tools),
         }
         if output_key:

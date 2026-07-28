@@ -7,6 +7,7 @@ from typing import Any
 from orchestrator.adk_compat import load_symbol
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
+from orchestrator.jspace import with_jspace_instruction
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
 
 ROOT_AGENT_INSTRUCTION = """
@@ -51,7 +52,7 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
         model=resolved_settings.model,
         name="root_orchestrator_agent",
         description="Phase-3 root agent for ADK-only workflow and tool orchestration.",
-        instruction=ROOT_AGENT_INSTRUCTION,
+        instruction=with_jspace_instruction(ROOT_AGENT_INSTRUCTION),
         tools=[capture_objective, get_orchestrator_status, *PHASE_3_LOCAL_TOOLS],
         sub_agents=list(phase2_workflows.values()),
     )
