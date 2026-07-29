@@ -15,7 +15,7 @@ ProgressiveFinalResponseStrategy = Literal[
     "root_selected_response",
     "all_visible_responses",
 ]
-JSpaceEnforcementMode = Literal["audit", "strict"]
+WorkspaceEnforcementMode = Literal["audit", "strict"]
 
 
 @dataclass(frozen=True)
@@ -103,10 +103,10 @@ def _parse_bool(raw_value: str | None, default: bool, env_name: str) -> bool:
     raise ValueError(f"{env_name} must be a boolean.")
 
 
-def _parse_jspace_mode(raw_value: str | None) -> JSpaceEnforcementMode:
+def _parse_workspace_mode(raw_value: str | None) -> WorkspaceEnforcementMode:
     normalized = (raw_value or "strict").strip().lower()
     if normalized not in {"audit", "strict"}:
-        raise ValueError("ADK_JSPACE_MODE must be either audit or strict.")
+        raise ValueError("ADK_WORKSPACE_MODE must be either audit or strict.")
     return normalized  # type: ignore[return-value]
 
 
@@ -208,10 +208,10 @@ class OrchestratorSettings:
     model: str = "gemini-flash-latest"
     tool_timeout_seconds: float = 10.0
     mcp_servers: tuple[MCPServerSettings, ...] = ()
-    jspace_enabled: bool = True
-    jspace_mode: JSpaceEnforcementMode = "strict"
-    jspace_root: str = "observability/jspace/traces"
-    jspace_max_bytes: int = 65_536
+    workspace_enabled: bool = True
+    workspace_mode: WorkspaceEnforcementMode = "strict"
+    workspace_root: str = "observability/verbalized_workspace/traces"
+    workspace_max_bytes: int = 65_536
     progressive_multi_agent_response: ProgressiveMultiAgentResponseSettings = field(
         default_factory=ProgressiveMultiAgentResponseSettings
     )
@@ -230,17 +230,20 @@ class OrchestratorSettings:
                 "ADK_TOOL_TIMEOUT_SECONDS",
             ),
             mcp_servers=_parse_mcp_servers(os.getenv("ADK_MCP_SERVERS")),
-            jspace_enabled=_parse_bool(
-                os.getenv("ADK_JSPACE_ENABLED"), cls.jspace_enabled, "ADK_JSPACE_ENABLED"
+            workspace_enabled=_parse_bool(
+                os.getenv("ADK_WORKSPACE_ENABLED"),
+                cls.workspace_enabled,
+                "ADK_WORKSPACE_ENABLED",
             ),
-            jspace_mode=_parse_jspace_mode(os.getenv("ADK_JSPACE_MODE")),
-            jspace_root=(
-                os.getenv("ADK_JSPACE_ROOT", cls.jspace_root).strip() or cls.jspace_root
+            workspace_mode=_parse_workspace_mode(os.getenv("ADK_WORKSPACE_MODE")),
+            workspace_root=(
+                os.getenv("ADK_WORKSPACE_ROOT", cls.workspace_root).strip()
+                or cls.workspace_root
             ),
-            jspace_max_bytes=_parse_positive_int(
-                os.getenv("ADK_JSPACE_MAX_BYTES"),
-                cls.jspace_max_bytes,
-                "ADK_JSPACE_MAX_BYTES",
+            workspace_max_bytes=_parse_positive_int(
+                os.getenv("ADK_WORKSPACE_MAX_BYTES"),
+                cls.workspace_max_bytes,
+                "ADK_WORKSPACE_MAX_BYTES",
             ),
             progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings.from_env(),
         )

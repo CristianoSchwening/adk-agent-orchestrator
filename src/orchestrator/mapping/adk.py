@@ -122,9 +122,9 @@ def map_adk_execution(
                 "loop_stop_reason": state.get("loop_stop_reason"),
                 "loop_final_score": state.get("loop_final_score"),
                 "loop_iterations_used": state.get("loop_iterations_used"),
-                "jspace_trace_count": state.get("jspace_trace_count"),
-                "jspace_violation_count": state.get("jspace_violation_count"),
-                "jspace_enforcement": state.get("jspace_enforcement"),
+                "workspace_trace_count": state.get("workspace_trace_count"),
+                "workspace_violation_count": state.get("workspace_violation_count"),
+                "workspace_enforcement": state.get("workspace_enforcement"),
             },
         ),
         decision_metadata=DecisionMetadataDTO(

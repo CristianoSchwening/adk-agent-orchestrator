@@ -1,4 +1,4 @@
-"""Filesystem persistence for immutable J-space snapshots."""
+"""Filesystem persistence for immutable verbalized-workspace snapshots."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-from orchestrator.jspace.models import JSpaceSnapshot, JSpaceValidationError
+from orchestrator.workspace.models import WorkspaceSnapshot, WorkspaceValidationError
 
 _SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9_.-]+")
 
@@ -17,11 +17,11 @@ _SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9_.-]+")
 def safe_component(value: str) -> str:
     normalized = _SAFE_COMPONENT.sub("_", value).strip("._")
     if not normalized:
-        raise JSpaceValidationError("trace path component is empty after sanitization")
+        raise WorkspaceValidationError("trace path component is empty after sanitization")
     return normalized[:160]
 
 
-class FileJSpaceRepository:
+class FileWorkspaceRepository:
     """Persist snapshots atomically below a repository-controlled root."""
 
     def __init__(
@@ -35,17 +35,19 @@ class FileJSpaceRepository:
         try:
             self.root.relative_to(self.repository_root)
         except ValueError as exc:
-            raise JSpaceValidationError("J-space root must stay inside the repository") from exc
+            raise WorkspaceValidationError(
+                "workspace trace root must stay inside the repository"
+            ) from exc
         self.max_bytes = max_bytes
         self._lock = Lock()
 
-    def save(self, snapshot: JSpaceSnapshot) -> Path:
+    def save(self, snapshot: WorkspaceSnapshot) -> Path:
         payload = json.dumps(
             snapshot.to_dict(), ensure_ascii=False, indent=2, sort_keys=True
         ).encode("utf-8")
         if len(payload) > self.max_bytes:
-            raise JSpaceValidationError(
-                f"J-space snapshot exceeds configured limit of {self.max_bytes} bytes"
+            raise WorkspaceValidationError(
+                f"workspace snapshot exceeds configured limit of {self.max_bytes} bytes"
             )
 
         session = safe_component(snapshot.session_id)
@@ -61,7 +63,7 @@ class FileJSpaceRepository:
             self._write_manifest(snapshot)
         return target
 
-    def _write_manifest(self, snapshot: JSpaceSnapshot) -> None:
+    def _write_manifest(self, snapshot: WorkspaceSnapshot) -> None:
         session_dir = self.root / safe_component(snapshot.session_id)
         manifest_path = session_dir / "manifest.json"
         manifest: dict[str, Any] = {

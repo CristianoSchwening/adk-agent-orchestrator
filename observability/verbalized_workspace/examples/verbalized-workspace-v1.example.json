@@ -14,13 +14,13 @@
   "integrity": {
     "reasoning_capture": {
       "is_hidden_chain_of_thought": false,
-      "type": "structured_deliberation"
+      "type": "verbalized_operational_workspace"
     },
     "redacted": false,
     "validation_status": "valid"
   },
   "invocation_id": "invocation-example",
-  "jspace": {
+  "workspace": {
     "assumptions": [],
     "blockers": [],
     "criticisms": [],
@@ -73,7 +73,7 @@
     "system_instruction": null,
     "tool_definitions": []
   },
-  "schema_version": "orchestrator.jspace.v1",
+  "schema_version": "orchestrator.verbalized_workspace.v1",
   "sequence": 2,
   "session_id": "session-example",
   "timestamp": "2026-07-28T12:00:00+00:00",

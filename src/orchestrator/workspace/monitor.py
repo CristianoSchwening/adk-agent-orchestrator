@@ -1,37 +1,32 @@
-"""Runtime enforcement and event capture for agent J-space metadata."""
+"""Runtime enforcement for complete structured verbalized-workspace responses."""
 
 from __future__ import annotations
 
 import json
-import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from orchestrator.jspace.models import (
+from orchestrator.workspace.models import (
     AgentIdentity,
-    JSpaceSnapshot,
-    JSpaceValidationError,
     Lifecycle,
     PromptCapture,
-    StructuredDeliberation,
+    VerbalizedWorkspace,
+    WorkspaceSnapshot,
+    WorkspaceValidationError,
 )
-from orchestrator.jspace.repository import FileJSpaceRepository
-
-JSPACE_BLOCK_PATTERN = re.compile(
-    r"<jspace_metadata>\s*(\{.*?\})\s*</jspace_metadata>", re.DOTALL
-)
+from orchestrator.workspace.repository import FileWorkspaceRepository
 
 
-class JSpaceMonitor:
-    """Track participating agents and require structured state on model output."""
+class WorkspaceMonitor:
+    """Track agents and require complete structured workspace responses."""
 
     def __init__(
         self,
         *,
         session_id: str,
         objective: str,
-        repository: FileJSpaceRepository,
+        repository: FileWorkspaceRepository,
         mode: str = "strict",
         agent_instructions: dict[str, str] | None = None,
         agent_tools: dict[str, list[dict[str, Any]]] | None = None,
@@ -63,11 +58,11 @@ class JSpaceMonitor:
             self._save(
                 agent_name,
                 "started",
-                StructuredDeliberation(
+                VerbalizedWorkspace(
                     objective=self.objective,
                     interpretation="Agent invocation started.",
                     current_step="Process the assigned objective.",
-                    next_action="Produce structured J-space metadata.",
+                    next_action="Produce a structured verbalized workspace.",
                 ),
                 model_output=None,
                 invocation_id=invocation_id,
@@ -78,7 +73,7 @@ class JSpaceMonitor:
             self._save(
                 agent_name,
                 "tool_result",
-                StructuredDeliberation(
+                VerbalizedWorkspace(
                     objective=self.objective,
                     interpretation="Tool activity observed for the agent.",
                     current_step=event_type,
@@ -90,14 +85,14 @@ class JSpaceMonitor:
             )
             return
         try:
-            deliberation = extract_deliberation(model_output, objective=self.objective)
-        except JSpaceValidationError as exc:
+            workspace = extract_workspace(model_output, objective=self.objective)
+        except WorkspaceValidationError as exc:
             self._violate(agent_name, str(exc), model_output, invocation_id)
             return
         self._save(
             agent_name,
             "progress",
-            deliberation,
+            workspace,
             model_output=model_output,
             invocation_id=invocation_id,
         )
@@ -108,7 +103,7 @@ class JSpaceMonitor:
         self._save(
             agent_name,
             "completed",
-            StructuredDeliberation(
+            VerbalizedWorkspace(
                 objective=self.objective,
                 interpretation="Agent output accepted by the runtime monitor.",
                 current_step="Completed",
@@ -131,11 +126,11 @@ class JSpaceMonitor:
         self._save(
             agent_name,
             "violation",
-            StructuredDeliberation(
+            VerbalizedWorkspace(
                 objective=self.objective,
-                interpretation="Agent output violated the J-space contract.",
+                interpretation="Agent output violated the verbalized workspace contract.",
                 blockers=[message],
-                next_action="Emit a valid <jspace_metadata> JSON block.",
+                next_action="Emit one complete JSON object matching the output schema.",
             ),
             model_output=model_output,
             invocation_id=invocation_id,
@@ -144,9 +139,9 @@ class JSpaceMonitor:
         self._save(
             agent_name,
             "failed",
-            StructuredDeliberation(
+            VerbalizedWorkspace(
                 objective=self.objective,
-                interpretation="The runtime stopped the agent because J-space validation failed.",
+                interpretation="The runtime stopped the agent after workspace validation failed.",
                 blockers=[message],
                 next_action="Correct the structured metadata and retry.",
             ),
@@ -156,20 +151,20 @@ class JSpaceMonitor:
         )
         self.terminal_agents.add(agent_name)
         if self.mode == "strict":
-            raise JSpaceValidationError(violation)
+            raise WorkspaceValidationError(violation)
 
     def _save(
         self,
         agent_name: str,
         phase: str,
-        deliberation: StructuredDeliberation,
+        workspace: VerbalizedWorkspace,
         *,
         model_output: str | None,
         invocation_id: str | None,
         valid: bool = True,
     ) -> None:
         self.sequences[agent_name] += 1
-        snapshot = JSpaceSnapshot(
+        snapshot = WorkspaceSnapshot(
             session_id=self.session_id,
             invocation_id=invocation_id,
             sequence=self.sequences[agent_name],
@@ -178,7 +173,7 @@ class JSpaceMonitor:
                 phase=phase,  # type: ignore[arg-type]
                 status="running" if phase in {"started", "progress", "tool_result"} else phase,
             ),
-            jspace=deliberation,
+            workspace=workspace,
             prompt_capture=PromptCapture(
                 agent_instruction=self.agent_instructions.get(agent_name),
                 session_context=self.session_context,
@@ -190,7 +185,7 @@ class JSpaceMonitor:
                 "redacted": False,
                 "validation_status": "valid" if valid else "invalid",
                 "reasoning_capture": {
-                    "type": "structured_deliberation",
+                    "type": "verbalized_operational_workspace",
                     "is_hidden_chain_of_thought": False,
                 },
             },
@@ -211,18 +206,27 @@ class JSpaceMonitor:
         )
 
 
-def extract_deliberation(text: str, *, objective: str) -> StructuredDeliberation:
-    match = JSPACE_BLOCK_PATTERN.search(text or "")
-    if not match:
-        raise JSpaceValidationError("model output is missing <jspace_metadata>")
+def parse_agent_step(text: str, *, objective: str) -> tuple[VerbalizedWorkspace, str]:
     try:
-        value = json.loads(match.group(1))
+        value = json.loads(text or "")
     except json.JSONDecodeError as exc:
-        raise JSpaceValidationError("jspace metadata contains invalid JSON") from exc
-    return StructuredDeliberation.from_mapping(value, objective=objective)
+        raise WorkspaceValidationError("agent response is not complete valid JSON") from exc
+    if not isinstance(value, dict) or set(value) != {"workspace", "result"}:
+        raise WorkspaceValidationError(
+            "agent response must contain exactly workspace and result"
+        )
+    result = value.get("result")
+    if not isinstance(result, str):
+        raise WorkspaceValidationError("agent response result must be a string")
+    workspace = VerbalizedWorkspace.from_mapping(value.get("workspace"), objective=objective)
+    return workspace, result
 
 
-def strip_jspace_metadata(text: str) -> str:
-    """Remove the monitoring envelope from user-visible model text."""
+def extract_workspace(text: str, *, objective: str) -> VerbalizedWorkspace:
+    return parse_agent_step(text, objective=objective)[0]
 
-    return JSPACE_BLOCK_PATTERN.sub("", text or "").strip()
+
+def extract_operational_result(text: str, *, objective: str = "agent objective") -> str:
+    """Return the operational result only after the complete response validates."""
+
+    return parse_agent_step(text, objective=objective)[1]

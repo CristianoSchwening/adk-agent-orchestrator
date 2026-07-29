@@ -1,4 +1,4 @@
-"""Versioned structured state used to observe agent deliberation."""
+"""Versioned proxy for an agent's explicitly verbalized operational workspace."""
 
 from __future__ import annotations
 
@@ -7,14 +7,14 @@ from datetime import datetime, timezone
 from typing import Any, Literal
 from uuid import uuid4
 
-JSPACE_SCHEMA_VERSION = "orchestrator.jspace.v1"
+WORKSPACE_SCHEMA_VERSION = "orchestrator.verbalized_workspace.v1"
 LifecyclePhase = Literal[
     "started", "progress", "tool_result", "blocked", "failed", "completed", "violation"
 ]
 
 
-class JSpaceValidationError(ValueError):
-    """Raised when mandatory agent metadata is missing or invalid."""
+class WorkspaceValidationError(ValueError):
+    """Raised when a mandatory verbalized workspace is missing or invalid."""
 
 
 def utc_now_iso() -> str:
@@ -46,7 +46,7 @@ class PromptCapture:
 
 
 @dataclass(frozen=True)
-class StructuredDeliberation:
+class VerbalizedWorkspace:
     objective: str
     interpretation: str | None = None
     current_step: str | None = None
@@ -63,12 +63,12 @@ class StructuredDeliberation:
     @classmethod
     def from_mapping(
         cls, value: dict[str, Any], *, objective: str
-    ) -> StructuredDeliberation:
+    ) -> VerbalizedWorkspace:
         if not isinstance(value, dict):
-            raise JSpaceValidationError("jspace metadata must be a JSON object")
+            raise WorkspaceValidationError("workspace must be a JSON object")
         resolved_objective = str(value.get("objective") or objective).strip()
         if not resolved_objective:
-            raise JSpaceValidationError("jspace.objective is required")
+            raise WorkspaceValidationError("workspace.objective is required")
         return cls(
             objective=resolved_objective,
             interpretation=_optional_text(value.get("interpretation")),
@@ -86,17 +86,17 @@ class StructuredDeliberation:
 
 
 @dataclass(frozen=True)
-class JSpaceSnapshot:
+class WorkspaceSnapshot:
     session_id: str
     sequence: int
     agent: AgentIdentity
     lifecycle: Lifecycle
-    jspace: StructuredDeliberation
+    workspace: VerbalizedWorkspace
     prompt_capture: PromptCapture
     invocation_id: str | None = None
     trace_id: str = field(default_factory=lambda: str(uuid4()))
     timestamp: str = field(default_factory=utc_now_iso)
-    schema_version: str = JSPACE_SCHEMA_VERSION
+    schema_version: str = WORKSPACE_SCHEMA_VERSION
     execution: dict[str, Any] = field(default_factory=dict)
     causality: dict[str, Any] = field(default_factory=dict)
     integrity: dict[str, Any] = field(
@@ -104,7 +104,7 @@ class JSpaceSnapshot:
             "redacted": False,
             "validation_status": "valid",
             "reasoning_capture": {
-                "type": "structured_deliberation",
+                "type": "verbalized_operational_workspace",
                 "is_hidden_chain_of_thought": False,
             },
         }

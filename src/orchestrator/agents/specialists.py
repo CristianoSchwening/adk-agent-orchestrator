@@ -13,7 +13,6 @@ from typing import Any
 
 from orchestrator.adk_compat import load_symbol
 from orchestrator.config import OrchestratorSettings
-from orchestrator.jspace import with_jspace_instruction
 from orchestrator.tools import (
     describe_model_request,
     extract_document_outline,
@@ -22,6 +21,7 @@ from orchestrator.tools import (
     read_text_file,
     request_human_approval,
 )
+from orchestrator.workspace import AGENT_STEP_RESPONSE_SCHEMA, with_workspace_instruction
 
 
 def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..., Any]:
@@ -44,9 +44,15 @@ def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..
             "model": settings.model,
             "name": name,
             "description": description,
-            "instruction": with_jspace_instruction(instruction),
+            "instruction": (
+                with_workspace_instruction(instruction)
+                if settings.workspace_enabled
+                else instruction.strip()
+            ),
             "tools": list(tools),
         }
+        if settings.workspace_enabled:
+            kwargs["output_schema"] = AGENT_STEP_RESPONSE_SCHEMA
         if output_key:
             kwargs["output_key"] = output_key
         if parallel_worker is not None:
