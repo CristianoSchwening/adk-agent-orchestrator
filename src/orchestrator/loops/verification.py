@@ -66,7 +66,10 @@ class VerificationLoop:
             ))
 
         total_w = sum(c.weight for c in self.rubric)
-        overall = sum(r.score * c.weight for r, c in zip(results, self.rubric)) / total_w
+        weighted_scores = (
+            r.score * c.weight for r, c in zip(results, self.rubric, strict=False)
+        )
+        overall = sum(weighted_scores) / total_w
         passed = overall >= self.threshold
 
         failed = [r for r in results if not r.passed]

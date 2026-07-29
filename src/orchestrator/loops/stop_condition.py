@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from orchestrator.loops.verification import VerificationLoop
 from orchestrator.policies.budget import BudgetPolicy

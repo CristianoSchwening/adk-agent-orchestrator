@@ -12,9 +12,6 @@ import inspect
 from typing import Any
 
 from orchestrator.adk_compat import load_symbol
-from orchestrator.loops.rubric import STANDARD_QUALITY_RUBRIC
-from orchestrator.loops.verification import VerificationLoop
-from orchestrator.loops.stop_condition import make_quality_stop_callback
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_context_agent,
@@ -34,6 +31,9 @@ from orchestrator.config import (
     ProgressiveFinalSummarizerMode,
 )
 from orchestrator.contracts import AgentHelpRequest, AgentHelpResponse, AgentVisibleResponse
+from orchestrator.loops.rubric import STANDARD_QUALITY_RUBRIC
+from orchestrator.loops.stop_condition import make_quality_stop_callback
+from orchestrator.loops.verification import VerificationLoop
 from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import (
     extract_document_outline,

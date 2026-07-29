@@ -120,15 +120,19 @@ def _compare_case(case_id: str, expected: dict[str, Any], observed: dict[str, An
     # contract_version: compare expected.contract_version -> observed.contract_version
     expected_contract = expected.get("contract_version")
     if expected_contract is not None and observed.get("contract_version") != expected_contract:
+        observed_contract = observed.get("contract_version")
         failures.append(
-            f"{case_id}: expected contract_version={expected_contract!r}, got {observed.get('contract_version')!r}"
+            f"{case_id}: expected contract_version={expected_contract!r}, "
+            f"got {observed_contract!r}"
         )
 
     # workflow: dataset may use "workflow" while observed uses "selected_workflow"
     expected_workflow = expected.get("workflow", expected.get("selected_workflow"))
     if expected_workflow is not None and observed.get("selected_workflow") != expected_workflow:
+        observed_workflow = observed.get("selected_workflow")
         failures.append(
-            f"{case_id}: expected workflow={expected_workflow!r}, got {observed.get('selected_workflow')!r}"
+            f"{case_id}: expected workflow={expected_workflow!r}, "
+            f"got {observed_workflow!r}"
         )
 
     # required capabilities: all expected capabilities must appear in observed list

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import sys
 import uuid
 from pathlib import Path
@@ -23,7 +22,7 @@ from orchestrator.contracts.dto import (
     utc_now_iso,
 )
 from orchestrator.loops import STANDARD_QUALITY_RUBRIC, VerificationLoop
-from orchestrator.runner.bootstrap import build_runtime, initial_session_state, run_once_contract
+from orchestrator.runner.bootstrap import run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
 REACT_DIR = Path(__file__).parent.parent.parent / "webapp-react" / "dist"
@@ -266,7 +265,17 @@ async def run_demo(body: RunRequest) -> JSONResponse:
                 "artifact_id": "demo-architecture-preview",
                 "name": "architecture-preview.svg",
                 "mime_type": "image/svg+xml",
-                "uri": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 360'%3E%3Crect width='640' height='360' fill='%231a1d27'/%3E%3Ccircle cx='160' cy='180' r='70' fill='%236366f1'/%3E%3Ccircle cx='320' cy='180' r='70' fill='%2306b6d4'/%3E%3Ccircle cx='480' cy='180' r='70' fill='%2322c55e'/%3E%3Ctext x='320' y='310' text-anchor='middle' fill='%23e2e8f0' font-family='Inter, sans-serif' font-size='28'%3EADK artifact preview%3C/text%3E%3C/svg%3E",
+                "uri": (
+                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+                    "viewBox='0 0 640 360'%3E%3Crect width='640' height='360' "
+                    "fill='%231a1d27'/%3E%3Ccircle cx='160' cy='180' r='70' "
+                    "fill='%236366f1'/%3E%3Ccircle cx='320' cy='180' r='70' "
+                    "fill='%2306b6d4'/%3E%3Ccircle cx='480' cy='180' r='70' "
+                    "fill='%2322c55e'/%3E%3Ctext x='320' y='310' "
+                    "text-anchor='middle' fill='%23e2e8f0' "
+                    "font-family='Inter, sans-serif' font-size='28'%3E"
+                    "ADK artifact preview%3C/text%3E%3C/svg%3E"
+                ),
                 "size_bytes": 18432,
                 "metadata": {"version": "1"},
             },

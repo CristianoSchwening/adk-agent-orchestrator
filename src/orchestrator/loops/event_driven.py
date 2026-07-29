@@ -164,7 +164,7 @@ class EventLoop:
                 verification_passed=v_passed,
                 verification_score=v_score,
             )
-        except Exception as exc:
+        except Exception:
             summary = ExecutionSummary(
                 run_id=run_id,
                 objective=objective,
