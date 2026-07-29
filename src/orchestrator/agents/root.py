@@ -8,6 +8,7 @@ from orchestrator.adk_compat import load_symbol
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
+from orchestrator.workspace import AGENT_STEP_RESPONSE_SCHEMA, with_workspace_instruction
 
 ROOT_AGENT_INSTRUCTION = """
 Você é o Root Orchestrator Agent de uma arquitetura greenfield construída com Google ADK.
@@ -47,11 +48,18 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     resolved_settings = settings or OrchestratorSettings.from_env()
     Agent = load_symbol("google.adk.agents.llm_agent", "Agent")
     phase2_workflows = create_phase2_workflows(resolved_settings)
-    return Agent(
-        model=resolved_settings.model,
-        name="root_orchestrator_agent",
-        description="Phase-3 root agent for ADK-only workflow and tool orchestration.",
-        instruction=ROOT_AGENT_INSTRUCTION,
-        tools=[capture_objective, get_orchestrator_status, *PHASE_3_LOCAL_TOOLS],
-        sub_agents=list(phase2_workflows.values()),
-    )
+    kwargs: dict[str, Any] = {
+        "model": resolved_settings.model,
+        "name": "root_orchestrator_agent",
+        "description": "Phase-3 root agent for ADK-only workflow and tool orchestration.",
+        "instruction": (
+            with_workspace_instruction(ROOT_AGENT_INSTRUCTION)
+            if resolved_settings.workspace_enabled
+            else ROOT_AGENT_INSTRUCTION
+        ),
+        "tools": [capture_objective, get_orchestrator_status, *PHASE_3_LOCAL_TOOLS],
+        "sub_agents": list(phase2_workflows.values()),
+    }
+    if resolved_settings.workspace_enabled:
+        kwargs["output_schema"] = AGENT_STEP_RESPONSE_SCHEMA
+    return Agent(**kwargs)
