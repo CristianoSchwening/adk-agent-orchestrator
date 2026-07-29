@@ -1,4 +1,4 @@
-name: Phase 5 Evaluation
+name: Evaluation
 
 on:
   pull_request:
