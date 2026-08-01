@@ -184,3 +184,13 @@ def test_workspace_can_be_disabled_for_plain_agent_outputs():
 
     assert router.output_schema is None
     assert "WORKSPACE OPERACIONAL VERBALIZADO" not in router.instruction
+
+
+def test_workspace_schema_is_preserved_on_graph_router():
+    from orchestrator.agents import create_root_agent
+
+    agent = create_root_agent(OrchestratorSettings(workspace_enabled=True))
+    router = next(node for node in agent.graph.nodes if node.name == "workflow_router_agent")
+
+    assert router.output_schema == AGENT_STEP_RESPONSE_SCHEMA
+    assert "WORKSPACE OPERACIONAL VERBALIZADO" in router.instruction
