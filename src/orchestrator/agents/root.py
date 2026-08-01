@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from orchestrator.adk_compat import load_agent_class
+from orchestrator.adk_compat import load_agent_class, load_workflow_classes
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
-from orchestrator.workspace import AGENT_STEP_RESPONSE_SCHEMA, with_workspace_instruction
+from orchestrator.workspace import with_workspace_instruction
 
 ROOT_AGENT_INSTRUCTION = """
 Você é o Root Orchestrator Agent de uma arquitetura greenfield construída com Google ADK.
@@ -34,32 +34,49 @@ Regras:
   interna de agent_help_request: ele não usa broker de ajuda; ele publica mensagens
   progressivas em progressive_agent_responses.
 - Não use runtimes legados; opere apenas com as primitivas oficiais do ADK Python.
+- Termine sempre com exatamente um destes tokens, sem pontuação nem texto adicional:
+  sequential, parallel, review_critic, iterative_refinement, human_in_the_loop,
+  agent_help_request ou progressive_multi_agent_response.
 """.strip()
 
 
 def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
-    """Create the official ADK root agent.
-
-    ADK's Python quickstart defines a required ``root_agent`` using the public
-    ``google.adk.Agent`` export. This factory follows that shape while keeping
-    the model configurable through ``OrchestratorSettings``.
-    """
+    """Create the graph-based ADK root workflow and its LLM router node."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
     Agent = load_agent_class()
+    Workflow, FunctionNode, _, Edge, START = load_workflow_classes()
     phase2_workflows = create_phase2_workflows(resolved_settings)
     kwargs: dict[str, Any] = {
         "model": resolved_settings.model,
-        "name": "root_orchestrator_agent",
-        "description": "Phase-3 root agent for ADK-only workflow and tool orchestration.",
+        "name": "workflow_router_agent",
+        "description": "Selects one graph workflow for the current objective.",
         "instruction": (
             with_workspace_instruction(ROOT_AGENT_INSTRUCTION)
             if resolved_settings.workspace_enabled
             else ROOT_AGENT_INSTRUCTION
         ),
         "tools": [capture_objective, get_orchestrator_status, *PHASE_3_LOCAL_TOOLS],
-        "sub_agents": list(phase2_workflows.values()),
     }
-    if resolved_settings.workspace_enabled:
-        kwargs["output_schema"] = AGENT_STEP_RESPONSE_SCHEMA
-    return Agent(**kwargs)
+    router = Agent(**kwargs)
+
+    def normalize_route(node_input: Any) -> str:
+        parts = getattr(node_input, "parts", None) or []
+        text = "".join(str(getattr(part, "text", "") or "") for part in parts)
+        candidate = (text or str(node_input)).strip().lower()
+        for route in phase2_workflows:
+            if route in candidate:
+                return route
+        return "sequential"
+
+    route_node = FunctionNode(func=normalize_route, name="normalize_workflow_route")
+    edges = [Edge(from_node=START, to_node=router), Edge(from_node=router, to_node=route_node)]
+    edges.extend(
+        Edge(from_node=route_node, to_node=workflow, route=route)
+        for route, workflow in phase2_workflows.items()
+    )
+    return Workflow(
+        name="root_orchestrator_agent",
+        description="Graph-based root orchestrator with one routed workflow per objective.",
+        edges=edges,
+    )

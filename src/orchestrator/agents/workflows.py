@@ -2,16 +2,14 @@
 
 Workflow composition stays separate from specialist agent definitions. The
 specialists live in ``orchestrator.agents.specialists`` while this module only
-assembles official ADK workflow primitives: ``SequentialAgent``,
-``ParallelAgent`` and ``LoopAgent``.
+assembles graph workflows with the public ``google.adk.workflow`` API.
 """
 
 from __future__ import annotations
 
-import inspect
 from typing import Any
 
-from orchestrator.adk_compat import load_workflow_agent_classes
+from orchestrator.adk_compat import load_workflow_classes
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_context_agent,
@@ -53,45 +51,40 @@ PHASE_2_WORKFLOW_NAMES = (
 )
 
 
-def _load_adk_workflow_primitives() -> tuple[type[Any], type[Any], type[Any]]:
-    """Load ADK workflow primitives without importing custom orchestration code."""
+def _workflow(name: str, description: str, *nodes: Any) -> Any:
+    """Build a deterministic chain with ADK's graph Workflow primitive."""
 
-    return load_workflow_agent_classes()
+    Workflow, _, _, _, _ = load_workflow_classes()
+    return Workflow(name=name, description=description, edges=[("START", *nodes)])
 
 
 def create_sequential_workflow(settings: OrchestratorSettings | None = None) -> Any:
     """Create the Planner → Executor → Critic → Summarizer ADK workflow."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    SequentialAgent, _, _ = _load_adk_workflow_primitives()
-
-    return SequentialAgent(
-        name="sequential_workflow",
-        description=(
-            "ADK SequentialAgent for deterministic planning, execution, critique and summary."
+    return _workflow(
+        "sequential_workflow",
+        "ADK graph for deterministic planning, execution, critique and summary.",
+        create_planner_agent(
+            resolved_settings,
+            name="sequential_planner_agent",
+            output_key="sequential_plan",
         ),
-        sub_agents=[
-            create_planner_agent(
-                resolved_settings,
-                name="sequential_planner_agent",
-                output_key="sequential_plan",
-            ),
-            create_executor_agent(
-                resolved_settings,
-                name="sequential_executor_agent",
-                output_key="sequential_execution",
-            ),
-            create_critic_agent(
-                resolved_settings,
-                name="sequential_critic_agent",
-                output_key="sequential_critique",
-            ),
-            create_summarizer_agent(
-                resolved_settings,
-                name="sequential_summarizer_agent",
-                output_key="sequential_summary",
-            ),
-        ],
+        create_executor_agent(
+            resolved_settings,
+            name="sequential_executor_agent",
+            output_key="sequential_execution",
+        ),
+        create_critic_agent(
+            resolved_settings,
+            name="sequential_critic_agent",
+            output_key="sequential_critique",
+        ),
+        create_summarizer_agent(
+            resolved_settings,
+            name="sequential_summarizer_agent",
+            output_key="sequential_summary",
+        ),
     )
 
 
@@ -99,71 +92,77 @@ def create_parallel_workflow(settings: OrchestratorSettings | None = None) -> An
     """Create Planner/Researcher/Executor in parallel followed by a Summarizer."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    SequentialAgent, ParallelAgent, _ = _load_adk_workflow_primitives()
-
-    parallel_block = ParallelAgent(
-        name="parallel_specialists_agent",
-        description="Runs planner, researcher and executor specialists in parallel.",
-        sub_agents=[
-            create_planner_agent(
-                resolved_settings,
-                name="parallel_planner_agent",
-                output_key="parallel_plan",
-                parallel_worker=True,
-            ),
-            create_researcher_agent(
-                resolved_settings,
-                name="parallel_researcher_agent",
-                output_key="parallel_research",
-                parallel_worker=True,
-            ),
-            create_executor_agent(
-                resolved_settings,
-                name="parallel_executor_agent",
-                output_key="parallel_execution",
-                parallel_worker=True,
-            ),
-        ],
+    Workflow, _, JoinNode, _, _ = load_workflow_classes()
+    planner = create_planner_agent(
+        resolved_settings, name="parallel_planner_agent", output_key="parallel_plan"
     )
-
-    return SequentialAgent(
+    researcher = create_researcher_agent(
+        resolved_settings, name="parallel_researcher_agent", output_key="parallel_research"
+    )
+    executor = create_executor_agent(
+        resolved_settings, name="parallel_executor_agent", output_key="parallel_execution"
+    )
+    join = JoinNode(name="parallel_specialists_join")
+    summarizer = create_summarizer_agent(
+        resolved_settings, name="parallel_summarizer_agent", output_key="parallel_summary"
+    )
+    return Workflow(
         name="parallel_workflow",
-        description="ADK workflow that runs parallel specialists and summarizes their outputs.",
-        sub_agents=[
-            parallel_block,
-            create_summarizer_agent(
-                resolved_settings,
-                name="parallel_summarizer_agent",
-                output_key="parallel_summary",
-            ),
-        ],
+        description="ADK graph that runs parallel specialists and summarizes their outputs.",
+        edges=[("START", (planner, researcher, executor), join, summarizer)],
     )
 
 
-def _build_loop_agent_kwargs(
-    base_kwargs: dict[str, Any],
-    stop_callback: Any,
-) -> dict[str, Any]:
-    """Conditionally inject should_stop_loop into LoopAgent kwargs.
+def _loop_gate(name: str, stop_callback: Any, final_state_key: str) -> Any:
+    """Create a routed graph node that applies quality and budget termination."""
 
-    Probes the installed ADK LoopAgent signature. If it accepts
-    ``should_stop_loop``, injects the callback. Falls back gracefully
-    on older ADK versions that do not expose this parameter.
-    """
-    import logging as _logging
-    _log = _logging.getLogger(__name__)
-    try:
-        _, _, LoopAgent = load_workflow_agent_classes()
-        sig = inspect.signature(LoopAgent.__init__)
-        if "should_stop_loop" in sig.parameters:
-            return {**base_kwargs, "should_stop_loop": stop_callback}
-        _log.warning(
-            "LoopAgent does not support 'should_stop_loop'; "
-            "falling back to max_iterations-only termination."
+    _, FunctionNode, _, _, _ = load_workflow_classes()
+
+    def decide(ctx: Any) -> str:
+        state = ctx.state
+        snapshot = state.to_dict() if hasattr(state, "to_dict") else dict(state)
+        snapshot["loop_iteration"] = state.get(f"{name}_iteration", 0)
+        should_stop = stop_callback(snapshot)
+        if snapshot.get("loop_iterations_used", 0) >= stop_callback.budget_policy.max_iterations:
+            should_stop = True
+            snapshot["loop_stop_reason"] = "budget_exhausted"
+        state.update(
+            {
+                key: value
+                for key, value in snapshot.items()
+                if key.startswith("loop_") or key == "grader_result"
+            }
         )
-    except (ImportError, AttributeError):
-        pass
-    return base_kwargs
+        state[f"{name}_iteration"] = snapshot["loop_iteration"]
+        if should_stop:
+            state[f"{name}_final_output"] = state.get(final_state_key, "")
+            return "done"
+        return "continue"
+
+    return FunctionNode(func=decide, name=name)
+
+
+def _loop_initializer(name: str) -> Any:
+    """Reset per-invocation graph loop counters before entering a cycle."""
+
+    _, FunctionNode, _, _, _ = load_workflow_classes()
+
+    def initialize(ctx: Any, node_input: Any) -> Any:
+        ctx.state[f"{name}_iteration"] = 0
+        return node_input
+
+    return FunctionNode(func=initialize, name=f"{name}_initializer")
+
+
+def _final_output_node(name: str, state_key: str) -> Any:
+    """Create a terminal node that emits the selected state value."""
+
+    _, FunctionNode, _, _, _ = load_workflow_classes()
+
+    def final_output(ctx: Any) -> Any:
+        return ctx.state.get(state_key, "")
+
+    return FunctionNode(func=final_output, name=name)
 
 
 def create_review_critic_workflow(
@@ -171,11 +170,11 @@ def create_review_critic_workflow(
     *,
     budget_policy: BudgetPolicy | None = None,
 ) -> Any:
-    """Create an ADK LoopAgent for draft/review cycles."""
+    """Create a conditional ADK graph for bounded draft/review cycles."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
     policy = budget_policy or BudgetPolicy()
-    _, _, LoopAgent = _load_adk_workflow_primitives()
+    Workflow, _, _, Edge, START = load_workflow_classes()
 
     v_loop = VerificationLoop(
         rubric=STANDARD_QUALITY_RUBRIC,
@@ -188,29 +187,27 @@ def create_review_critic_workflow(
         output_key="review_candidate",
     )
 
-    loop_kwargs = _build_loop_agent_kwargs(
-        {
-            "name": "review_critic_workflow",
-            "description": (
-                "ADK LoopAgent that alternates authoring and critique within the iteration budget."
-            ),
-            "max_iterations": policy.max_iterations,
-            "sub_agents": [
-                create_executor_agent(
-                    resolved_settings,
-                    name="review_author_agent",
-                    output_key="review_candidate",
-                ),
-                create_critic_agent(
-                    resolved_settings,
-                    name="review_critic_agent",
-                    output_key="review_critique",
-                ),
-            ],
-        },
-        stop_callback,
+    author = create_executor_agent(
+        resolved_settings, name="review_author_agent", output_key="review_candidate"
     )
-    return LoopAgent(**loop_kwargs)
+    critic = create_critic_agent(
+        resolved_settings, name="review_critic_agent", output_key="review_critique"
+    )
+    gate = _loop_gate("review_critic_gate", stop_callback, "review_candidate")
+    initializer = _loop_initializer("review_critic_gate")
+    finalizer = _final_output_node("review_critic_finalizer", "review_candidate")
+    return Workflow(
+        name="review_critic_workflow",
+        description="ADK graph that alternates authoring and critique within a budget.",
+        edges=[
+            Edge(from_node=START, to_node=initializer),
+            Edge(from_node=initializer, to_node=author),
+            Edge(from_node=author, to_node=critic),
+            Edge(from_node=critic, to_node=gate),
+            Edge(from_node=gate, to_node=author, route="continue"),
+            Edge(from_node=gate, to_node=finalizer, route="done"),
+        ],
+    )
 
 
 def create_iterative_refinement_workflow(
@@ -218,52 +215,60 @@ def create_iterative_refinement_workflow(
     *,
     budget_policy: BudgetPolicy | None = None,
 ) -> Any:
-    """Create an ADK LoopAgent for iterative refinement."""
+    """Create a conditional ADK graph for iterative refinement."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
     policy = budget_policy or BudgetPolicy()
-    _, _, LoopAgent = _load_adk_workflow_primitives()
-
-    return LoopAgent(
-        name="iterative_refinement_workflow",
-        description=(
-            "ADK LoopAgent that drafts, evaluates and refines until the iteration budget ends."
-        ),
+    Workflow, _, _, Edge, START = load_workflow_classes()
+    v_loop = VerificationLoop(
+        rubric=STANDARD_QUALITY_RUBRIC,
         max_iterations=policy.max_iterations,
-        sub_agents=[
-            create_planner_agent(
-                resolved_settings,
-                name="refinement_drafter_agent",
-                output_key="refinement_draft",
-            ),
-            create_evaluator_agent(resolved_settings),
-            create_refiner_agent(
-                resolved_settings,
-                name="refinement_editor_agent",
-                output_key="refinement_result",
-            ),
+        threshold=policy.quality_threshold,
+    )
+    stop_callback = make_quality_stop_callback(
+        verification_loop=v_loop,
+        budget_policy=policy,
+        output_key="refinement_result",
+    )
+    drafter = create_planner_agent(
+        resolved_settings, name="refinement_drafter_agent", output_key="refinement_draft"
+    )
+    evaluator = create_evaluator_agent(resolved_settings)
+    editor = create_refiner_agent(
+        resolved_settings, name="refinement_editor_agent", output_key="refinement_result"
+    )
+    gate = _loop_gate("iterative_refinement_gate", stop_callback, "refinement_result")
+    initializer = _loop_initializer("iterative_refinement_gate")
+    finalizer = _final_output_node("iterative_refinement_finalizer", "refinement_result")
+    return Workflow(
+        name="iterative_refinement_workflow",
+        description="ADK graph that drafts, evaluates and refines within a budget.",
+        edges=[
+            Edge(from_node=START, to_node=initializer),
+            Edge(from_node=initializer, to_node=drafter),
+            Edge(from_node=drafter, to_node=evaluator),
+            Edge(from_node=evaluator, to_node=editor),
+            Edge(from_node=editor, to_node=gate),
+            Edge(from_node=gate, to_node=drafter, route="continue"),
+            Edge(from_node=gate, to_node=finalizer, route="done"),
         ],
     )
 
 
 def create_human_in_the_loop_workflow(settings: OrchestratorSettings | None = None) -> Any:
-    """Create an ADK SequentialAgent that pauses for explicit human approval."""
+    """Create an ADK graph that pauses for explicit human approval."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    SequentialAgent, _, _ = _load_adk_workflow_primitives()
-
-    return SequentialAgent(
-        name="human_in_the_loop_workflow",
-        description="ADK workflow that requests human approval before final execution guidance.",
-        sub_agents=[
-            create_context_agent(resolved_settings),
-            create_approval_agent(
-                resolved_settings,
-                name="human_approval_agent",
-                output_key="human_approval_decision",
-            ),
-            create_followup_agent(resolved_settings),
-        ],
+    return _workflow(
+        "human_in_the_loop_workflow",
+        "ADK graph that requests human approval before final execution guidance.",
+        create_context_agent(resolved_settings),
+        create_approval_agent(
+            resolved_settings,
+            name="human_approval_agent",
+            output_key="human_approval_decision",
+        ),
+        create_followup_agent(resolved_settings),
     )
 
 
@@ -304,7 +309,6 @@ def create_agent_help_request_workflow(
 
     resolved_settings = settings or OrchestratorSettings.from_env()
     policy = budget_policy or BudgetPolicy()
-    SequentialAgent, _, _ = _load_adk_workflow_primitives()
     llm = create_llm_specialist_factory(resolved_settings)
     request_contract = _agent_help_contract_template(AgentHelpRequest)
     response_contract = _agent_help_contract_template(AgentHelpResponse)
@@ -397,13 +401,17 @@ def create_agent_help_request_workflow(
         disallow_transfer_to_peers=True,
     )
 
-    return SequentialAgent(
-        name="agent_help_request_workflow",
-        description=(
+    return _workflow(
+        "agent_help_request_workflow",
+        (
             "ADK workflow for a task-owner agent to request bounded specialist help through "
             "a broker using AgentHelpRequest and AgentHelpResponse contracts."
         ),
-        sub_agents=[task_owner, request_broker, provider, response_broker, finalizer],
+        task_owner,
+        request_broker,
+        provider,
+        response_broker,
+        finalizer,
     )
 
 
@@ -516,7 +524,6 @@ def create_progressive_multi_agent_response_workflow(
 
     resolved_settings = settings or OrchestratorSettings.from_env()
     policy = budget_policy or BudgetPolicy()
-    SequentialAgent, _, _ = _load_adk_workflow_primitives()
     llm = create_llm_specialist_factory(resolved_settings)
     visible_response_contract = _agent_visible_response_contract_template()
     required_fields = visible_response_contract["required_fields"]
@@ -621,9 +628,9 @@ def create_progressive_multi_agent_response_workflow(
         disallow_transfer_to_peers=True,
     )
 
-    sub_agents = [agent_a, agent_b, agent_c, publisher]
+    nodes = [agent_a, agent_b, agent_c, publisher]
     if final_summarizer_mode in {"enabled", "auto"}:
-        sub_agents.append(
+        nodes.append(
             _create_response_chain_summarizer_agent(
                 llm,
                 mode=final_summarizer_mode,
@@ -631,13 +638,13 @@ def create_progressive_multi_agent_response_workflow(
             )
         )
 
-    return SequentialAgent(
-        name="progressive_multi_agent_response_workflow",
-        description=(
+    return _workflow(
+        "progressive_multi_agent_response_workflow",
+        (
             "ADK workflow for successive user-visible specialist responses with authored "
             "message order and dependency causality stored in progressive_agent_responses."
         ),
-        sub_agents=sub_agents,
+        *nodes,
     )
 
 

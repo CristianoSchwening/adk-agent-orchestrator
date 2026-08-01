@@ -39,8 +39,7 @@ def ensure_certified_adk() -> str:
         )
     if installed != CERTIFIED_ADK_VERSION:
         raise RuntimeError(
-            f"Unsupported {ADK_DISTRIBUTION} version {installed}; "
-            f"expected {CERTIFIED_ADK_VERSION}."
+            f"Unsupported {ADK_DISTRIBUTION} version {installed}; expected {CERTIFIED_ADK_VERSION}."
         )
     return installed
 
@@ -63,11 +62,11 @@ def load_agent_class() -> Any:
     return load_symbol("google.adk", "Agent")
 
 
-def load_workflow_agent_classes() -> tuple[Any, Any, Any]:
-    """Load the public classic workflow-agent exports."""
+def load_workflow_classes() -> tuple[Any, Any, Any, Any, Any]:
+    """Load graph workflow primitives from ADK's public workflow API."""
 
-    module = import_module("google.adk.agents")
-    return module.SequentialAgent, module.ParallelAgent, module.LoopAgent
+    module = import_module("google.adk.workflow")
+    return module.Workflow, module.FunctionNode, module.JoinNode, module.Edge, module.START
 
 
 def load_runtime_classes() -> tuple[Any, Any, Any, Any]:

@@ -4,17 +4,16 @@ Repositório **greenfield** para a reimplementação do orquestrador usando **Go
 
 Esta entrega implementa a **Fase 5 — Avaliação e Produção** sobre o contrato UI/API da Fase 4:
 
-- `RootOrchestratorAgent` em ADK Python com subagentes de workflow.
+- `RootOrchestratorAgent` como grafo `Workflow`, com roteador LLM e workflows aninhados.
 - `App` e `Runner` oficiais do ADK.
 - `InMemorySessionService` para sessões locais.
 - `InMemoryArtifactService` para artefatos locais.
 - Configuração por `.env`/variáveis de ambiente.
 - Workflows equivalentes usando apenas primitivas ADK Python:
-  - `SequentialAgent` para pipeline Planner → Executor → Critic → Summarizer.
-  - `SequentialAgent` envolvendo `ParallelAgent` para Planner/Researcher/Executor em paralelo e Summarizer final.
-  - `LoopAgent` para `review_critic`.
-  - `LoopAgent` para `iterative_refinement`.
-  - `SequentialAgent` com tool ADK para `human_in_the_loop`.
+  - `Workflow` em cadeia para Planner → Executor → Critic → Summarizer.
+  - `Workflow` com fan-out e `JoinNode` para especialistas em paralelo.
+  - `Workflow` com arestas condicionais para `review_critic` e `iterative_refinement`.
+  - `Workflow` em cadeia com tool ADK para `human_in_the_loop`.
 - Tools locais seguras para filesystem, HTTP, documentos, dados e planejamento de modelo.
 - Catálogo de tools consultável pelo agente raiz.
 - Factory lazy para integração externa via ADK `MCPToolset`.
@@ -38,15 +37,16 @@ Esta entrega implementa a **Fase 5 — Avaliação e Produção** sobre o contra
 User / CLI / ADK Web
         │
         ▼
-RootOrchestratorAgent (ADK LlmAgent)
+RootOrchestratorAgent (ADK Workflow)
         │
         ├── capture_objective tool
         ├── get_orchestrator_status tool
-        ├── sequential_workflow (ADK SequentialAgent)
-        ├── parallel_workflow (ADK ParallelAgent)
-        ├── review_critic_workflow (ADK LoopAgent)
-        ├── iterative_refinement_workflow (ADK LoopAgent)
-        ├── human_in_the_loop_workflow (ADK SequentialAgent + tool)
+        ├── workflow_router_agent (ADK LlmAgent)
+        ├── sequential_workflow (ADK Workflow)
+        ├── parallel_workflow (fan-out + JoinNode)
+        ├── review_critic_workflow (arestas condicionais)
+        ├── iterative_refinement_workflow (arestas condicionais)
+        ├── human_in_the_loop_workflow (ADK Workflow + tool)
         ├── Phase 3 local tools + MCP toolsets
         ├── Phase 4 execution contract mapper
         └── Phase 5 evaluation + observability readiness

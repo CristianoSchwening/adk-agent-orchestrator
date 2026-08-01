@@ -158,9 +158,7 @@ def test_settings_and_initial_state_enable_strict_workspace(monkeypatch):
 
 
 def test_example_snapshot_is_valid_json():
-    path = Path(
-        "observability/verbalized_workspace/examples/verbalized-workspace-v1.example.json"
-    )
+    path = Path("observability/verbalized_workspace/examples/verbalized-workspace-v1.example.json")
     payload = json.loads(path.read_text(encoding="utf-8"))
     schema = json.loads(
         Path(
@@ -182,6 +180,7 @@ def test_workspace_can_be_disabled_for_plain_agent_outputs():
     from orchestrator.agents import create_root_agent
 
     agent = create_root_agent(OrchestratorSettings(workspace_enabled=False))
+    router = next(node for node in agent.graph.nodes if node.name == "workflow_router_agent")
 
-    assert agent.output_schema is None
-    assert "WORKSPACE OPERACIONAL VERBALIZADO" not in agent.instruction
+    assert router.output_schema is None
+    assert "WORKSPACE OPERACIONAL VERBALIZADO" not in router.instruction
