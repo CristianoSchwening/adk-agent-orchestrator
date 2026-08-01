@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from types import SimpleNamespace
 
 from orchestrator.adk_compat import is_adk_installed
 from orchestrator.agents import PHASE_2_WORKFLOW_NAMES
@@ -284,6 +285,24 @@ def test_root_agent_can_be_created_when_adk_is_installed():
         "agent_help_request_workflow",
         "progressive_multi_agent_response_workflow",
     ]
+
+
+def test_root_route_node_persists_workflow_decision_when_adk_is_installed():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_root_agent
+
+    root = create_root_agent(OrchestratorSettings(workspace_enabled=False))
+    route_node = next(node for node in root.graph.nodes if node.name == "normalize_workflow_route")
+    ctx = SimpleNamespace(state={})
+
+    selected = route_node._func(ctx=ctx, node_input="Use parallel for independent research.")
+
+    assert selected == "parallel"
+    assert ctx.state["selected_workflow"] == "parallel"
+    assert ctx.state["workflow"] == "parallel"
+    assert "parallel" not in ctx.state["workflow_alternatives"]
 
 
 def test_specialist_factories_can_be_created_when_adk_is_installed():

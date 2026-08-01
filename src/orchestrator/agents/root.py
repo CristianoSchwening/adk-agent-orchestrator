@@ -8,7 +8,7 @@ from orchestrator.adk_compat import load_agent_class, load_workflow_classes
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
-from orchestrator.workspace import with_workspace_instruction
+from orchestrator.workspace import AGENT_STEP_RESPONSE_SCHEMA, with_workspace_instruction
 
 ROOT_AGENT_INSTRUCTION = """
 Você é o Root Orchestrator Agent de uma arquitetura greenfield construída com Google ADK.
@@ -34,7 +34,8 @@ Regras:
   interna de agent_help_request: ele não usa broker de ajuda; ele publica mensagens
   progressivas em progressive_agent_responses.
 - Não use runtimes legados; opere apenas com as primitivas oficiais do ADK Python.
-- Termine sempre com exatamente um destes tokens, sem pontuação nem texto adicional:
+- Se o workspace operacional estiver habilitado, coloque exatamente um destes tokens no
+  campo result. Caso contrário, responda somente com o token, sem pontuação adicional:
   sequential, parallel, review_critic, iterative_refinement, human_in_the_loop,
   agent_help_request ou progressive_multi_agent_response.
 """.strip()
@@ -58,16 +59,25 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
         ),
         "tools": [capture_objective, get_orchestrator_status, *PHASE_3_LOCAL_TOOLS],
     }
+    if resolved_settings.workspace_enabled:
+        kwargs["output_schema"] = AGENT_STEP_RESPONSE_SCHEMA
     router = Agent(**kwargs)
 
-    def normalize_route(node_input: Any) -> str:
+    def normalize_route(ctx: Any, node_input: Any) -> str:
         parts = getattr(node_input, "parts", None) or []
         text = "".join(str(getattr(part, "text", "") or "") for part in parts)
         candidate = (text or str(node_input)).strip().lower()
+        selected_route = "sequential"
         for route in phase2_workflows:
             if route in candidate:
-                return route
-        return "sequential"
+                selected_route = route
+                break
+        ctx.state["selected_workflow"] = selected_route
+        ctx.state["workflow"] = selected_route
+        ctx.state["workflow_alternatives"] = [
+            route for route in phase2_workflows if route != selected_route
+        ]
+        return selected_route
 
     route_node = FunctionNode(func=normalize_route, name="normalize_workflow_route")
     edges = [Edge(from_node=START, to_node=router), Edge(from_node=router, to_node=route_node)]
