@@ -70,13 +70,14 @@ def load_workflow_agent_classes() -> tuple[Any, Any, Any]:
     return module.SequentialAgent, module.ParallelAgent, module.LoopAgent
 
 
-def load_runtime_classes() -> tuple[Any, Any, Any]:
-    """Load Runner and the public in-memory service exports."""
+def load_runtime_classes() -> tuple[Any, Any, Any, Any]:
+    """Load App, Runner and the public in-memory service exports."""
 
+    App = load_symbol("google.adk.apps", "App")
     Runner = load_symbol("google.adk", "Runner")
     InMemorySessionService = load_symbol("google.adk.sessions", "InMemorySessionService")
     InMemoryArtifactService = load_symbol("google.adk.artifacts", "InMemoryArtifactService")
-    return Runner, InMemorySessionService, InMemoryArtifactService
+    return App, Runner, InMemorySessionService, InMemoryArtifactService
 
 
 def load_content_classes() -> tuple[Any, Any]:
@@ -86,12 +87,14 @@ def load_content_classes() -> tuple[Any, Any]:
     return module.Content, module.Part
 
 
-def load_mcp_classes() -> tuple[Any, Any, Any, Any]:
+def load_mcp_classes() -> tuple[Any, Any, Any, Any, Any]:
     """Load MCP symbols from the ADK package's public MCP export module."""
 
     module = import_module("google.adk.tools.mcp_tool")
+    mcp_module = import_module("mcp")
     return (
         module.McpToolset,
+        mcp_module.StdioServerParameters,
         module.StdioConnectionParams,
         module.SseConnectionParams,
         module.StreamableHTTPConnectionParams,

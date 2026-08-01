@@ -35,18 +35,24 @@ def _connection_params_for(server: MCPServerSettings) -> Any:
     if server.transport == "stdio":
         if not server.command:
             raise ValueError(f"MCP stdio server {server.name!r} requires command.")
-        _, StdioConnectionParams, _, _ = load_mcp_classes()
-        return StdioConnectionParams(command=server.command, args=list(server.args), env=server.env)
+        _, StdioServerParameters, StdioConnectionParams, _, _ = load_mcp_classes()
+        return StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command=server.command,
+                args=list(server.args),
+                env=server.env,
+            )
+        )
 
     if server.transport == "sse":
         if not server.url:
             raise ValueError(f"MCP sse server {server.name!r} requires url.")
-        _, _, SseConnectionParams, _ = load_mcp_classes()
+        _, _, _, SseConnectionParams, _ = load_mcp_classes()
         return SseConnectionParams(url=server.url)
 
     if not server.url:
         raise ValueError(f"MCP streamable_http server {server.name!r} requires url.")
-    _, _, _, StreamableHTTPConnectionParams = load_mcp_classes()
+    _, _, _, _, StreamableHTTPConnectionParams = load_mcp_classes()
     return StreamableHTTPConnectionParams(url=server.url)
 
 
@@ -59,7 +65,7 @@ def create_configured_mcp_toolsets(settings: OrchestratorSettings | None = None)
     """
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    McpToolset, _, _, _ = load_mcp_classes()
+    McpToolset, _, _, _, _ = load_mcp_classes()
     return [
         McpToolset(connection_params=_connection_params_for(server))
         for server in resolved_settings.mcp_servers

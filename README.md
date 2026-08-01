@@ -5,7 +5,7 @@ Repositório **greenfield** para a reimplementação do orquestrador usando **Go
 Esta entrega implementa a **Fase 5 — Avaliação e Produção** sobre o contrato UI/API da Fase 4:
 
 - `RootOrchestratorAgent` em ADK Python com subagentes de workflow.
-- `Runner` oficial do ADK.
+- `App` e `Runner` oficiais do ADK.
 - `InMemorySessionService` para sessões locais.
 - `InMemoryArtifactService` para artefatos locais.
 - Configuração por `.env`/variáveis de ambiente.
@@ -52,7 +52,7 @@ RootOrchestratorAgent (ADK LlmAgent)
         └── Phase 5 evaluation + observability readiness
         │
         ▼
-ADK Runner
+ADK App + Runner
         │
         ├── InMemorySessionService
         └── InMemoryArtifactService
@@ -69,7 +69,7 @@ adk-agent-orchestrator/
 │   ├── agents/root.py           # factory do RootOrchestratorAgent
 │   ├── agents/specialists.py    # factories dos agentes especialistas
 │   ├── agents/workflows.py      # composição dos workflows ADK da Fase 2
-│   ├── runner/bootstrap.py      # Runner + SessionService + ArtifactService
+│   ├── runner/bootstrap.py      # App + Runner + SessionService + ArtifactService
 │   ├── tools/foundation.py      # tools de status/captura
 │   ├── tools/human.py           # tool de aprovação humana
 │   ├── tools/local.py           # tools locais da Fase 3
@@ -108,7 +108,7 @@ cp .env.example .env
 
 Escolha o arquivo `constraints-3.10.txt`, `constraints-3.11.txt`,
 `constraints-3.12.txt` ou `constraints-3.13.txt` conforme a versão do Python.
-O runtime é certificado para `google-adk==2.6.1`; uma versão diferente falha
+O runtime é certificado para `google-adk[mcp]==2.6.1`; uma versão diferente falha
 explicitamente durante o bootstrap.
 
 Edite `.env` e configure `GOOGLE_API_KEY` quando quiser executar uma chamada real ao modelo.

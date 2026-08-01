@@ -33,6 +33,7 @@ class AdkRuntime:
     """Container for ADK runtime objects."""
 
     settings: OrchestratorSettings
+    app: Any
     root_agent: Any
     runner: Any
     session_service: Any
@@ -49,19 +50,20 @@ def build_runtime(settings: OrchestratorSettings | None = None) -> AdkRuntime:
     resolved_settings = settings or OrchestratorSettings.from_env()
     adk_version = ensure_certified_adk()
     logger.info("Starting orchestrator with certified google-adk version %s", adk_version)
-    Runner, InMemorySessionService, InMemoryArtifactService = load_runtime_classes()
+    App, Runner, InMemorySessionService, InMemoryArtifactService = load_runtime_classes()
 
     root_agent = create_root_agent(resolved_settings)
+    app = App(name=resolved_settings.app_name, root_agent=root_agent)
     session_service = InMemorySessionService()
     artifact_service = InMemoryArtifactService()
     runner = Runner(
-        agent=root_agent,
-        app_name=resolved_settings.app_name,
+        app=app,
         session_service=session_service,
         artifact_service=artifact_service,
     )
     return AdkRuntime(
         settings=resolved_settings,
+        app=app,
         root_agent=root_agent,
         runner=runner,
         session_service=session_service,
