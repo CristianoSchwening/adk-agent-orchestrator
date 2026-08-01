@@ -14,28 +14,29 @@ Implementar workflows multiagente, tools/MCP, contrato UI/API e readiness de ava
           ▼
 ┌───────────────────────────────┐
 │ RootOrchestratorAgent         │
-│ - LlmAgent ADK                │
+│ - Workflow graph ADK          │
+│ - LlmAgent roteador           │
 │ - tools de status/captura     │
-│ - subagentes de workflow ADK  │
+│ - workflows aninhados         │
 │ - tools locais e MCP toolsets  │
 │ - contrato UI/API versionado   │
 │ - avaliação e observabilidade  │
 └─────────┬─────────────────────┘
           │
           ├── sequential_workflow
-          │   └── SequentialAgent: planner → executor → critic → summarizer
+          │   └── Workflow: planner → executor → critic → summarizer
           │
           ├── parallel_workflow
-          │   └── ParallelAgent: architecture + quality + risk specialists
+          │   └── fan-out + JoinNode: especialistas em paralelo
           │
           ├── review_critic_workflow
-          │   └── LoopAgent: author ↔ critic
+          │   └── Workflow: author ↔ critic por aresta condicional
           │
           ├── iterative_refinement_workflow
-          │   └── LoopAgent: drafter → evaluator → editor
+          │   └── Workflow: drafter → evaluator → editor por aresta condicional
           │
           └── human_in_the_loop_workflow
-              └── SequentialAgent: context → approval tool → follow-up
+              └── Workflow: context → approval tool → follow-up
           │
           ▼
 ┌────────────────────────────┐
@@ -62,20 +63,18 @@ Especialistas disponíveis: planner, executor, critic, summarizer, researcher, r
 
 | Workflow | Primitiva ADK | Papel |
 | --- | --- | --- |
-| `sequential` | `SequentialAgent` | Planejar, executar, criticar e resumir em ordem determinística. |
-| `parallel` | `SequentialAgent` contendo `ParallelAgent` + Summarizer | Rodar Planner, Researcher e Executor em paralelo e consolidar com Summarizer. |
-| `review_critic` | `LoopAgent` | Alternar autoria e crítica dentro do orçamento de iteração. |
-| `iterative_refinement` | `LoopAgent` | Criar rascunho, avaliar e refinar iterativamente. |
-| `human_in_the_loop` | `SequentialAgent` + function tool ADK | Registrar decisão humana estruturada antes do follow-up. |
+| `sequential` | `Workflow` em cadeia | Planejar, executar, criticar e resumir em ordem determinística. |
+| `parallel` | `Workflow` com fan-out + `JoinNode` | Rodar especialistas em paralelo e consolidar com Summarizer. |
+| `review_critic` | `Workflow` com rota condicional | Alternar autoria e crítica dentro do orçamento de iteração. |
+| `iterative_refinement` | `Workflow` com rota condicional | Criar rascunho, avaliar e refinar iterativamente. |
+| `human_in_the_loop` | `Workflow` + function tool ADK | Registrar decisão humana estruturada antes do follow-up. |
 
 O workflow `parallel` segue o desenho original do legado reinterpretado em ADK:
 
 ```text
-parallel_workflow (SequentialAgent)
-├── parallel_specialists_agent (ParallelAgent)
-│   ├── parallel_planner_agent
-│   ├── parallel_researcher_agent
-│   └── parallel_executor_agent
+parallel_workflow (Workflow)
+├── fan-out: planner + researcher + executor
+├── parallel_specialists_join (JoinNode)
 └── parallel_summarizer_agent
 ```
 
@@ -93,10 +92,10 @@ A Fase 5 adiciona datasets em `eval/datasets/`, runner determinístico em `src/o
 
 ## Decisões arquiteturais
 
-1. **ADK como runtime central**: o bootstrap usa `App`, `Runner`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`, ADK function tools, MCP Toolsets, `InMemorySessionService` e `InMemoryArtifactService`.
+1. **ADK como runtime central**: o bootstrap usa `App`, `Runner`, `LlmAgent`, `Workflow`, `FunctionNode`, `JoinNode`, ADK function tools, MCP Toolsets e serviços in-memory.
 2. **Sem código legado**: não há dependência de `workforce.py`, `TaskBoard`, `Subtask` ou `Toolkit`.
 3. **Lazy imports do ADK**: os módulos de domínio podem ser testados mesmo quando o wheel `google-adk` não está instalado no interpretador local.
-4. **Workflows como subagentes**: o agente raiz recebe os workflows como subagentes ADK, permitindo delegação pelo mecanismo nativo do ADK.
+4. **Root como grafo**: um `LlmAgent` escolhe a rota, um `FunctionNode` normaliza a saída e arestas condicionais acionam exatamente um workflow aninhado.
 5. **Persistência in-memory**: adequada ao desenvolvimento local; fases futuras devem avaliar serviços persistentes.
 6. **Configuração por ambiente**: `ADK_APP_NAME`, `ADK_USER_ID`, `ADK_MODEL`, `ADK_TOOL_TIMEOUT_SECONDS` e `ADK_MCP_SERVERS` são lidos de variáveis de ambiente.
 7. **Contrato versionado**: clientes consomem `orchestrator.execution.v1`; mudanças futuras devem criar nova versão ou mapper compatível.

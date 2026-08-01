@@ -29,10 +29,12 @@ def test_public_adk_loaders_use_supported_exports(monkeypatch):
     modules = {
         "google.adk": SimpleNamespace(Agent="agent", Runner="runner"),
         "google.adk.apps": SimpleNamespace(App="app"),
-        "google.adk.agents": SimpleNamespace(
-            SequentialAgent="sequential",
-            ParallelAgent="parallel",
-            LoopAgent="loop",
+        "google.adk.workflow": SimpleNamespace(
+            Workflow="workflow",
+            FunctionNode="function",
+            JoinNode="join",
+            Edge="edge",
+            START="start",
         ),
         "google.adk.sessions": SimpleNamespace(InMemorySessionService="session"),
         "google.adk.artifacts": SimpleNamespace(InMemoryArtifactService="artifact"),
@@ -48,7 +50,13 @@ def test_public_adk_loaders_use_supported_exports(monkeypatch):
     monkeypatch.setattr(adk_compat, "import_module", modules.__getitem__)
 
     assert adk_compat.load_agent_class() == "agent"
-    assert adk_compat.load_workflow_agent_classes() == ("sequential", "parallel", "loop")
+    assert adk_compat.load_workflow_classes() == (
+        "workflow",
+        "function",
+        "join",
+        "edge",
+        "start",
+    )
     assert adk_compat.load_runtime_classes() == ("app", "runner", "session", "artifact")
     assert adk_compat.load_content_classes() == ("content", "part")
     assert adk_compat.load_mcp_classes() == (

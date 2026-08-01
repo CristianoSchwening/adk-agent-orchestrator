@@ -13,6 +13,10 @@ from orchestrator.policies import BudgetPolicy
 from orchestrator.tools import capture_objective, get_orchestrator_status, request_human_approval
 
 
+def _workflow_nodes(workflow):
+    return [node for node in workflow.graph.nodes if node.name != "__START__"]
+
+
 def test_settings_from_env(monkeypatch):
     monkeypatch.setenv("ADK_APP_NAME", "custom-app")
     monkeypatch.setenv("ADK_USER_ID", "user-123")
@@ -74,45 +78,46 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
 
     assert tuple(workflows) == PHASE_2_WORKFLOW_NAMES
     assert workflows["sequential"].name == "sequential_workflow"
-    assert [agent.name for agent in workflows["sequential"].sub_agents] == [
+    assert [agent.name for agent in _workflow_nodes(workflows["sequential"])] == [
         "sequential_planner_agent",
         "sequential_executor_agent",
         "sequential_critic_agent",
         "sequential_summarizer_agent",
     ]
     assert workflows["parallel"].name == "parallel_workflow"
-    assert [agent.name for agent in workflows["parallel"].sub_agents] == [
-        "parallel_specialists_agent",
-        "parallel_summarizer_agent",
-    ]
-    assert [agent.name for agent in workflows["parallel"].sub_agents[0].sub_agents] == [
+    assert [agent.name for agent in _workflow_nodes(workflows["parallel"])] == [
         "parallel_planner_agent",
         "parallel_researcher_agent",
         "parallel_executor_agent",
+        "parallel_specialists_join",
+        "parallel_summarizer_agent",
     ]
-    assert workflows["review_critic"].max_iterations == BudgetPolicy().max_iterations
-    assert workflows["iterative_refinement"].max_iterations == BudgetPolicy().max_iterations
-    assert workflows["human_in_the_loop"].sub_agents[1].name == "human_approval_agent"
+    assert "review_critic_gate" in {
+        node.name for node in _workflow_nodes(workflows["review_critic"])
+    }
+    assert "iterative_refinement_gate" in {
+        node.name for node in _workflow_nodes(workflows["iterative_refinement"])
+    }
+    assert _workflow_nodes(workflows["human_in_the_loop"])[1].name == "human_approval_agent"
     assert workflows["agent_help_request"].name == "agent_help_request_workflow"
     assert workflows["progressive_multi_agent_response"].name == (
         "progressive_multi_agent_response_workflow"
     )
-    assert [agent.name for agent in workflows["agent_help_request"].sub_agents] == [
+    assert [agent.name for agent in _workflow_nodes(workflows["agent_help_request"])] == [
         "agent_help_task_owner_agent",
         "agent_help_request_broker_agent",
         "agent_help_provider_agent",
         "agent_help_response_broker_agent",
         "agent_help_task_finalizer_agent",
     ]
-    assert [agent.name for agent in workflows["progressive_multi_agent_response"].sub_agents] == [
+    progressive_nodes = _workflow_nodes(workflows["progressive_multi_agent_response"])
+    assert [agent.name for agent in progressive_nodes] == [
         "progressive_agent_a",
         "progressive_agent_b",
         "progressive_agent_c",
         "progressive_response_publisher_agent",
     ]
-    assert workflows["progressive_multi_agent_response"].sub_agents[-1].output_key == (
-        "progressive_agent_responses"
-    )
+    assert progressive_nodes[-1].output_key == "progressive_agent_responses"
 
 
 def test_progressive_workflow_without_final_summarizer_when_disabled():
@@ -131,14 +136,15 @@ def test_progressive_workflow_without_final_summarizer_when_disabled():
 
     workflow = create_progressive_multi_agent_response_workflow(settings)
 
-    assert [agent.name for agent in workflow.sub_agents] == [
+    nodes = _workflow_nodes(workflow)
+    assert [agent.name for agent in nodes] == [
         "progressive_agent_a",
         "progressive_agent_b",
         "progressive_agent_c",
         "progressive_response_publisher_agent",
     ]
-    assert "response_chain_summarizer_agent" not in {agent.name for agent in workflow.sub_agents}
-    assert workflow.sub_agents[-1].output_key == "progressive_agent_responses"
+    assert "response_chain_summarizer_agent" not in {agent.name for agent in nodes}
+    assert nodes[-1].output_key == "progressive_agent_responses"
 
 
 def test_progressive_workflow_adds_final_summarizer_when_enabled():
@@ -157,16 +163,17 @@ def test_progressive_workflow_adds_final_summarizer_when_enabled():
 
     workflow = create_progressive_multi_agent_response_workflow(settings)
 
-    assert [agent.name for agent in workflow.sub_agents] == [
+    nodes = _workflow_nodes(workflow)
+    assert [agent.name for agent in nodes] == [
         "progressive_agent_a",
         "progressive_agent_b",
         "progressive_agent_c",
         "progressive_response_publisher_agent",
         "response_chain_summarizer_agent",
     ]
-    assert workflow.sub_agents[-1].output_key == "progressive_final_response"
-    assert "final_summarizer_enabled=enabled" in workflow.sub_agents[-1].instruction
-    assert "summarizer_response" in workflow.sub_agents[-1].instruction
+    assert nodes[-1].output_key == "progressive_final_response"
+    assert "final_summarizer_enabled=enabled" in nodes[-1].instruction
+    assert "summarizer_response" in nodes[-1].instruction
 
 
 def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
@@ -185,11 +192,12 @@ def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
 
     workflow = create_progressive_multi_agent_response_workflow(settings)
 
-    assert workflow.sub_agents[-1].name == "response_chain_summarizer_agent"
-    assert workflow.sub_agents[-1].output_key == "progressive_final_response"
-    assert "final_summarizer_enabled=auto" in workflow.sub_agents[-1].instruction
-    assert "ponto de decisão do root" in workflow.sub_agents[-1].instruction
-    assert "root_selected_response" in workflow.sub_agents[-1].instruction
+    finalizer = _workflow_nodes(workflow)[-1]
+    assert finalizer.name == "response_chain_summarizer_agent"
+    assert finalizer.output_key == "progressive_final_response"
+    assert "final_summarizer_enabled=auto" in finalizer.instruction
+    assert "ponto de decisão do root" in finalizer.instruction
+    assert "root_selected_response" in finalizer.instruction
 
 
 def test_progressive_workflow_settings_from_env(monkeypatch):
@@ -265,7 +273,9 @@ def test_root_agent_can_be_created_when_adk_is_installed():
     root_agent = create_root_agent(settings)
 
     assert root_agent.name == "root_orchestrator_agent"
-    assert [agent.name for agent in root_agent.sub_agents] == [
+    assert [agent.name for agent in _workflow_nodes(root_agent)] == [
+        "workflow_router_agent",
+        "normalize_workflow_route",
         "sequential_workflow",
         "parallel_workflow",
         "review_critic_workflow",

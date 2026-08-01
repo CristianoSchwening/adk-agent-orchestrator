@@ -218,7 +218,7 @@ def _agent_instruction_registry(root_agent: Any) -> dict[str, str]:
         instruction = getattr(agent, "instruction", None)
         if name and instruction:
             result[str(name)] = str(instruction)
-        pending.extend(list(getattr(agent, "sub_agents", None) or []))
+        pending.extend(_child_nodes(agent))
     return result
 
 
@@ -237,15 +237,26 @@ def _agent_tool_registry(root_agent: Any) -> dict[str, list[dict[str, Any]]]:
                         or type(tool).__name__
                     ),
                     "description": str(
-                        getattr(tool, "description", None)
-                        or getattr(tool, "__doc__", None)
-                        or ""
+                        getattr(tool, "description", None) or getattr(tool, "__doc__", None) or ""
                     ).strip(),
                 }
                 for tool in list(getattr(agent, "tools", None) or [])
             ]
-        pending.extend(list(getattr(agent, "sub_agents", None) or []))
+        pending.extend(_child_nodes(agent))
     return result
+
+
+def _child_nodes(node: Any) -> list[Any]:
+    """Return children from either classic agents or graph workflows."""
+
+    children = list(getattr(node, "sub_agents", None) or [])
+    graph = getattr(node, "graph", None)
+    children.extend(
+        child
+        for child in (getattr(graph, "nodes", None) or [])
+        if getattr(child, "name", None) != "__START__"
+    )
+    return children
 
 
 async def _get_session(runtime: AdkRuntime, session_id: str) -> Any:
