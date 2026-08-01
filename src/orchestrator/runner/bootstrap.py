@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Any
 from uuid import uuid4
 
-from orchestrator.adk_compat import load_symbol
+from orchestrator.adk_compat import (
+    ensure_certified_adk,
+    load_content_classes,
+    load_runtime_classes,
+)
 from orchestrator.agents import create_root_agent
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts import ExecutionContractDTO
@@ -20,6 +25,7 @@ from orchestrator.workspace import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -41,9 +47,9 @@ def build_runtime(settings: OrchestratorSettings | None = None) -> AdkRuntime:
     """
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    Runner = load_symbol("google.adk.runners", "Runner")
-    InMemorySessionService = load_symbol("google.adk.sessions", "InMemorySessionService")
-    InMemoryArtifactService = load_symbol("google.adk.artifacts", "InMemoryArtifactService")
+    adk_version = ensure_certified_adk()
+    logger.info("Starting orchestrator with certified google-adk version %s", adk_version)
+    Runner, InMemorySessionService, InMemoryArtifactService = load_runtime_classes()
 
     root_agent = create_root_agent(resolved_settings)
     session_service = InMemorySessionService()
@@ -117,8 +123,7 @@ async def run_once_contract(
     resolved_session_id = session_id or f"session-{uuid4()}"
     session = await _create_session(runtime, resolved_session_id)
 
-    Content = load_symbol("google.genai.types", "Content")
-    Part = load_symbol("google.genai.types", "Part")
+    Content, Part = load_content_classes()
     user_message = Content(parts=[Part(text=objective)], role="user")
 
     events: list[Any] = []

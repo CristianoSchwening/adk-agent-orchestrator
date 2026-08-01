@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from orchestrator.adk_compat import load_symbol
+from orchestrator.adk_compat import load_agent_class
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
@@ -40,13 +40,13 @@ Regras:
 def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     """Create the official ADK root agent.
 
-    ADK's Python quickstart defines a required ``root_agent`` using
-    ``google.adk.agents.llm_agent.Agent``. This factory follows that shape while
-    keeping the model configurable through ``OrchestratorSettings``.
+    ADK's Python quickstart defines a required ``root_agent`` using the public
+    ``google.adk.Agent`` export. This factory follows that shape while keeping
+    the model configurable through ``OrchestratorSettings``.
     """
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    Agent = load_symbol("google.adk.agents.llm_agent", "Agent")
+    Agent = load_agent_class()
     phase2_workflows = create_phase2_workflows(resolved_settings)
     kwargs: dict[str, Any] = {
         "model": resolved_settings.model,

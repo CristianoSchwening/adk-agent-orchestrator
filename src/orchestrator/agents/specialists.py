@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from typing import Any
 
-from orchestrator.adk_compat import load_symbol
+from orchestrator.adk_compat import load_agent_class
 from orchestrator.config import OrchestratorSettings
 from orchestrator.tools import (
     describe_model_request,
@@ -27,7 +27,7 @@ from orchestrator.workspace import AGENT_STEP_RESPONSE_SCHEMA, with_workspace_in
 def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..., Any]:
     """Return a small ADK LlmAgent factory bound to the configured model id."""
 
-    LlmAgent = load_symbol("google.adk.agents.llm_agent", "Agent")
+    LlmAgent = load_agent_class()
 
     def create_llm_agent(
         *,

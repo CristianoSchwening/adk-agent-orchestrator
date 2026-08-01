@@ -47,16 +47,24 @@ class StatusResponse(BaseModel):
     status: str
     contract_version: str
     adk_installed: bool
+    adk_version: str | None
+    certified_adk_version: str
 
 
 @app.get("/api/status")
 async def get_status() -> StatusResponse:
-    from orchestrator.adk_compat import is_adk_installed
+    from orchestrator.adk_compat import (
+        CERTIFIED_ADK_VERSION,
+        get_adk_version,
+        is_adk_installed,
+    )
 
     return StatusResponse(
         status="ready",
         contract_version=CONTRACT_VERSION,
         adk_installed=is_adk_installed(),
+        adk_version=get_adk_version(),
+        certified_adk_version=CERTIFIED_ADK_VERSION,
     )
 
 

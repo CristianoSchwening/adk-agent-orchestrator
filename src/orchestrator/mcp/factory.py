@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from orchestrator.adk_compat import load_symbol
+from orchestrator.adk_compat import load_mcp_classes
 from orchestrator.config import MCPServerSettings, OrchestratorSettings
 
 
@@ -35,27 +35,18 @@ def _connection_params_for(server: MCPServerSettings) -> Any:
     if server.transport == "stdio":
         if not server.command:
             raise ValueError(f"MCP stdio server {server.name!r} requires command.")
-        StdioConnectionParams = load_symbol(
-            "google.adk.tools.mcp_tool.mcp_session_manager",
-            "StdioConnectionParams",
-        )
+        _, StdioConnectionParams, _, _ = load_mcp_classes()
         return StdioConnectionParams(command=server.command, args=list(server.args), env=server.env)
 
     if server.transport == "sse":
         if not server.url:
             raise ValueError(f"MCP sse server {server.name!r} requires url.")
-        SseConnectionParams = load_symbol(
-            "google.adk.tools.mcp_tool.mcp_session_manager",
-            "SseConnectionParams",
-        )
+        _, _, SseConnectionParams, _ = load_mcp_classes()
         return SseConnectionParams(url=server.url)
 
     if not server.url:
         raise ValueError(f"MCP streamable_http server {server.name!r} requires url.")
-    StreamableHTTPConnectionParams = load_symbol(
-        "google.adk.tools.mcp_tool.mcp_session_manager",
-        "StreamableHTTPConnectionParams",
-    )
+    _, _, _, StreamableHTTPConnectionParams = load_mcp_classes()
     return StreamableHTTPConnectionParams(url=server.url)
 
 
@@ -68,8 +59,8 @@ def create_configured_mcp_toolsets(settings: OrchestratorSettings | None = None)
     """
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    MCPToolset = load_symbol("google.adk.tools.mcp_tool.mcp_toolset", "MCPToolset")
+    McpToolset, _, _, _ = load_mcp_classes()
     return [
-        MCPToolset(connection_params=_connection_params_for(server))
+        McpToolset(connection_params=_connection_params_for(server))
         for server in resolved_settings.mcp_servers
     ]

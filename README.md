@@ -102,9 +102,14 @@ cd adk-agent-orchestrator
 python3.13 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e '.[dev]'
+python -m pip install -c constraints-3.13.txt -e '.[dev]'
 cp .env.example .env
 ```
+
+Escolha o arquivo `constraints-3.10.txt`, `constraints-3.11.txt`,
+`constraints-3.12.txt` ou `constraints-3.13.txt` conforme a versão do Python.
+O runtime é certificado para `google-adk==2.6.1`; uma versão diferente falha
+explicitamente durante o bootstrap.
 
 Edite `.env` e configure `GOOGLE_API_KEY` quando quiser executar uma chamada real ao modelo.
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from orchestrator.adk_compat import CERTIFIED_ADK_VERSION, get_adk_version
+
 
 def capture_objective(objective: str) -> dict[str, Any]:
     """Capture a user objective as structured metadata for the session.
@@ -28,6 +30,8 @@ def get_orchestrator_status() -> dict[str, Any]:
     return {
         "status": "ready",
         "phase": "phase_5_evaluation_production",
+        "adk_version": get_adk_version(),
+        "certified_adk_version": CERTIFIED_ADK_VERSION,
         "capabilities": [
             "root_agent",
             "runner",
