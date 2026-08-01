@@ -13,7 +13,7 @@ authors = [
   { name = "Meu Orquestrador Team" }
 ]
 dependencies = [
-  "google-adk==2.6.1",
+  "google-adk[mcp]==2.6.1",
   "python-dotenv>=1.0.1,<2.0.0"
 ]
 

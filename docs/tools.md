@@ -71,7 +71,10 @@ Esse valor é lido por `OrchestratorSettings.from_env()`.
 
 ## MCP
 
-A integração MCP fica em `src/orchestrator/mcp/factory.py`. Ela é lazy: o projeto pode importar normalmente sem instalar extras MCP, e os imports de `MCPToolset` só acontecem quando `create_configured_mcp_toolsets` é chamado.
+A integração MCP fica em `src/orchestrator/mcp/factory.py`. O extra oficial
+`google-adk[mcp]` faz parte do runtime certificado; os imports e a criação dos
+toolsets continuam lazy e só acontecem quando `create_configured_mcp_toolsets`
+é chamado.
 
 Configure servidores externos via JSON:
 

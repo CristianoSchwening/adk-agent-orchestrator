@@ -39,8 +39,8 @@ Implementar workflows multiagente, tools/MCP, contrato UI/API e readiness de ava
           │
           ▼
 ┌────────────────────────────┐
-│ Runner ADK                 │
-│ - app_name                 │
+│ App + Runner ADK           │
+│ - App(name, root_agent)    │
 │ - session_service          │
 │ - artifact_service         │
 └─────┬───────────────┬──────┘
@@ -93,7 +93,7 @@ A Fase 5 adiciona datasets em `eval/datasets/`, runner determinístico em `src/o
 
 ## Decisões arquiteturais
 
-1. **ADK como runtime central**: o bootstrap usa `Runner`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`, ADK function tools, MCP Toolsets, `InMemorySessionService` e `InMemoryArtifactService`.
+1. **ADK como runtime central**: o bootstrap usa `App`, `Runner`, `LlmAgent`, `SequentialAgent`, `ParallelAgent`, `LoopAgent`, ADK function tools, MCP Toolsets, `InMemorySessionService` e `InMemoryArtifactService`.
 2. **Sem código legado**: não há dependência de `workforce.py`, `TaskBoard`, `Subtask` ou `Toolkit`.
 3. **Lazy imports do ADK**: os módulos de domínio podem ser testados mesmo quando o wheel `google-adk` não está instalado no interpretador local.
 4. **Workflows como subagentes**: o agente raiz recebe os workflows como subagentes ADK, permitindo delegação pelo mecanismo nativo do ADK.
@@ -113,9 +113,10 @@ run_once(objective)
    ├── build_runtime()
    │     ├── create_root_agent()
    │     │    └── create_phase2_workflows()
+   │     ├── App(name, root_agent)
    │     ├── InMemorySessionService()
    │     ├── InMemoryArtifactService()
-   │     └── Runner(...)
+   │     └── Runner(app=...)
    │
    ├── session_service.create_session(..., state={"phase": "phase_5_evaluation_production", "contract_version": "orchestrator.execution.v1", ...})
    ├── runner.run_async(...)
