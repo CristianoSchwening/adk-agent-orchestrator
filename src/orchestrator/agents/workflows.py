@@ -11,7 +11,7 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
-from orchestrator.adk_compat import load_symbol
+from orchestrator.adk_compat import load_workflow_agent_classes
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_context_agent,
@@ -56,10 +56,7 @@ PHASE_2_WORKFLOW_NAMES = (
 def _load_adk_workflow_primitives() -> tuple[type[Any], type[Any], type[Any]]:
     """Load ADK workflow primitives without importing custom orchestration code."""
 
-    SequentialAgent = load_symbol("google.adk.agents.sequential_agent", "SequentialAgent")
-    ParallelAgent = load_symbol("google.adk.agents.parallel_agent", "ParallelAgent")
-    LoopAgent = load_symbol("google.adk.agents.loop_agent", "LoopAgent")
-    return SequentialAgent, ParallelAgent, LoopAgent
+    return load_workflow_agent_classes()
 
 
 def create_sequential_workflow(settings: OrchestratorSettings | None = None) -> Any:
@@ -156,7 +153,7 @@ def _build_loop_agent_kwargs(
     import logging as _logging
     _log = _logging.getLogger(__name__)
     try:
-        LoopAgent = load_symbol("google.adk.agents.loop_agent", "LoopAgent")
+        _, _, LoopAgent = load_workflow_agent_classes()
         sig = inspect.signature(LoopAgent.__init__)
         if "should_stop_loop" in sig.parameters:
             return {**base_kwargs, "should_stop_loop": stop_callback}

@@ -16,7 +16,7 @@ jobs:
       - name: Install package and dev dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
+          python -m pip install -c constraints-3.13.txt -e '.[dev]'
       - name: Run unit checks
         run: |
           pytest -q
