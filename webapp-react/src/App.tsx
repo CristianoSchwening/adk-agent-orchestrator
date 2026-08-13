@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, ChevronDown, Clock3, Network, Sparkles } from 'lucide-react'
+import { AlertTriangle, Bot, ChevronDown, Clock3, Network, RefreshCw, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ExecutionComposer } from '@/components/layout/ExecutionComposer'
@@ -7,18 +7,20 @@ import { ExecutionViews } from '@/components/workspace/ExecutionViews'
 import { FinalResponsePanel } from '@/components/workspace/FinalResponsePanel'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { DEFAULT_WORKFLOW, workflowLabel } from '@/config/workflows'
 import { formatDuration, humanizeStatus } from '@/lib/format'
 import { useContract } from '@/hooks/useContract'
 import { useTheme } from '@/hooks/useTheme'
+import { useStoredState } from '@/hooks/useStoredState'
 
 const DEMO_OBJECTIVE = 'Investigue como estruturar um orquestrador de agentes robusto e produza uma recomendação técnica.'
 
 export default function App() {
   const [objective, setObjective] = useState('')
-  const [workflow, setWorkflow] = useState(DEFAULT_WORKFLOW)
+  const [workflow, setWorkflow] = useStoredState('adk-workflow', DEFAULT_WORKFLOW)
   const [automationsOpen, setAutomationsOpen] = useState(false)
-  const { contract, loading, error, loadDemo, run, clear } = useContract()
+  const { contract, loading, error, loadDemo, run, retry, clear } = useContract()
   const { theme, toggle } = useTheme()
 
   const handleDemo = () => loadDemo(objective.trim() || DEMO_OBJECTIVE, workflow)
@@ -63,11 +65,25 @@ export default function App() {
 
   return (
     <AppShell contract={contract} onNewExecution={handleNewExecution} topbar={topbar} composer={composer}>
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="sr-only" role="status" aria-live="polite">
+          {loading ? 'Execução em andamento' : contract ? `Execução ${humanizeStatus(contract.task.status)}` : ''}
+        </div>
         {error && (
-          <div className="mb-5 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-            <div><div className="font-semibold">Não foi possível concluir a execução</div><div className="mt-1 opacity-80">{error}</div></div>
+            <div className="min-w-0 flex-1"><div className="font-semibold">Não foi possível concluir a execução</div><div className="mt-1 break-words opacity-80">{error}</div></div>
+            <Button variant="outline" size="sm" onClick={retry} disabled={loading} className="shrink-0 border-destructive/30">
+              <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
+        {loading && contract && (
+          <div role="status" className="mb-5 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+            <Bot className="size-4 animate-pulse" />
+            Atualizando a execução com uma nova solicitação…
           </div>
         )}
 
@@ -131,12 +147,12 @@ export default function App() {
             <FinalResponsePanel response={contract.task.final_response} />
 
             <section className="surface-panel overflow-hidden">
-              <button className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setAutomationsOpen((open) => !open)}>
+              <button type="button" aria-expanded={automationsOpen} aria-controls="automations-panel" className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setAutomationsOpen((open) => !open)}>
                 <Clock3 className="size-4 text-muted-foreground" />
                 <div><div className="text-sm font-semibold">Automações e gatilhos</div><div className="text-[11px] text-muted-foreground">Webhook, execução manual e agendamento</div></div>
                 <ChevronDown className={`ml-auto size-4 transition-transform ${automationsOpen ? 'rotate-180' : ''}`} />
               </button>
-              {automationsOpen && <div className="border-t border-border p-3"><EventLoopPanel /></div>}
+              {automationsOpen && <div id="automations-panel" className="border-t border-border p-3"><EventLoopPanel /></div>}
             </section>
           </div>
         ) : null}
