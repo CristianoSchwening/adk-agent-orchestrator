@@ -3,98 +3,94 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Dark theme (default) ─────────────────────────────────────── */
   :root {
-    --background: 235 30% 8%;
-    --foreground: 215 20% 85%;
-
-    --card: 235 25% 11%;
-    --card-foreground: 215 20% 85%;
-
-    --popover: 235 25% 11%;
-    --popover-foreground: 215 20% 85%;
-
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 235 20% 17%;
-    --secondary-foreground: 215 20% 75%;
-
-    --muted: 235 20% 17%;
-    --muted-foreground: 215 15% 50%;
-
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 235 20% 18%;
-    --input: 235 20% 18%;
-    --ring: 239 84% 67%;
-    --radius: 0.625rem;
-
-    --color-green:  142 71% 45%;
-    --color-yellow: 38 92% 50%;
-    --color-purple: 270 84% 60%;
-    --color-cyan:   189 85% 43%;
-    --color-red:    0 72% 51%;
-  }
-
-  /* ── Light theme ──────────────────────────────────────────────── */
-  :root.light {
-    --background: 220 20% 97%;
-    --foreground: 224 30% 15%;
-
+    --background: 220 18% 96%;
+    --foreground: 222 24% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 224 30% 15%;
-
+    --card-foreground: 222 24% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 224 30% 15%;
-
-    --primary: 239 84% 60%;
+    --popover-foreground: 222 24% 16%;
+    --primary: 229 72% 55%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 15% 93%;
-    --secondary-foreground: 224 20% 35%;
-
-    --muted: 220 15% 93%;
-    --muted-foreground: 224 15% 52%;
-
-    --accent: 239 84% 60%;
+    --secondary: 220 17% 94%;
+    --secondary-foreground: 222 18% 28%;
+    --muted: 220 16% 93%;
+    --muted-foreground: 218 11% 46%;
+    --accent: 229 72% 55%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 220 15% 87%;
-    --input: 220 15% 87%;
-    --ring: 239 84% 60%;
-
-    --color-green:  142 60% 38%;
-    --color-yellow: 38 85% 44%;
-    --color-purple: 270 70% 52%;
-    --color-cyan:   189 75% 36%;
-    --color-red:    0 72% 51%;
+    --border: 220 14% 86%;
+    --input: 220 14% 86%;
+    --ring: 229 72% 55%;
+    --radius: 0.75rem;
   }
-}
 
-@layer base {
+  :root:not(.light) {
+    --background: 228 24% 9%;
+    --foreground: 215 20% 88%;
+    --card: 228 22% 12%;
+    --card-foreground: 215 20% 88%;
+    --popover: 228 22% 12%;
+    --popover-foreground: 215 20% 88%;
+    --primary: 229 82% 68%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 228 18% 17%;
+    --secondary-foreground: 215 18% 78%;
+    --muted: 228 18% 17%;
+    --muted-foreground: 216 12% 58%;
+    --accent: 229 82% 68%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 228 16% 22%;
+    --input: 228 16% 22%;
+    --ring: 229 82% 68%;
+  }
+
   * {
     @apply border-border;
     box-sizing: border-box;
   }
+
+  html {
+    color-scheme: light;
+  }
+
+  html:not(.light) {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    min-width: 320px;
+    min-height: 100vh;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-background; }
-  ::-webkit-scrollbar-thumb { @apply bg-border rounded; }
 
-  /* Smooth theme transition on all elements */
-  *, *::before, *::after {
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply rounded bg-border; }
+}
+
+@layer components {
+  .surface-panel {
+    @apply rounded-xl border border-border bg-card text-card-foreground shadow-sm;
+  }
+
+  .section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground;
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 }

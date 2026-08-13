@@ -4,12 +4,8 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useLoop3 } from '@/hooks/useLoop3'
 import type { ExecutionSummary, TriggerSource } from '@/types/loop3'
-
-const WORKFLOWS = [
-  { value: 'loop2_verification',               label: 'Loop 2 — Verificação' },
-  { value: 'progressive_multi_agent_response', label: 'Progressive Multi-Agent' },
-  { value: 'sequential',                       label: 'Sequential' },
-]
+import { AUTOMATION_WORKFLOWS, DEFAULT_WORKFLOW } from '@/config/workflows'
+import { formatDuration, formatTime } from '@/lib/format'
 
 const INTERVALS = [
   { label: '10 s',  value: 10 },
@@ -28,15 +24,6 @@ function statusDot(status: string) {
   if (status === 'completed') return <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
   if (status === 'failed')    return <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
   return <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block animate-pulse" />
-}
-
-function fmtDuration(ms: number) {
-  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
-}
-
-function fmtTime(iso: string) {
-  try { return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
-  catch { return iso.slice(11, 19) }
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -70,8 +57,8 @@ function HistoryRow({ run }: { run: ExecutionSummary }) {
           {(run.verification_score * 100).toFixed(0)}%
         </span>
       )}
-      <span className="text-muted-foreground flex-shrink-0">{fmtDuration(run.duration_ms)}</span>
-      <span className="text-muted-foreground flex-shrink-0">{fmtTime(run.started_at)}</span>
+      <span className="text-muted-foreground flex-shrink-0">{formatDuration(run.duration_ms)}</span>
+      <span className="text-muted-foreground flex-shrink-0">{formatTime(run.started_at)}</span>
     </div>
   )
 }
@@ -80,7 +67,7 @@ export function EventLoopPanel() {
   const { config, loading, trigger, setSchedule, stopSchedule, fetchConfig } = useLoop3()
 
   const [objective,  setObjective]  = useState('Build a production-ready ADK agent orchestrator')
-  const [workflow,   setWorkflow]   = useState('loop2_verification')
+  const [workflow,   setWorkflow]   = useState(DEFAULT_WORKFLOW)
   const [interval,   setInterval]   = useState(30)
 
   const webhookUrl = config
@@ -137,7 +124,7 @@ export function EventLoopPanel() {
               onChange={e => setWorkflow(e.target.value)}
               className="h-8 px-3 rounded-lg border border-border bg-secondary text-sm text-foreground focus:outline-none focus:border-primary/60"
             >
-              {WORKFLOWS.map(w => (
+              {AUTOMATION_WORKFLOWS.map(w => (
                 <option key={w.value} value={w.value} className="bg-card">{w.label}</option>
               ))}
             </select>
@@ -206,7 +193,7 @@ export function EventLoopPanel() {
                 <div className="text-muted-foreground truncate">obj: {config.schedule.objective}</div>
                 {config.schedule.next_run_at && (
                   <div className="text-muted-foreground">
-                    próximo: {fmtTime(config.schedule.next_run_at)}
+                    próximo: {formatTime(config.schedule.next_run_at)}
                   </div>
                 )}
               </>

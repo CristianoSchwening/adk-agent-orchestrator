@@ -7,19 +7,12 @@ import { EventLoopPanel } from '@/components/EventLoopPanel'
 import { useContract } from '@/hooks/useContract'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
-
-const WORKFLOWS = [
-  { value: 'loop2_verification',               label: '🔁 Loop 2 — Verificação' },
-  { value: 'progressive_multi_agent_response', label: 'Progressive Multi-Agent' },
-  { value: 'sequential',                       label: 'Sequential' },
-  { value: 'parallel',                         label: 'Parallel' },
-  { value: 'review_critic',                    label: 'Review & Critic' },
-  { value: 'iterative_refinement',             label: 'Iterative Refinement' },
-]
+import { DEFAULT_WORKFLOW, WORKFLOW_OPTIONS } from '@/config/workflows'
+import { formatDuration } from '@/lib/format'
 
 export default function App() {
   const [objective, setObjective] = useState('')
-  const [workflow,  setWorkflow]  = useState('loop2_verification')
+  const [workflow,  setWorkflow]  = useState(DEFAULT_WORKFLOW)
   const { contract, loading, error, loadDemo, run } = useContract()
   const { theme, toggle } = useTheme()
 
@@ -47,7 +40,7 @@ export default function App() {
           <div>
             <div className="text-sm font-bold leading-none">ADK Orchestrator</div>
             <div className="text-[11px] text-muted-foreground leading-none mt-0.5">
-              React — Stage 1 · AI Elements Messages
+              Workspace de execução multiagente
             </div>
           </div>
         </div>
@@ -55,10 +48,6 @@ export default function App() {
         <div className="flex items-center gap-3">
           {/* Theme toggle */}
           <ThemeToggle theme={theme} onToggle={toggle} />
-          {/* Stage badge */}
-          <span className="text-[10px] font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-            Estágio 3
-          </span>
           <a
             href="/"
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -92,7 +81,7 @@ export default function App() {
               'focus:outline-none focus:border-primary/60',
             )}
           >
-            {WORKFLOWS.map(w => (
+            {WORKFLOW_OPTIONS.map(w => (
               <option key={w.value} value={w.value} className="bg-card">
                 {w.label}
               </option>
@@ -140,7 +129,7 @@ export default function App() {
               </span>
               {contract.metrics?.duration_ms != null && (
                 <span className="text-[11px] text-muted-foreground">
-                  {(contract.metrics.duration_ms / 1000).toFixed(2)}s
+                  {formatDuration(contract.metrics.duration_ms)}
                 </span>
               )}
               <span className="text-[11px] text-muted-foreground">
@@ -160,7 +149,7 @@ export default function App() {
               💬
             </div>
             <div>
-              <h2 className="text-lg font-semibold mb-2">Stage 1 — AI Elements Messages</h2>
+              <h2 className="text-lg font-semibold mb-2">Explore uma execução multiagente</h2>
               <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
                 Clique em <strong>Load Demo</strong> para carregar 5 respostas de agentes com{' '}
                 <code className="text-primary text-xs bg-primary/10 px-1 rounded">visibility</code>,{' '}
