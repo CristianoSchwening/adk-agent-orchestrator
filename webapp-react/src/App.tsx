@@ -2,8 +2,9 @@ import { AlertTriangle, Bot, ChevronDown, Clock3, Network, Sparkles } from 'luci
 import { useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ExecutionComposer } from '@/components/layout/ExecutionComposer'
-import { ProgressivePanel } from '@/components/progressive/ProgressivePanel'
 import { EventLoopPanel } from '@/components/EventLoopPanel'
+import { ExecutionViews } from '@/components/workspace/ExecutionViews'
+import { FinalResponsePanel } from '@/components/workspace/FinalResponsePanel'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Badge } from '@/components/ui/badge'
 import { DEFAULT_WORKFLOW, workflowLabel } from '@/config/workflows'
@@ -30,7 +31,6 @@ export default function App() {
     setWorkflow(DEFAULT_WORKFLOW)
   }
 
-  const responses = contract?.progressive_agent_responses ?? []
   const completedSubtasks = contract?.subtasks.filter((subtask) => subtask.status === 'completed').length ?? 0
 
   const topbar = (
@@ -127,14 +127,8 @@ export default function App() {
               </div>
             </section>
 
-            {responses.length ? (
-              <ProgressivePanel responses={responses} />
-            ) : (
-              <section className="surface-panel p-6">
-                <div className="section-label mb-3">Resposta final</div>
-                <p className="whitespace-pre-wrap text-sm leading-7">{contract.task.final_response ?? 'A execução foi concluída sem uma resposta progressiva publicada.'}</p>
-              </section>
-            )}
+            <ExecutionViews contract={contract} />
+            <FinalResponsePanel response={contract.task.final_response} />
 
             <section className="surface-panel overflow-hidden">
               <button className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setAutomationsOpen((open) => !open)}>
