@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import uuid
 from pathlib import Path
@@ -21,7 +22,7 @@ from orchestrator.contracts.dto import (
     AgentVisibleResponse,
     utc_now_iso,
 )
-from orchestrator.loops import STANDARD_QUALITY_RUBRIC, VerificationLoop
+from orchestrator.loops import STANDARD_QUALITY_RUBRIC, EventLoop, VerificationLoop
 from orchestrator.runner.bootstrap import run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
@@ -43,12 +44,30 @@ class RunRequest(BaseModel):
     workflow: str | None = None
 
 
+class ScheduleRequest(BaseModel):
+    objective: str
+    workflow: str = "loop2_verification"
+    interval_seconds: int = 30
+    active: bool = True
+
+
 class StatusResponse(BaseModel):
     status: str
     contract_version: str
     adk_installed: bool
     adk_version: str | None
     certified_adk_version: str
+
+
+event_loop = EventLoop()
+
+
+async def _run_demo_data(objective: str, workflow: str) -> dict[str, Any]:
+    response = await run_demo(RunRequest(objective=objective, workflow=workflow))
+    return json.loads(response.body)
+
+
+event_loop.set_demo_runner(_run_demo_data)
 
 
 @app.get("/api/status")
@@ -541,6 +560,66 @@ async def run_demo(body: RunRequest) -> JSONResponse:
         ]
 
     return JSONResponse(content=data)
+
+
+@app.get("/api/loop3/config")
+async def get_loop3_config() -> dict[str, Any]:
+    return {
+        "webhook_token": event_loop.webhook_token,
+        "webhook_url": f"/api/loop3/webhook/{event_loop.webhook_token}",
+        "schedule": event_loop.schedule.to_dict() if event_loop.schedule else None,
+        "history": [run.to_dict() for run in event_loop.history],
+    }
+
+
+@app.post("/api/loop3/trigger")
+async def trigger_loop3(body: RunRequest) -> dict[str, Any]:
+    objective = body.objective.strip()
+    if not objective:
+        raise HTTPException(status_code=422, detail="objective must not be empty")
+    summary = await event_loop.trigger(
+        objective,
+        body.workflow or "loop2_verification",
+        source="manual",
+    )
+    return summary.to_dict()
+
+
+@app.post("/api/loop3/webhook/{token}")
+async def trigger_loop3_webhook(token: str, body: RunRequest) -> dict[str, Any]:
+    if token != event_loop.webhook_token:
+        raise HTTPException(status_code=404, detail="webhook not found")
+    objective = body.objective.strip()
+    if not objective:
+        raise HTTPException(status_code=422, detail="objective must not be empty")
+    summary = await event_loop.trigger(
+        objective,
+        body.workflow or "loop2_verification",
+        source="webhook",
+    )
+    return summary.to_dict()
+
+
+@app.post("/api/loop3/schedule")
+async def configure_loop3_schedule(body: ScheduleRequest) -> dict[str, Any]:
+    objective = body.objective.strip()
+    if not objective:
+        raise HTTPException(status_code=422, detail="objective must not be empty")
+    if body.interval_seconds < 10:
+        raise HTTPException(status_code=422, detail="interval_seconds must be at least 10")
+    schedule = event_loop.configure_schedule(
+        objective,
+        body.workflow,
+        body.interval_seconds,
+        body.active,
+    )
+    return schedule.to_dict()
+
+
+@app.delete("/api/loop3/schedule")
+async def stop_loop3_schedule() -> dict[str, str]:
+    event_loop.stop_schedule()
+    return {"status": "stopped"}
 
 
 def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:

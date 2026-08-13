@@ -146,15 +146,15 @@ adk-orchestrator-smoke --contract-json "Validar contrato Fase 4"
 
 A versão atual do contrato é `orchestrator.execution.v1` e inclui `task`, `subtasks`, `events`, `metrics`, `decision_metadata` e `artifacts`. Consulte [`docs/contracts/README.md`](docs/contracts/README.md) e o snapshot [`docs/contracts/execution_contract_v1.example.json`](docs/contracts/execution_contract_v1.example.json).
 
-## Webapp UI (Event Log — Estágio 2)
+## Webapp React
 
-A webapp agora é uma SPA React em [`webapp/ui`](webapp/ui) compilada para [`webapp/static/index.html`](webapp/static/index.html) e servida pelo FastAPI em `/`. Os painéis **Subtasks**, **Metrics**, **Decision Audit**, **Event Log** e **Artifacts** usam componentes React/shadcn e Tailwind buildado pelo Vite, sem CDN em produção.
+A aplicação principal é a SPA React em [`webapp-react`](webapp-react), servida pelo FastAPI em `/` e `/app`. Ela oferece execução demo e real, respostas progressivas em Chat/DAG, verificação iterativa e controles event-driven (manual, webhook e agendamento).
 
-Build do bundle React (obrigatório antes de servir o Event Log rico):
+Build do bundle React (obrigatório antes de iniciar o servidor):
 
 ```bash
-cd webapp/ui
-npm install
+cd webapp-react
+npm ci
 npm run build
 ```
 
@@ -164,14 +164,18 @@ Subir o servidor:
 python run_server.py
 ```
 
-Abra `http://localhost:5000` e use **Load Demo** para validar cards expansíveis de tool calls e cards simples para eventos `model`/`error`.
+Abra `http://localhost:5000` e use **Load Demo** para validar a interface sem uma chave de modelo.
 
 Desenvolvimento isolado do painel:
 
 ```bash
-cd webapp/ui
+cd webapp-react
 npm run dev
 ```
+
+O servidor Vite encaminha `/api` para `http://localhost:5000`, portanto mantenha também `python run_server.py` em execução durante o desenvolvimento.
+
+O diretório [`webapp/ui`](webapp/ui) permanece como implementação anterior/especializada do Event Log e gera os artefatos em [`webapp/static`](webapp/static).
 
 ## Executar via CLI própria
 
