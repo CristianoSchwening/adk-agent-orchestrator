@@ -178,12 +178,40 @@ def test_adk_output_schema_requires_workspace_before_result_contractually():
 
 def test_workspace_can_be_disabled_for_plain_agent_outputs():
     from orchestrator.agents import create_root_agent
+    from orchestrator.runner.bootstrap import _extract_final_response
 
     agent = create_root_agent(OrchestratorSettings(workspace_enabled=False))
     router = next(node for node in agent.graph.nodes if node.name == "workflow_router_agent")
 
     assert router.output_schema is None
     assert "WORKSPACE OPERACIONAL VERBALIZADO" not in router.instruction
+    assert (
+        _extract_final_response(
+            "plain Gemini response",
+            objective="test objective",
+            workspace_enabled=False,
+        )
+        == "plain Gemini response"
+    )
+
+
+def test_workspace_enabled_requires_structured_final_response():
+    from orchestrator.runner.bootstrap import _extract_final_response
+
+    assert (
+        _extract_final_response(
+            VALID_RESPONSE,
+            objective="test objective",
+            workspace_enabled=True,
+        )
+        == "operational result"
+    )
+    with pytest.raises(WorkspaceValidationError, match="valid JSON"):
+        _extract_final_response(
+            "plain Gemini response",
+            objective="test objective",
+            workspace_enabled=True,
+        )
 
 
 def test_workspace_schema_is_preserved_on_graph_router():

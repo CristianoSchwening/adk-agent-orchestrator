@@ -157,9 +157,10 @@ async def run_once_contract(
                     event_type=event_type,
                 )
         if event.is_final_response() and event.content and event.content.parts:
-            final_response_text = extract_operational_result(
+            final_response_text = _extract_final_response(
                 event.content.parts[0].text or "",
                 objective=objective,
+                workspace_enabled=runtime.settings.workspace_enabled,
             )
 
     if monitor is not None:
@@ -186,6 +187,16 @@ async def run_once_contract(
         settings=runtime.settings,
         duration_ms=map_duration_ms(started),
     )
+
+
+def _extract_final_response(
+    text: str, *, objective: str, workspace_enabled: bool
+) -> str:
+    """Return plain model text unless the workspace response contract is enabled."""
+
+    if not workspace_enabled:
+        return text
+    return extract_operational_result(text, objective=objective)
 
 
 def _build_workspace_monitor(
