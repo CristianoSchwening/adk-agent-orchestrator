@@ -9,7 +9,7 @@ function getInitialTheme(): Theme {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored === 'light' || stored === 'dark') return stored
   } catch { /* ignore */ }
-  return 'dark'
+  return 'light'
 }
 
 function applyTheme(theme: Theme) {

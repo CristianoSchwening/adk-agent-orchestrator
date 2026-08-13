@@ -7,6 +7,7 @@ interface UseContractReturn {
   error: string | null
   loadDemo: (objective: string, workflow: string) => Promise<void>
   run: (objective: string, workflow: string) => Promise<void>
+  clear: () => void
 }
 
 export function useContract(): UseContractReturn {
@@ -43,5 +44,10 @@ export function useContract(): UseContractReturn {
     [post],
   )
 
-  return { contract, loading, error, loadDemo, run }
+  const clear = useCallback(() => {
+    setContract(null)
+    setError(null)
+  }, [])
+
+  return { contract, loading, error, loadDemo, run, clear }
 }
