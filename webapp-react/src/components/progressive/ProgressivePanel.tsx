@@ -11,6 +11,8 @@ type View = 'chat' | 'dag'
 
 interface ProgressivePanelProps {
   responses: AgentVisibleResponse[]
+  forcedView?: View
+  showViewToggle?: boolean
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -53,8 +55,9 @@ function IterationHeader({ iteration, graderMeta }: {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ProgressivePanel({ responses }: ProgressivePanelProps) {
+export function ProgressivePanel({ responses, forcedView, showViewToggle = true }: ProgressivePanelProps) {
   const [view, setView]             = useState<View>('chat')
+  const activeView = forcedView ?? view
   const [showInternal, setInternal] = useState(true)
 
   const sorted = useMemo(
@@ -152,14 +155,14 @@ export function ProgressivePanel({ responses }: ProgressivePanelProps) {
           <span className="text-[11px] text-muted-foreground">{responses.length} responses</span>
 
           {/* Chat / DAG toggle */}
-          <div className="flex border border-border rounded-md overflow-hidden">
+          {showViewToggle && <div className="flex border border-border rounded-md overflow-hidden">
             {(['chat', 'dag'] as View[]).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={cn(
                   'px-3 py-1 text-[11px] font-semibold transition-colors',
-                  view === v
+                  activeView === v
                     ? 'bg-primary text-white'
                     : 'bg-transparent text-muted-foreground hover:text-foreground',
                 )}
@@ -167,7 +170,7 @@ export function ProgressivePanel({ responses }: ProgressivePanelProps) {
                 {v === 'chat' ? '💬 Chat' : '🔀 DAG'}
               </button>
             ))}
-          </div>
+          </div>}
 
           <Button
             variant={showInternal ? 'outline' : 'ghost'}
@@ -181,7 +184,7 @@ export function ProgressivePanel({ responses }: ProgressivePanelProps) {
       </div>
 
       {/* ── Legend ────────────────────────────────────────────────── */}
-      {view === 'chat' && (
+      {activeView === 'chat' && (
         <div className="px-4 py-2 border-b border-border flex flex-wrap gap-1.5 items-center">
           <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mr-1">Status:</span>
           {(['published', 'superseded', 'draft', 'failed'] as const).map(v => (
@@ -198,7 +201,7 @@ export function ProgressivePanel({ responses }: ProgressivePanelProps) {
       )}
 
       {/* ── Content ───────────────────────────────────────────────── */}
-      {view === 'chat' ? (
+      {activeView === 'chat' ? (
         <div className="p-4 flex flex-col gap-3 max-h-[620px] overflow-y-auto">
           {visible.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
