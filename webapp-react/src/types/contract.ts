@@ -19,9 +19,13 @@ export interface TaskDTO {
   session_id: string
   objective: string
   status: string
-  workflow: string
-  started_at: string
-  finished_at: string | null
+  workflow?: string
+  app_name?: string
+  user_id?: string
+  started_at?: string
+  finished_at?: string | null
+  created_at?: string
+  updated_at?: string
   final_response: string | null
 }
 
@@ -31,9 +35,11 @@ export interface SubtaskDTO {
   agent_name: string | null
   status: string
   workflow: string | null
+  input_summary?: string | null
   output_summary: string | null
   started_at: string | null
   finished_at: string | null
+  error?: string | null
 }
 
 export interface EventDTO {
@@ -71,6 +77,8 @@ export interface ArtifactDTO {
   name: string
   mime_type: string | null
   uri: string | null
+  size_bytes?: number | null
+  metadata?: Record<string, unknown>
 }
 
 export interface ExecutionContractDTO {
