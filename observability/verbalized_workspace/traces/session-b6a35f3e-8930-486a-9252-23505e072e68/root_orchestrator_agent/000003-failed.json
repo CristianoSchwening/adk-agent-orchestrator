@@ -1,0 +1,69 @@
+{
+  "agent": {
+    "name": "root_orchestrator_agent",
+    "role": "agent",
+    "workflow": null
+  },
+  "causality": {},
+  "execution": {},
+  "integrity": {
+    "reasoning_capture": {
+      "is_hidden_chain_of_thought": false,
+      "type": "verbalized_operational_workspace"
+    },
+    "redacted": false,
+    "validation_status": "invalid"
+  },
+  "invocation_id": "e-93c84a7b-228e-4219-a087-bf4f76a4ed99",
+  "lifecycle": {
+    "iteration": null,
+    "phase": "failed",
+    "status": "failed"
+  },
+  "prompt_capture": {
+    "agent_instruction": null,
+    "input_messages": [
+      {
+        "content": "teste",
+        "role": "user"
+      }
+    ],
+    "model_output": null,
+    "session_context": {
+      "contract_version": "orchestrator.execution.v1",
+      "evaluation_dataset": "eval/datasets/phase5_smoke.json",
+      "mcp_server_count": 0,
+      "phase": "phase_5_evaluation_production",
+      "progressive_agent_responses": [],
+      "tool_timeout_seconds": 10.0,
+      "workspace_enabled": true,
+      "workspace_enforcement": "strict",
+      "workspace_schema_version": "orchestrator.verbalized_workspace.v1",
+      "workspace_trace_count": 0,
+      "workspace_trace_root": "observability/verbalized_workspace/traces"
+    },
+    "system_instruction": null,
+    "tool_definitions": []
+  },
+  "schema_version": "orchestrator.verbalized_workspace.v1",
+  "sequence": 3,
+  "session_id": "session-b6a35f3e-8930-486a-9252-23505e072e68",
+  "timestamp": "2026-08-13T19:59:48.703339+00:00",
+  "trace_id": "4528734e-b7fc-4b40-bb3f-7d7eb02b4d02",
+  "workspace": {
+    "assumptions": [],
+    "blockers": [
+      "agent response is not complete valid JSON"
+    ],
+    "criticisms": [],
+    "current_step": null,
+    "decisions": [],
+    "evidence": [],
+    "hypotheses": [],
+    "interpretation": "The runtime stopped the agent after workspace validation failed.",
+    "next_action": "Correct the structured metadata and retry.",
+    "objective": "teste",
+    "plan": [],
+    "uncertainties": []
+  }
+}
