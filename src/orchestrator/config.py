@@ -206,6 +206,11 @@ class OrchestratorSettings:
     app_name: str = "adk-agent-orchestrator"
     user_id: str = "local-user"
     model: str = "gemini-flash-latest"
+    model_retry_attempts: int = 4
+    model_retry_initial_delay_seconds: float = 1.0
+    model_retry_max_delay_seconds: float = 8.0
+    model_retry_exponential_base: float = 2.0
+    model_retry_jitter_seconds: float = 1.0
     tool_timeout_seconds: float = 10.0
     mcp_servers: tuple[MCPServerSettings, ...] = ()
     workspace_enabled: bool = True
@@ -224,6 +229,31 @@ class OrchestratorSettings:
             app_name=os.getenv("ADK_APP_NAME", cls.app_name).strip() or cls.app_name,
             user_id=os.getenv("ADK_USER_ID", cls.user_id).strip() or cls.user_id,
             model=os.getenv("ADK_MODEL", cls.model).strip() or cls.model,
+            model_retry_attempts=_parse_positive_int(
+                os.getenv("ADK_MODEL_RETRY_ATTEMPTS"),
+                cls.model_retry_attempts,
+                "ADK_MODEL_RETRY_ATTEMPTS",
+            ),
+            model_retry_initial_delay_seconds=_parse_positive_float(
+                os.getenv("ADK_MODEL_RETRY_INITIAL_DELAY_SECONDS"),
+                cls.model_retry_initial_delay_seconds,
+                "ADK_MODEL_RETRY_INITIAL_DELAY_SECONDS",
+            ),
+            model_retry_max_delay_seconds=_parse_positive_float(
+                os.getenv("ADK_MODEL_RETRY_MAX_DELAY_SECONDS"),
+                cls.model_retry_max_delay_seconds,
+                "ADK_MODEL_RETRY_MAX_DELAY_SECONDS",
+            ),
+            model_retry_exponential_base=_parse_positive_float(
+                os.getenv("ADK_MODEL_RETRY_EXPONENTIAL_BASE"),
+                cls.model_retry_exponential_base,
+                "ADK_MODEL_RETRY_EXPONENTIAL_BASE",
+            ),
+            model_retry_jitter_seconds=_parse_positive_float(
+                os.getenv("ADK_MODEL_RETRY_JITTER_SECONDS"),
+                cls.model_retry_jitter_seconds,
+                "ADK_MODEL_RETRY_JITTER_SECONDS",
+            ),
             tool_timeout_seconds=_parse_positive_float(
                 os.getenv("ADK_TOOL_TIMEOUT_SECONDS"),
                 cls.tool_timeout_seconds,

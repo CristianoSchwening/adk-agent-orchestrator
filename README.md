@@ -113,6 +113,18 @@ explicitamente durante o bootstrap.
 
 Edite `.env` e configure `GOOGLE_API_KEY` quando quiser executar uma chamada real ao modelo.
 
+Chamadas ao Gemini usam retry no cliente para erros transitórios (`408`, `429` e `5xx`),
+sem repetir o workflow completo. Os valores padrão totalizam quatro tentativas com backoff
+exponencial, jitter e espera máxima de oito segundos. Para ajustar a política:
+
+```bash
+ADK_MODEL_RETRY_ATTEMPTS="4"
+ADK_MODEL_RETRY_INITIAL_DELAY_SECONDS="1"
+ADK_MODEL_RETRY_MAX_DELAY_SECONDS="8"
+ADK_MODEL_RETRY_EXPONENTIAL_BASE="2"
+ADK_MODEL_RETRY_JITTER_SECONDS="1"
+```
+
 ## Executar testes e checks
 
 ```bash

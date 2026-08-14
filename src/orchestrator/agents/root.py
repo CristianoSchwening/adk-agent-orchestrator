@@ -7,6 +7,7 @@ from typing import Any
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
+from orchestrator.model import create_gemini_model
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
 from orchestrator.workspace import AGENT_STEP_RESPONSE_SCHEMA, with_workspace_instruction
 
@@ -49,7 +50,7 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     Workflow, FunctionNode, _, Edge, START = load_workflow_classes()
     phase2_workflows = create_phase2_workflows(resolved_settings)
     kwargs: dict[str, Any] = {
-        "model": resolved_settings.model,
+        "model": create_gemini_model(resolved_settings),
         "name": "workflow_router_agent",
         "description": "Selects one graph workflow for the current objective.",
         "instruction": (
