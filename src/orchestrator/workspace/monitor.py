@@ -53,6 +53,7 @@ class WorkspaceMonitor:
         model_output: str,
         invocation_id: str | None = None,
         event_type: str = "model",
+        event_diagnostic: str | None = None,
     ) -> None:
         if agent_name not in self.started_agents:
             self._save(
@@ -82,6 +83,15 @@ class WorkspaceMonitor:
                 ),
                 model_output=model_output,
                 invocation_id=invocation_id,
+            )
+            return
+        if not model_output.strip():
+            detail = f" ({event_diagnostic})" if event_diagnostic else ""
+            self._violate(
+                agent_name,
+                f"agent returned an empty textual response{detail}",
+                model_output,
+                invocation_id,
             )
             return
         try:
@@ -207,10 +217,14 @@ class WorkspaceMonitor:
 
 
 def parse_agent_step(text: str, *, objective: str) -> tuple[VerbalizedWorkspace, str]:
+    if not (text or "").strip():
+        raise WorkspaceValidationError("agent returned an empty textual response")
     try:
         value = json.loads(text or "")
     except json.JSONDecodeError as exc:
-        raise WorkspaceValidationError("agent response is not complete valid JSON") from exc
+        raise WorkspaceValidationError(
+            f"agent response is malformed JSON at line {exc.lineno}, column {exc.colno}"
+        ) from exc
     if not isinstance(value, dict) or set(value) != {"workspace", "result"}:
         raise WorkspaceValidationError(
             "agent response must contain exactly workspace and result"
