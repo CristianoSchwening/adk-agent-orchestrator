@@ -1,0 +1,13 @@
+{
+  "agents": {
+    "root_orchestrator_agent": {
+      "last_phase": "failed",
+      "last_trace_id": "b711e455-99ec-4423-87df-4adab790cbe2",
+      "snapshot_count": 3
+    }
+  },
+  "schema_version": "orchestrator.verbalized_workspace.v1",
+  "session_id": "session-61fb0238-8b47-4592-9b99-5f1374fd4478",
+  "snapshot_count": 3,
+  "updated_at": "2026-08-14T01:26:54.402977+00:00"
+}
