@@ -3,9 +3,13 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 import uvicorn
+from dotenv import load_dotenv
+
+REPOSITORY_ROOT = Path(__file__).resolve().parent
+load_dotenv(REPOSITORY_ROOT / ".env")
+
+sys.path.insert(0, str(REPOSITORY_ROOT / "src"))
 
 if __name__ == "__main__":
     uvicorn.run(
