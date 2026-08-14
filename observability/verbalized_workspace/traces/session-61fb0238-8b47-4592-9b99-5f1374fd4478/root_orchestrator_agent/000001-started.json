@@ -1,0 +1,67 @@
+{
+  "agent": {
+    "name": "root_orchestrator_agent",
+    "role": "agent",
+    "workflow": null
+  },
+  "causality": {},
+  "execution": {},
+  "integrity": {
+    "reasoning_capture": {
+      "is_hidden_chain_of_thought": false,
+      "type": "verbalized_operational_workspace"
+    },
+    "redacted": false,
+    "validation_status": "valid"
+  },
+  "invocation_id": "e-20b9c6aa-ab9c-459d-aac8-82dade3fccd2",
+  "lifecycle": {
+    "iteration": null,
+    "phase": "started",
+    "status": "running"
+  },
+  "prompt_capture": {
+    "agent_instruction": null,
+    "input_messages": [
+      {
+        "content": "qual a capital de brasilia",
+        "role": "user"
+      }
+    ],
+    "model_output": null,
+    "session_context": {
+      "contract_version": "orchestrator.execution.v1",
+      "evaluation_dataset": "eval/datasets/phase5_smoke.json",
+      "mcp_server_count": 0,
+      "phase": "phase_5_evaluation_production",
+      "progressive_agent_responses": [],
+      "tool_timeout_seconds": 10.0,
+      "workspace_enabled": true,
+      "workspace_enforcement": "strict",
+      "workspace_schema_version": "orchestrator.verbalized_workspace.v1",
+      "workspace_trace_count": 0,
+      "workspace_trace_root": "observability/verbalized_workspace/traces"
+    },
+    "system_instruction": null,
+    "tool_definitions": []
+  },
+  "schema_version": "orchestrator.verbalized_workspace.v1",
+  "sequence": 1,
+  "session_id": "session-61fb0238-8b47-4592-9b99-5f1374fd4478",
+  "timestamp": "2026-08-14T01:26:54.373617+00:00",
+  "trace_id": "e97b7ed0-55d1-443a-95fb-075843c63b5a",
+  "workspace": {
+    "assumptions": [],
+    "blockers": [],
+    "criticisms": [],
+    "current_step": "Process the assigned objective.",
+    "decisions": [],
+    "evidence": [],
+    "hypotheses": [],
+    "interpretation": "Agent invocation started.",
+    "next_action": "Produce a structured verbalized workspace.",
+    "objective": "qual a capital de brasilia",
+    "plan": [],
+    "uncertainties": []
+  }
+}
