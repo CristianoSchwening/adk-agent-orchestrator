@@ -150,11 +150,17 @@ async def run_once_contract(
                 "tool_call",
                 "tool_response",
             }:
+                model_output = _runtime_event_text(event)
+                # ADK can emit non-partial bookkeeping/model events without a textual part.
+                # They are not agent answers and must not fail strict workspace validation.
+                if event_type == "model" and not model_output:
+                    continue
                 monitor.observe(
                     agent_name=str(getattr(event, "author", None) or "root_orchestrator_agent"),
-                    model_output=_runtime_event_text(event),
+                    model_output=model_output,
                     invocation_id=getattr(event, "invocation_id", None),
                     event_type=event_type,
+                    event_diagnostic=_runtime_event_diagnostic(event),
                 )
         if event.is_final_response() and event.content and event.content.parts:
             final_response_text = _extract_final_response(
@@ -299,6 +305,17 @@ def _runtime_event_text(event: Any) -> str:
     if parts:
         return "".join(str(getattr(part, "text", None) or "") for part in parts).strip()
     return str(getattr(event, "message", None) or "")
+
+
+def _runtime_event_diagnostic(event: Any) -> str | None:
+    """Return safe provider/ADK termination details without serializing the full event."""
+
+    details: list[str] = []
+    for name in ("finish_reason", "error_code", "error_message", "turn_complete", "interrupted"):
+        value = getattr(event, name, None)
+        if value not in (None, "", False):
+            details.append(f"{name}={value}")
+    return ", ".join(details) or None
 
 
 def _workspace_contract_events(monitor: WorkspaceMonitor) -> list[dict[str, Any]]:

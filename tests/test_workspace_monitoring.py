@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -54,7 +55,7 @@ def test_extracts_workspace_and_operational_result():
 
 
 def test_rejects_partial_or_extra_json_before_exposing_result():
-    with pytest.raises(WorkspaceValidationError, match="complete"):
+    with pytest.raises(WorkspaceValidationError, match="malformed JSON"):
         extract_operational_result('{"workspace":')
 
     payload = json.loads(VALID_RESPONSE)
@@ -72,12 +73,38 @@ def test_strict_monitor_rejects_missing_workspace(tmp_path):
         mode="strict",
     )
 
-    with pytest.raises(WorkspaceValidationError, match="valid JSON"):
+    with pytest.raises(WorkspaceValidationError, match="malformed JSON"):
         monitor.observe(agent_name="planner", model_output="plain output")
 
     violation = tmp_path / "traces" / "session-1" / "planner" / "000002-violation.json"
     assert violation.exists()
     assert (tmp_path / "traces" / "session-1" / "planner" / "000003-failed.json").exists()
+
+
+def test_strict_monitor_reports_empty_response_with_provider_diagnostic(tmp_path):
+    repository = FileWorkspaceRepository(tmp_path / "traces", repository_root=tmp_path)
+    monitor = WorkspaceMonitor(
+        session_id="session-empty",
+        objective="objective",
+        repository=repository,
+        mode="strict",
+    )
+
+    with pytest.raises(
+        WorkspaceValidationError,
+        match="empty textual response.*finish_reason=SAFETY",
+    ):
+        monitor.observe(
+            agent_name="root",
+            model_output="",
+            event_type="final_response",
+            event_diagnostic="finish_reason=SAFETY",
+        )
+
+    violation = tmp_path / "traces" / "session-empty" / "root" / "000002-violation.json"
+    payload = json.loads(violation.read_text(encoding="utf-8"))
+    assert payload["prompt_capture"]["model_output"] == ""
+    assert "finish_reason=SAFETY" in payload["workspace"]["blockers"][0]
 
 
 def test_audit_monitor_persists_full_prompt_and_lifecycle(tmp_path):
@@ -206,12 +233,32 @@ def test_workspace_enabled_requires_structured_final_response():
         )
         == "operational result"
     )
-    with pytest.raises(WorkspaceValidationError, match="valid JSON"):
+    with pytest.raises(WorkspaceValidationError, match="malformed JSON"):
         _extract_final_response(
             "plain Gemini response",
             objective="test objective",
             workspace_enabled=True,
         )
+
+
+def test_runtime_event_diagnostic_preserves_provider_termination_details():
+    from orchestrator.runner.bootstrap import _runtime_event_diagnostic
+
+    event = SimpleNamespace(
+        finish_reason="MAX_TOKENS",
+        error_code="MODEL_OUTPUT_LIMIT",
+        error_message="Response stopped before completion",
+        turn_complete=True,
+        interrupted=False,
+    )
+
+    diagnostic = _runtime_event_diagnostic(event)
+
+    assert diagnostic is not None
+    assert "finish_reason=MAX_TOKENS" in diagnostic
+    assert "error_code=MODEL_OUTPUT_LIMIT" in diagnostic
+    assert "error_message=Response stopped before completion" in diagnostic
+    assert "turn_complete=True" in diagnostic
 
 
 def test_workspace_schema_is_preserved_on_graph_router():
