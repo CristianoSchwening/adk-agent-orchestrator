@@ -22,12 +22,65 @@ def test_settings_from_env(monkeypatch):
     monkeypatch.setenv("ADK_APP_NAME", "custom-app")
     monkeypatch.setenv("ADK_USER_ID", "user-123")
     monkeypatch.setenv("ADK_MODEL", "gemini-test-model")
+    monkeypatch.setenv("ADK_MODEL_RETRY_ATTEMPTS", "5")
+    monkeypatch.setenv("ADK_MODEL_RETRY_INITIAL_DELAY_SECONDS", "0.5")
+    monkeypatch.setenv("ADK_MODEL_RETRY_MAX_DELAY_SECONDS", "12")
 
     settings = OrchestratorSettings.from_env()
 
     assert settings.app_name == "custom-app"
     assert settings.user_id == "user-123"
     assert settings.model == "gemini-test-model"
+    assert settings.model_retry_attempts == 5
+    assert settings.model_retry_initial_delay_seconds == 0.5
+    assert settings.model_retry_max_delay_seconds == 12
+
+
+def test_gemini_model_uses_bounded_transient_retry_policy():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.model import TRANSIENT_HTTP_STATUS_CODES, create_gemini_model
+
+    model = create_gemini_model(
+        OrchestratorSettings(
+            model="gemini-flash-latest",
+            model_retry_attempts=4,
+            model_retry_initial_delay_seconds=1.0,
+            model_retry_max_delay_seconds=8.0,
+            model_retry_exponential_base=2.0,
+            model_retry_jitter_seconds=1.0,
+        )
+    )
+
+    assert model.model == "gemini-flash-latest"
+    assert model.retry_options.attempts == 4
+    assert model.retry_options.initial_delay == 1.0
+    assert model.retry_options.max_delay == 8.0
+    assert model.retry_options.exp_base == 2.0
+    assert model.retry_options.jitter == 1.0
+    assert model.retry_options.http_status_codes == TRANSIENT_HTTP_STATUS_CODES
+
+
+def test_all_llm_agents_receive_retrying_gemini_model():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_phase2_workflows, create_root_agent
+
+    settings = OrchestratorSettings(model="gemini-flash-latest", model_retry_attempts=3)
+    workflows = create_phase2_workflows(settings)
+    root = create_root_agent(settings)
+    agents = [
+        node
+        for workflow in workflows.values()
+        for node in _workflow_nodes(workflow)
+        if hasattr(node, "model")
+    ]
+    agents.extend(node for node in _workflow_nodes(root) if hasattr(node, "model"))
+
+    assert agents
+    assert all(agent.model.retry_options.attempts == 3 for agent in agents)
 
 
 def test_tools_return_structured_payloads():

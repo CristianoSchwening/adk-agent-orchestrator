@@ -13,6 +13,7 @@ from typing import Any
 
 from orchestrator.adk_compat import load_agent_class
 from orchestrator.config import OrchestratorSettings
+from orchestrator.model import create_gemini_model
 from orchestrator.tools import (
     describe_model_request,
     extract_document_outline,
@@ -41,7 +42,7 @@ def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..
         disallow_transfer_to_peers: bool | None = None,
     ) -> Any:
         kwargs: dict[str, Any] = {
-            "model": settings.model,
+            "model": create_gemini_model(settings),
             "name": name,
             "description": description,
             "instruction": (
