@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from orchestrator.agents import PHASE_2_WORKFLOW_NAMES
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts.dto import (
     CONTRACT_VERSION,
@@ -61,6 +62,11 @@ class StatusResponse(BaseModel):
 
 event_loop = EventLoop()
 
+RUN_WORKFLOW_ALIASES = {
+    # Legacy UI name for the closest production ADK workflow.
+    "loop2_verification": "iterative_refinement",
+}
+
 
 async def _run_demo_data(objective: str, workflow: str) -> dict[str, Any]:
     response = await run_demo(RunRequest(objective=objective, workflow=workflow))
@@ -94,15 +100,32 @@ async def run_objective(body: RunRequest) -> JSONResponse:
         raise HTTPException(status_code=422, detail="objective must not be empty")
 
     settings = OrchestratorSettings.from_env()
+    requested_workflow = (body.workflow or "").strip() or None
+    workflow = RUN_WORKFLOW_ALIASES.get(requested_workflow, requested_workflow)
+    if workflow == "auto":
+        workflow = None
+    if workflow is not None and workflow not in PHASE_2_WORKFLOW_NAMES:
+        supported = ["auto", *PHASE_2_WORKFLOW_NAMES, *RUN_WORKFLOW_ALIASES]
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": f"unsupported workflow '{requested_workflow}'",
+                "supported_workflows": supported,
+            },
+        )
 
     try:
-        contract = await run_once_contract(objective, settings=settings)
+        contract = await run_once_contract(
+            objective,
+            settings=settings,
+            workflow=workflow,
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     data = contract.to_dict()
 
-    if body.workflow == "progressive_multi_agent_response":
+    if contract.decision_metadata.selected_workflow == "progressive_multi_agent_response":
         data["progressive_agent_responses"] = _build_progressive_responses(contract)
 
     return JSONResponse(content=data)

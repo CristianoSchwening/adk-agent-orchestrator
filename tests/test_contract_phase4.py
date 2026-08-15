@@ -39,6 +39,28 @@ def test_initial_session_state_tracks_phase4_contract_version():
     assert state["progressive_agent_responses"] == []
 
 
+def test_empty_initial_workflow_collections_do_not_select_a_workflow():
+    contract = map_adk_execution(
+        session={"session_id": "empty", "state": initial_session_state(OrchestratorSettings())},
+        events=[],
+        objective="Aguardando roteamento",
+        final_response="",
+        settings=OrchestratorSettings(),
+    )
+
+    assert contract.decision_metadata.selected_workflow is None
+
+
+def test_explicit_workflow_is_recorded_in_initial_session_state():
+    state = initial_session_state(
+        OrchestratorSettings(),
+        selected_workflow="parallel",
+    )
+
+    assert state["workflow"] == "parallel"
+    assert state["selected_workflow"] == "parallel"
+
+
 def test_status_reports_contract_capabilities():
     status = get_orchestrator_status()
 

@@ -80,3 +80,63 @@ def test_loop3_schedule_rejects_short_interval() -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_run_routes_requested_workflow_to_runtime(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from orchestrator import server
+
+    captured: dict[str, str | None] = {}
+
+    async def fake_run_once_contract(objective, *, settings, workflow):
+        captured["objective"] = objective
+        captured["workflow"] = workflow
+        return SimpleNamespace(
+            decision_metadata=SimpleNamespace(selected_workflow=workflow),
+            to_dict=lambda: {
+                "decision_metadata": {"selected_workflow": workflow},
+                "progressive_agent_responses": [],
+            },
+        )
+
+    monkeypatch.setattr(server, "run_once_contract", fake_run_once_contract)
+    response = client.post(
+        "/api/run",
+        json={"objective": "Qual a capital de Brasilia?", "workflow": "parallel"},
+    )
+
+    assert response.status_code == 200
+    assert captured == {
+        "objective": "Qual a capital de Brasilia?",
+        "workflow": "parallel",
+    }
+
+
+def test_run_maps_legacy_verification_name_to_iterative_workflow(monkeypatch) -> None:
+    from orchestrator import server
+
+    captured: dict[str, str | None] = {}
+
+    async def fake_run_once_contract(objective, *, settings, workflow):
+        captured["workflow"] = workflow
+        raise RuntimeError("stop after routing")
+
+    monkeypatch.setattr(server, "run_once_contract", fake_run_once_contract)
+    response = client.post(
+        "/api/run",
+        json={"objective": "Teste", "workflow": "loop2_verification"},
+    )
+
+    assert response.status_code == 500
+    assert captured["workflow"] == "iterative_refinement"
+
+
+def test_run_rejects_unknown_workflow_before_runtime() -> None:
+    response = client.post(
+        "/api/run",
+        json={"objective": "Teste", "workflow": "unknown"},
+    )
+
+    assert response.status_code == 422
+    assert "supported_workflows" in response.json()["detail"]
