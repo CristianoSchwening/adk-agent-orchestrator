@@ -15,7 +15,11 @@ from orchestrator.adk_compat import (
     load_content_classes,
     load_runtime_classes,
 )
-from orchestrator.agents import PHASE_2_WORKFLOW_NAMES, create_root_agent
+from orchestrator.agents import (
+    PHASE_2_WORKFLOW_NAMES,
+    create_phase2_workflows,
+    create_root_agent,
+)
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts import ExecutionContractDTO
 from orchestrator.mapping.adk import map_adk_execution, map_duration_ms
@@ -39,9 +43,14 @@ class AdkRuntime:
     runner: Any
     session_service: Any
     artifact_service: Any
+    selected_workflow: str | None = None
 
 
-def build_runtime(settings: OrchestratorSettings | None = None) -> AdkRuntime:
+def build_runtime(
+    settings: OrchestratorSettings | None = None,
+    *,
+    workflow: str | None = None,
+) -> AdkRuntime:
     """Build a Runner with in-memory Session and Artifact services.
 
     This uses the official ADK Runner with one ADK root agent, in-memory
@@ -53,7 +62,15 @@ def build_runtime(settings: OrchestratorSettings | None = None) -> AdkRuntime:
     logger.info("Starting orchestrator with certified google-adk version %s", adk_version)
     App, Runner, InMemorySessionService, InMemoryArtifactService = load_runtime_classes()
 
-    root_agent = create_root_agent(resolved_settings)
+    if workflow is not None and workflow not in PHASE_2_WORKFLOW_NAMES:
+        supported = ", ".join(PHASE_2_WORKFLOW_NAMES)
+        raise ValueError(f"unsupported workflow '{workflow}'; expected one of: {supported}")
+
+    root_agent = (
+        create_phase2_workflows(resolved_settings)[workflow]
+        if workflow is not None
+        else create_root_agent(resolved_settings)
+    )
     app = App(name=resolved_settings.app_name, root_agent=root_agent)
     session_service = InMemorySessionService()
     artifact_service = InMemoryArtifactService()
@@ -69,13 +86,18 @@ def build_runtime(settings: OrchestratorSettings | None = None) -> AdkRuntime:
         runner=runner,
         session_service=session_service,
         artifact_service=artifact_service,
+        selected_workflow=workflow,
     )
 
 
-def initial_session_state(settings: OrchestratorSettings) -> dict[str, object]:
+def initial_session_state(
+    settings: OrchestratorSettings,
+    *,
+    selected_workflow: str | None = None,
+) -> dict[str, object]:
     """Return the initial ADK session state tracked by the public contract."""
 
-    return {
+    state: dict[str, object] = {
         "phase": "phase_5_evaluation_production",
         "contract_version": "orchestrator.execution.v1",
         "tool_timeout_seconds": settings.tool_timeout_seconds,
@@ -88,6 +110,10 @@ def initial_session_state(settings: OrchestratorSettings) -> dict[str, object]:
         "workspace_trace_root": settings.workspace_root,
         "workspace_trace_count": 0,
     }
+    if selected_workflow is not None:
+        state["workflow"] = selected_workflow
+        state["selected_workflow"] = selected_workflow
+    return state
 
 
 async def _create_session(runtime: AdkRuntime, session_id: str) -> Any:
@@ -97,7 +123,10 @@ async def _create_session(runtime: AdkRuntime, session_id: str) -> Any:
         app_name=runtime.settings.app_name,
         user_id=runtime.settings.user_id,
         session_id=session_id,
-        state=initial_session_state(runtime.settings),
+        state=initial_session_state(
+            runtime.settings,
+            selected_workflow=runtime.selected_workflow,
+        ),
     )
 
 
@@ -106,10 +135,16 @@ async def run_once(
     *,
     settings: OrchestratorSettings | None = None,
     session_id: str | None = None,
+    workflow: str | None = None,
 ) -> str:
     """Execute one user objective through the ADK Runner and return final text."""
 
-    contract = await run_once_contract(objective, settings=settings, session_id=session_id)
+    contract = await run_once_contract(
+        objective,
+        settings=settings,
+        session_id=session_id,
+        workflow=workflow,
+    )
     return contract.task.final_response or ""
 
 
@@ -118,11 +153,12 @@ async def run_once_contract(
     *,
     settings: OrchestratorSettings | None = None,
     session_id: str | None = None,
+    workflow: str | None = None,
 ) -> ExecutionContractDTO:
     """Execute one objective and return the versioned UI/API execution contract."""
 
     started = perf_counter()
-    runtime = build_runtime(settings)
+    runtime = build_runtime(settings, workflow=workflow)
     resolved_session_id = session_id or f"session-{uuid4()}"
     session = await _create_session(runtime, resolved_session_id)
 
@@ -201,7 +237,10 @@ async def run_once_contract(
             "session_id": resolved_session_id,
             "app_name": runtime.settings.app_name,
             "user_id": runtime.settings.user_id,
-            "state": initial_session_state(runtime.settings),
+            "state": initial_session_state(
+                runtime.settings,
+                selected_workflow=runtime.selected_workflow,
+            ),
         },
         events=events,
         objective=objective,
@@ -238,7 +277,10 @@ def _build_workspace_monitor(
         mode=runtime.settings.workspace_mode,
         agent_instructions=_agent_instruction_registry(runtime.root_agent),
         agent_tools=_agent_tool_registry(runtime.root_agent),
-        session_context=initial_session_state(runtime.settings),
+        session_context=initial_session_state(
+            runtime.settings,
+            selected_workflow=runtime.selected_workflow,
+        ),
     )
 
 

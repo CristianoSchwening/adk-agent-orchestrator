@@ -167,9 +167,15 @@ def _selected_workflow(state: dict[str, Any]) -> str | None:
     if workflow:
         return str(workflow)
     for key in WORKFLOW_STATE_KEYS:
-        if key in state:
+        if _has_material_value(state.get(key)):
             return WORKFLOW_STATE_KEYS[key][0]
     return None
+
+
+def _has_material_value(value: Any) -> bool:
+    """Return whether a state value represents produced workflow output."""
+
+    return value is not None and value != "" and value != [] and value != {}
 
 
 def _map_event(event: Any, index: int) -> EventDTO:
