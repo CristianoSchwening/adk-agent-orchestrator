@@ -16,6 +16,7 @@ from orchestrator.workspace import (
     WorkspaceValidationError,
     extract_operational_result,
     extract_workspace,
+    parse_agent_step,
 )
 from orchestrator.workspace.models import (
     AgentIdentity,
@@ -259,6 +260,45 @@ def test_runtime_event_diagnostic_preserves_provider_termination_details():
     assert "error_code=MODEL_OUTPUT_LIMIT" in diagnostic
     assert "error_message=Response stopped before completion" in diagnostic
     assert "turn_complete=True" in diagnostic
+
+
+def test_router_bare_route_is_normalized_to_workspace_contract():
+    from orchestrator.runner.bootstrap import _normalize_router_output
+
+    normalized = _normalize_router_output(
+        '"sequential"',
+        agent_name="workflow_router_agent",
+        event_type="final_response",
+        objective="answer a simple question",
+    )
+    workspace, result = parse_agent_step(normalized, objective="fallback")
+
+    assert result == "sequential"
+    assert workspace.objective == "answer a simple question"
+    assert workspace.decisions[0]["selected_workflow"] == "sequential"
+
+
+def test_router_normalizer_preserves_complete_or_invalid_outputs():
+    from orchestrator.runner.bootstrap import _normalize_router_output
+
+    assert _normalize_router_output(
+        VALID_RESPONSE,
+        agent_name="workflow_router_agent",
+        event_type="model",
+        objective="objective",
+    ) == VALID_RESPONSE
+    assert _normalize_router_output(
+        '"unknown_workflow"',
+        agent_name="workflow_router_agent",
+        event_type="model",
+        objective="objective",
+    ) == '"unknown_workflow"'
+    assert _normalize_router_output(
+        '"sequential"',
+        agent_name="planner_agent",
+        event_type="model",
+        objective="objective",
+    ) == '"sequential"'
 
 
 def test_workspace_schema_is_preserved_on_graph_router():
