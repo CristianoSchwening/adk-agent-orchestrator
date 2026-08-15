@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,7 +15,7 @@ from orchestrator.adk_compat import (
     load_content_classes,
     load_runtime_classes,
 )
-from orchestrator.agents import create_root_agent
+from orchestrator.agents import PHASE_2_WORKFLOW_NAMES, create_root_agent
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts import ExecutionContractDTO
 from orchestrator.mapping.adk import map_adk_execution, map_duration_ms
@@ -150,21 +151,36 @@ async def run_once_contract(
                 "tool_call",
                 "tool_response",
             }:
-                model_output = _runtime_event_text(event)
+                agent_name = str(
+                    getattr(event, "author", None) or "root_orchestrator_agent"
+                )
+                model_output = _normalize_router_output(
+                    _runtime_event_text(event),
+                    agent_name=agent_name,
+                    event_type=event_type,
+                    objective=objective,
+                )
                 # ADK can emit non-partial bookkeeping/model events without a textual part.
                 # They are not agent answers and must not fail strict workspace validation.
                 if event_type == "model" and not model_output:
                     continue
                 monitor.observe(
-                    agent_name=str(getattr(event, "author", None) or "root_orchestrator_agent"),
+                    agent_name=agent_name,
                     model_output=model_output,
                     invocation_id=getattr(event, "invocation_id", None),
                     event_type=event_type,
                     event_diagnostic=_runtime_event_diagnostic(event),
                 )
         if event.is_final_response() and event.content and event.content.parts:
-            final_response_text = _extract_final_response(
+            agent_name = str(getattr(event, "author", None) or "root_orchestrator_agent")
+            final_output = _normalize_router_output(
                 event.content.parts[0].text or "",
+                agent_name=agent_name,
+                event_type="final_response",
+                objective=objective,
+            )
+            final_response_text = _extract_final_response(
+                final_output,
                 objective=objective,
                 workspace_enabled=runtime.settings.workspace_enabled,
             )
@@ -305,6 +321,56 @@ def _runtime_event_text(event: Any) -> str:
     if parts:
         return "".join(str(getattr(part, "text", None) or "") for part in parts).strip()
     return str(getattr(event, "message", None) or "")
+
+
+def _normalize_router_output(
+    text: str,
+    *,
+    agent_name: str,
+    event_type: str,
+    objective: str,
+) -> str:
+    """Wrap a valid bare workflow route in the operational workspace contract."""
+
+    if agent_name != "workflow_router_agent" or event_type not in {
+        "model",
+        "final_response",
+    }:
+        return text
+
+    candidate = text.strip()
+    try:
+        decoded = json.loads(candidate)
+    except json.JSONDecodeError:
+        decoded = candidate
+    if not isinstance(decoded, str) or decoded not in PHASE_2_WORKFLOW_NAMES:
+        return text
+
+    return json.dumps(
+        {
+            "workspace": {
+                "objective": objective,
+                "interpretation": "Select the workflow that best matches the objective.",
+                "current_step": "Route the objective to a workflow.",
+                "plan": [],
+                "assumptions": [],
+                "hypotheses": [],
+                "evidence": [],
+                "decisions": [
+                    {
+                        "type": "workflow_route",
+                        "selected_workflow": decoded,
+                    }
+                ],
+                "uncertainties": [],
+                "blockers": [],
+                "criticisms": [],
+                "next_action": f"Execute the {decoded} workflow.",
+            },
+            "result": decoded,
+        },
+        ensure_ascii=False,
+    )
 
 
 def _runtime_event_diagnostic(event: Any) -> str | None:
