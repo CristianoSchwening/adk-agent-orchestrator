@@ -7,6 +7,8 @@ assembles graph workflows with the public ``google.adk.workflow`` API.
 
 from __future__ import annotations
 
+import json
+from datetime import datetime, timezone
 from typing import Any
 
 from orchestrator.adk_compat import load_workflow_classes
@@ -508,6 +510,85 @@ def _agent_visible_response_contract_template() -> dict[str, Any]:
     }
 
 
+def _progressive_response_payload(value: Any) -> dict[str, Any]:
+    """Extract one specialist response from ADK content or structured text."""
+
+    parts = getattr(value, "parts", None) or []
+    text = "".join(str(getattr(part, "text", "") or "") for part in parts)
+    raw: Any = (text or value) if not isinstance(value, dict) else value
+    if isinstance(raw, str):
+        candidate = raw.strip()
+        if candidate.startswith("```"):
+            lines = candidate.splitlines()
+            candidate = "\n".join(lines[1:-1]).strip() if len(lines) > 2 else candidate
+        try:
+            raw = json.loads(candidate)
+        except json.JSONDecodeError:
+            return {"content": candidate}
+    if not isinstance(raw, dict):
+        return {"content": str(raw)}
+    if isinstance(raw.get("workspace"), dict) and "result" in raw:
+        return _progressive_response_payload(raw["result"])
+    return raw
+
+
+def _progressive_publish_node(
+    *,
+    name: str,
+    source_key: str,
+    response_id: str,
+    agent_name: str,
+    default_role: str,
+    publication_order: int,
+    depends_on_response_ids: list[str],
+) -> Any:
+    """Publish one response immediately after its specialist completes."""
+
+    _, FunctionNode, _, _, _ = load_workflow_classes()
+
+    def publish(ctx: Any, node_input: Any) -> Any:
+        payload = _progressive_response_payload(ctx.state.get(source_key, node_input))
+        raw_metadata = payload.get("metadata")
+        metadata = dict(raw_metadata) if isinstance(raw_metadata, dict) else {}
+        response = AgentVisibleResponse(
+            response_id=response_id,
+            agent_name=agent_name,
+            agent_role=str(payload.get("agent_role") or default_role),
+            content=str(payload.get("content") or ""),
+            depends_on_response_ids=list(depends_on_response_ids),
+            visibility=(
+                payload.get("visibility")
+                if payload.get("visibility") in {"internal", "user_visible", "hidden"}
+                else "user_visible"
+            ),
+            status=(
+                payload.get("status")
+                if payload.get("status") in {"draft", "published", "superseded", "failed"}
+                else "published"
+            ),
+            publication_order=publication_order,
+            created_at=str(payload.get("created_at") or datetime.now(timezone.utc).isoformat()),
+            metadata={
+                **metadata,
+                "workflow": "progressive_multi_agent_response",
+                "state_key": "progressive_agent_responses",
+                "published_incrementally": True,
+            },
+        ).to_dict()
+        responses = [
+            item.to_dict() if isinstance(item, AgentVisibleResponse) else item
+            for item in list(ctx.state.get("progressive_agent_responses") or [])
+            if isinstance(item, (dict, AgentVisibleResponse))
+        ]
+        responses = [item for item in responses if item.get("response_id") != response_id]
+        responses.append(response)
+        responses.sort(key=lambda item: int(item.get("publication_order", 0)))
+        ctx.state["progressive_agent_responses"] = responses
+        return node_input
+
+    return FunctionNode(func=publish, name=name)
+
+
 def create_progressive_multi_agent_response_workflow(
     settings: OrchestratorSettings | None = None,
     *,
@@ -530,7 +611,6 @@ def create_progressive_multi_agent_response_workflow(
     progressive_config = resolved_settings.progressive_multi_agent_response
     final_summarizer_mode = progressive_config.final_summarizer_enabled
     final_response_strategy = progressive_config.final_response_strategy
-    final_strategy_instruction = _progressive_final_strategy_instruction(final_response_strategy)
 
     agent_a = llm(
         name="progressive_agent_a",
@@ -600,35 +680,35 @@ def create_progressive_multi_agent_response_workflow(
         disallow_transfer_to_peers=True,
     )
 
-    publisher = llm(
-        name="progressive_response_publisher_agent",
-        description="Normalizes progressive specialist responses into session state.",
-        instruction=f"""
-        Normalize progressive_response_a, progressive_response_b e progressive_response_c
-        em uma lista JSON ordenada de AgentVisibleResponse sob a chave de estado
-        progressive_agent_responses. Cada item deve conter exatamente os campos
-        obrigatórios {required_fields}.
-
-        Preserve autoria, publication_order e causalidade:
-        - response-x não depende de respostas anteriores;
-        - response-z depende de response-x;
-        - response-c depende de response-x e response-z.
-
-        Configuração de finalização:
-        - final_summarizer_enabled={final_summarizer_mode};
-        - final_response_strategy={final_response_strategy};
-        - {final_strategy_instruction}
-
-        Não transforme este modo em AgentHelpRequest/AgentHelpResponse; este workflow é
-        independente e voltado a mensagens sucessivas de especialistas no chat.
-        """,
-        output_key="progressive_agent_responses",
-        parallel_worker=False,
-        disallow_transfer_to_parent=True,
-        disallow_transfer_to_peers=True,
+    publish_a = _progressive_publish_node(
+        name="publish_progressive_response_a",
+        source_key="progressive_response_a",
+        response_id="response-x",
+        agent_name="progressive_agent_a",
+        default_role="planner_specialist",
+        publication_order=1,
+        depends_on_response_ids=[],
+    )
+    publish_b = _progressive_publish_node(
+        name="publish_progressive_response_b",
+        source_key="progressive_response_b",
+        response_id="response-z",
+        agent_name="progressive_agent_b",
+        default_role="research_specialist",
+        publication_order=2,
+        depends_on_response_ids=["response-x"],
+    )
+    publish_c = _progressive_publish_node(
+        name="publish_progressive_response_c",
+        source_key="progressive_response_c",
+        response_id="response-c",
+        agent_name="progressive_agent_c",
+        default_role="synthesis_specialist",
+        publication_order=3,
+        depends_on_response_ids=["response-x", "response-z"],
     )
 
-    nodes = [agent_a, agent_b, agent_c, publisher]
+    nodes = [agent_a, publish_a, agent_b, publish_b, agent_c, publish_c]
     if final_summarizer_mode in {"enabled", "auto"}:
         nodes.append(
             _create_response_chain_summarizer_agent(
