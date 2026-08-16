@@ -1,16 +1,18 @@
-import { Activity, MessagesSquare, Network } from 'lucide-react'
+import { Activity, ListTree, MessagesSquare, Network } from 'lucide-react'
 import { ActivityTimeline } from './ActivityTimeline'
+import { OperationalEventLog } from './event-log/OperationalEventLog'
 import { ProgressivePanel } from '@/components/progressive/ProgressivePanel'
 import { cn } from '@/lib/utils'
 import type { ExecutionContractDTO } from '@/types/contract'
 import { useStoredState } from '@/hooks/useStoredState'
 
-type ExecutionView = 'timeline' | 'chat' | 'dag'
+type ExecutionView = 'timeline' | 'chat' | 'dag' | 'event-log'
 
 const VIEWS = [
   { id: 'timeline' as const, label: 'Timeline', icon: Activity },
   { id: 'chat' as const, label: 'Chat', icon: MessagesSquare },
   { id: 'dag' as const, label: 'DAG', icon: Network },
+  { id: 'event-log' as const, label: 'Event Log', icon: ListTree },
 ]
 
 export function ExecutionViews({ contract }: { contract: ExecutionContractDTO }) {
@@ -27,7 +29,7 @@ export function ExecutionViews({ contract }: { contract: ExecutionContractDTO })
             role="tab"
             aria-selected={view === id}
             aria-controls={`execution-view-${id}`}
-            disabled={!hasResponses && id !== 'timeline'}
+            disabled={!hasResponses && id !== 'timeline' && id !== 'event-log'}
             onClick={() => setView(id)}
             className={cn(
               'focus-ring flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
@@ -47,6 +49,7 @@ export function ExecutionViews({ contract }: { contract: ExecutionContractDTO })
         {view === 'timeline' && <ActivityTimeline events={contract.events} responses={contract.progressive_agent_responses} />}
         {view === 'chat' && <ProgressivePanel responses={contract.progressive_agent_responses} forcedView="chat" showViewToggle={false} />}
         {view === 'dag' && <ProgressivePanel responses={contract.progressive_agent_responses} forcedView="dag" showViewToggle={false} />}
+        {view === 'event-log' && <OperationalEventLog events={contract.events} />}
       </div>
     </section>
   )
