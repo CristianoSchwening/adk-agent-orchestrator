@@ -334,6 +334,7 @@ def create_agent_help_request_workflow(
         parallel_worker=False,
         disallow_transfer_to_parent=True,
         disallow_transfer_to_peers=True,
+        model_role="reasoning",
     )
 
     request_broker = llm(
@@ -401,6 +402,7 @@ def create_agent_help_request_workflow(
         parallel_worker=False,
         disallow_transfer_to_parent=True,
         disallow_transfer_to_peers=True,
+        model_role="finalizer",
     )
 
     return _workflow(
@@ -486,6 +488,7 @@ def _create_response_chain_summarizer_agent(
         parallel_worker=False,
         disallow_transfer_to_parent=True,
         disallow_transfer_to_peers=True,
+        model_role="finalizer",
     )
 
 

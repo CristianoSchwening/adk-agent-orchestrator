@@ -37,6 +37,13 @@ def test_initial_session_state_tracks_phase4_contract_version():
     assert state["contract_version"] == CONTRACT_VERSION
     assert state["tool_timeout_seconds"] == 2.0
     assert state["progressive_agent_responses"] == []
+    assert state["model_basket"] == {
+        "router": "gemini-flash-latest",
+        "reasoning": "gemini-flash-latest",
+        "worker": "gemini-flash-latest",
+        "finalizer": "gemini-flash-latest",
+        "fallback": None,
+    }
 
 
 def test_empty_initial_workflow_collections_do_not_select_a_workflow():
@@ -124,6 +131,41 @@ def test_map_adk_execution_returns_versioned_contract():
     assert contract.decision_metadata.selected_workflow == "sequential"
     assert contract.decision_metadata.confidence == 0.9
     assert contract.artifacts[0].metadata == {"version": "1"}
+
+
+def test_map_adk_execution_reports_model_fallback_metadata():
+    event = FakeEvent(
+        event_id="evt-fallback",
+        event_type="model",
+        message="Resposta pelo fallback.",
+        author="critic_agent",
+        timestamp="2026-05-30T00:00:00+00:00",
+    )
+    object.__setattr__(
+        event,
+        "custom_metadata",
+        {
+            "model_routing": {
+                "role": "reasoning",
+                "requested_model": "gemini-3.5-flash",
+                "used_model": "gemini-3.5-flash-lite",
+                "fallback_used": True,
+                "fallback_reason": "daily_quota_exhausted",
+            }
+        },
+    )
+
+    contract = map_adk_execution(
+        session={"session_id": "fallback", "state": {}},
+        events=[event],
+        objective="Testar fallback",
+        final_response="Resposta pelo fallback.",
+        settings=OrchestratorSettings(),
+    )
+
+    assert contract.events[0].metadata["model_routing"]["fallback_used"] is True
+    assert contract.metrics.custom["model_fallback_count"] == 1
+    assert contract.metrics.custom["models_used"] == ["gemini-3.5-flash-lite"]
 
 
 def test_contract_snapshot_shape_is_stable():

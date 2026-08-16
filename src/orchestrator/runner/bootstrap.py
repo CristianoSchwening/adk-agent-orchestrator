@@ -104,6 +104,7 @@ def initial_session_state(
         "mcp_server_count": len(settings.mcp_servers),
         "evaluation_dataset": "eval/datasets/phase5_smoke.json",
         "progressive_agent_responses": [],
+        "model_basket": settings.resolved_model_basket(),
         "workspace_enabled": settings.workspace_enabled,
         "workspace_schema_version": "orchestrator.verbalized_workspace.v1",
         "workspace_enforcement": settings.workspace_mode,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from types import SimpleNamespace
 
@@ -22,6 +23,11 @@ def test_settings_from_env(monkeypatch):
     monkeypatch.setenv("ADK_APP_NAME", "custom-app")
     monkeypatch.setenv("ADK_USER_ID", "user-123")
     monkeypatch.setenv("ADK_MODEL", "gemini-test-model")
+    monkeypatch.setenv("ADK_MODEL_ROUTER", "gemini-router")
+    monkeypatch.setenv("ADK_MODEL_REASONING", "gemini-reasoning")
+    monkeypatch.setenv("ADK_MODEL_WORKER", "gemini-worker")
+    monkeypatch.setenv("ADK_MODEL_FINALIZER", "gemini-finalizer")
+    monkeypatch.setenv("ADK_MODEL_FALLBACK", "gemini-fallback")
     monkeypatch.setenv("ADK_MODEL_RETRY_ATTEMPTS", "5")
     monkeypatch.setenv("ADK_MODEL_RETRY_INITIAL_DELAY_SECONDS", "0.5")
     monkeypatch.setenv("ADK_MODEL_RETRY_MAX_DELAY_SECONDS", "12")
@@ -31,6 +37,13 @@ def test_settings_from_env(monkeypatch):
     assert settings.app_name == "custom-app"
     assert settings.user_id == "user-123"
     assert settings.model == "gemini-test-model"
+    assert settings.resolved_model_basket() == {
+        "router": "gemini-router",
+        "reasoning": "gemini-reasoning",
+        "worker": "gemini-worker",
+        "finalizer": "gemini-finalizer",
+        "fallback": "gemini-fallback",
+    }
     assert settings.model_retry_attempts == 5
     assert settings.model_retry_initial_delay_seconds == 0.5
     assert settings.model_retry_max_delay_seconds == 12
@@ -60,6 +73,147 @@ def test_gemini_model_uses_bounded_transient_retry_policy():
     assert model.retry_options.exp_base == 2.0
     assert model.retry_options.jitter == 1.0
     assert model.retry_options.http_status_codes == TRANSIENT_HTTP_STATUS_CODES
+
+
+def test_model_basket_falls_back_to_global_model():
+    settings = OrchestratorSettings(model="gemini-global", router_model="gemini-router")
+
+    assert settings.model_for("router") == "gemini-router"
+    assert settings.model_for("reasoning") == "gemini-global"
+    assert settings.model_for("worker") == "gemini-global"
+    assert settings.model_for("finalizer") == "gemini-global"
+    assert settings.resolved_model_basket()["fallback"] is None
+
+
+def test_daily_quota_falls_back_and_opens_primary_circuit():
+    from orchestrator.model import _with_fallback, reset_model_fallback_circuits
+
+    class FakePrimary:
+        model = "gemini-primary"
+
+        def __init__(self):
+            self.calls = 0
+
+        async def generate_content_async(self, llm_request, stream=False):
+            self.calls += 1
+            raise RuntimeError(
+                "429 RESOURCE_EXHAUSTED GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+            )
+            yield  # pragma: no cover
+
+    class FakeFallback:
+        model = "gemini-lite"
+
+        def __init__(self):
+            self.requested_models = []
+
+        async def generate_content_async(self, llm_request, stream=False):
+            self.requested_models.append(llm_request.model)
+            yield SimpleNamespace(custom_metadata=None)
+
+    async def collect(model):
+        request = SimpleNamespace(model=None)
+        return [item async for item in model.generate_content_async(request)]
+
+    reset_model_fallback_circuits()
+    primary = FakePrimary()
+    fallback = FakeFallback()
+    model = _with_fallback(primary, fallback, role="router")
+
+    first = asyncio.run(collect(model))
+    second = asyncio.run(collect(model))
+
+    assert primary.calls == 1
+    assert first[0].custom_metadata["model_routing"] == {
+        "role": "router",
+        "requested_model": "gemini-primary",
+        "used_model": "gemini-lite",
+        "fallback_used": True,
+        "fallback_reason": "daily_quota_exhausted",
+    }
+    assert second[0].custom_metadata["model_routing"]["fallback_reason"] == (
+        "daily_quota_circuit_open"
+    )
+    assert fallback.requested_models == ["gemini-lite", "gemini-lite"]
+    reset_model_fallback_circuits()
+
+
+def test_non_transient_model_error_does_not_fallback():
+    from orchestrator.model import _with_fallback, reset_model_fallback_circuits
+
+    class FakePrimary:
+        model = "gemini-primary"
+
+        async def generate_content_async(self, llm_request, stream=False):
+            raise RuntimeError("400 INVALID_ARGUMENT")
+            yield  # pragma: no cover
+
+    class FakeFallback:
+        model = "gemini-lite"
+
+        async def generate_content_async(self, llm_request, stream=False):
+            raise AssertionError("fallback must not run")
+            yield  # pragma: no cover
+
+    async def collect(model):
+        request = SimpleNamespace(model=None)
+        return [item async for item in model.generate_content_async(request)]
+
+    reset_model_fallback_circuits()
+    model = _with_fallback(FakePrimary(), FakeFallback(), role="reasoning")
+
+    try:
+        asyncio.run(collect(model))
+    except RuntimeError as exc:
+        assert "INVALID_ARGUMENT" in str(exc)
+    else:
+        raise AssertionError("expected primary model error")
+
+
+def test_agents_use_role_specific_models():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_phase2_workflows, create_root_agent
+
+    settings = OrchestratorSettings(
+        model="gemini-global",
+        router_model="gemini-router",
+        reasoning_model="gemini-reasoning",
+        worker_model="gemini-worker",
+        finalizer_model="gemini-finalizer",
+    )
+    workflows = create_phase2_workflows(settings)
+    root = create_root_agent(settings)
+
+    root_models = {
+        node.name: node.model.model
+        for node in _workflow_nodes(root)
+        if hasattr(node, "model")
+    }
+    sequential_models = {
+        node.name: node.model.model
+        for node in _workflow_nodes(workflows["sequential"])
+        if hasattr(node, "model")
+    }
+    help_models = {
+        node.name: node.model.model
+        for node in _workflow_nodes(workflows["agent_help_request"])
+        if hasattr(node, "model")
+    }
+
+    assert root_models["workflow_router_agent"] == "gemini-router"
+    assert sequential_models == {
+        "sequential_planner_agent": "gemini-worker",
+        "sequential_executor_agent": "gemini-worker",
+        "sequential_critic_agent": "gemini-reasoning",
+        "sequential_summarizer_agent": "gemini-finalizer",
+    }
+    assert help_models["agent_help_task_owner_agent"] == "gemini-reasoning"
+    assert help_models["agent_help_request_broker_agent"] == "gemini-worker"
+    assert help_models["agent_help_provider_agent"] == "gemini-worker"
+    assert help_models["agent_help_response_broker_agent"] == "gemini-worker"
+    assert help_models["agent_help_task_finalizer_agent"] == "gemini-finalizer"
 
 
 def test_all_llm_agents_receive_retrying_gemini_model():
