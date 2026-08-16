@@ -90,6 +90,11 @@ def map_adk_execution(
     error_count = sum(1 for event in event_dtos if event.severity == "error")
     tool_call_count = sum(1 for event in event_dtos if event.type in {"tool_call", "tool_response"})
     model_event_count = sum(1 for event in event_dtos if event.type in {"model", "final_response"})
+    model_routing = [
+        event.metadata["model_routing"]
+        for event in event_dtos
+        if isinstance(event.metadata.get("model_routing"), dict)
+    ]
 
     return ExecutionContractDTO(
         contract_version=CONTRACT_VERSION,
@@ -125,6 +130,17 @@ def map_adk_execution(
                 "workspace_trace_count": state.get("workspace_trace_count"),
                 "workspace_violation_count": state.get("workspace_violation_count"),
                 "workspace_enforcement": state.get("workspace_enforcement"),
+                "model_basket": state.get("model_basket"),
+                "model_fallback_count": sum(
+                    1 for route in model_routing if route.get("fallback_used") is True
+                ),
+                "models_used": sorted(
+                    {
+                        str(route["used_model"])
+                        for route in model_routing
+                        if route.get("used_model")
+                    }
+                ),
             },
         ),
         decision_metadata=DecisionMetadataDTO(
@@ -188,8 +204,10 @@ def _map_event(event: Any, index: int) -> EventDTO:
     severity = "error" if error else "info"
     message = str(error or content_text or event_type)
     explicit_metadata = _extract_value(event, "metadata")
+    custom_metadata = _extract_value(event, "custom_metadata")
     metadata = {
         **(dict(explicit_metadata) if isinstance(explicit_metadata, dict) else {}),
+        **(dict(custom_metadata) if isinstance(custom_metadata, dict) else {}),
         "invocation_id": _extract_value(event, "invocation_id"),
         "branch": _extract_value(event, "branch"),
     }

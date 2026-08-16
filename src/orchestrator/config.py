@@ -16,6 +16,7 @@ ProgressiveFinalResponseStrategy = Literal[
     "all_visible_responses",
 ]
 WorkspaceEnforcementMode = Literal["audit", "strict"]
+ModelRole = Literal["router", "reasoning", "worker", "finalizer"]
 
 
 @dataclass(frozen=True)
@@ -206,6 +207,11 @@ class OrchestratorSettings:
     app_name: str = "adk-agent-orchestrator"
     user_id: str = "local-user"
     model: str = "gemini-flash-latest"
+    router_model: str | None = None
+    reasoning_model: str | None = None
+    worker_model: str | None = None
+    finalizer_model: str | None = None
+    fallback_model: str | None = None
     model_retry_attempts: int = 4
     model_retry_initial_delay_seconds: float = 1.0
     model_retry_max_delay_seconds: float = 8.0
@@ -221,6 +227,27 @@ class OrchestratorSettings:
         default_factory=ProgressiveMultiAgentResponseSettings
     )
 
+    def model_for(self, role: ModelRole) -> str:
+        """Resolve a role-specific model while preserving ``ADK_MODEL`` compatibility."""
+
+        override = {
+            "router": self.router_model,
+            "reasoning": self.reasoning_model,
+            "worker": self.worker_model,
+            "finalizer": self.finalizer_model,
+        }[role]
+        return override or self.model
+
+    def resolved_model_basket(self) -> dict[str, str | None]:
+        """Return the effective model assigned to every orchestration role."""
+
+        basket: dict[str, str | None] = {
+            role: self.model_for(role)
+            for role in ("router", "reasoning", "worker", "finalizer")
+        }
+        basket["fallback"] = self.fallback_model
+        return basket
+
     @classmethod
     def from_env(cls) -> OrchestratorSettings:
         """Build settings from environment variables with safe local defaults."""
@@ -229,6 +256,11 @@ class OrchestratorSettings:
             app_name=os.getenv("ADK_APP_NAME", cls.app_name).strip() or cls.app_name,
             user_id=os.getenv("ADK_USER_ID", cls.user_id).strip() or cls.user_id,
             model=os.getenv("ADK_MODEL", cls.model).strip() or cls.model,
+            router_model=_optional_str(os.getenv("ADK_MODEL_ROUTER")),
+            reasoning_model=_optional_str(os.getenv("ADK_MODEL_REASONING")),
+            worker_model=_optional_str(os.getenv("ADK_MODEL_WORKER")),
+            finalizer_model=_optional_str(os.getenv("ADK_MODEL_FINALIZER")),
+            fallback_model=_optional_str(os.getenv("ADK_MODEL_FALLBACK")),
             model_retry_attempts=_parse_positive_int(
                 os.getenv("ADK_MODEL_RETRY_ATTEMPTS"),
                 cls.model_retry_attempts,

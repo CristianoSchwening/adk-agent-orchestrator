@@ -50,7 +50,7 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     Workflow, FunctionNode, _, Edge, START = load_workflow_classes()
     phase2_workflows = create_phase2_workflows(resolved_settings)
     kwargs: dict[str, Any] = {
-        "model": create_gemini_model(resolved_settings),
+        "model": create_gemini_model(resolved_settings, role="router"),
         "name": "workflow_router_agent",
         "description": "Selects one graph workflow for the current objective.",
         "instruction": (

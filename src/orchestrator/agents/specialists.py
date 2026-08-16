@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable
 from typing import Any
 
 from orchestrator.adk_compat import load_agent_class
-from orchestrator.config import OrchestratorSettings
+from orchestrator.config import ModelRole, OrchestratorSettings
 from orchestrator.model import create_gemini_model
 from orchestrator.tools import (
     describe_model_request,
@@ -40,9 +40,10 @@ def create_llm_specialist_factory(settings: OrchestratorSettings) -> Callable[..
         parallel_worker: bool | None = None,
         disallow_transfer_to_parent: bool | None = None,
         disallow_transfer_to_peers: bool | None = None,
+        model_role: ModelRole = "worker",
     ) -> Any:
         kwargs: dict[str, Any] = {
-            "model": create_gemini_model(settings),
+            "model": create_gemini_model(settings, role=model_role),
             "name": name,
             "description": description,
             "instruction": (
@@ -132,6 +133,7 @@ def create_critic_agent(
         """,
         output_key=output_key,
         parallel_worker=parallel_worker,
+        model_role="reasoning",
     )
 
 
@@ -155,6 +157,7 @@ def create_summarizer_agent(
         tools=[describe_model_request],
         output_key=output_key,
         parallel_worker=parallel_worker,
+        model_role="finalizer",
     )
 
 
@@ -223,6 +226,7 @@ def create_approval_agent(
         tools=[request_human_approval],
         output_key=output_key,
         parallel_worker=parallel_worker,
+        model_role="reasoning",
     )
 
 
@@ -297,6 +301,7 @@ def create_followup_agent(settings: OrchestratorSettings) -> Any:
         aprovação, limite-se a recomendações seguras, perguntas e alternativas.
         """,
         output_key="human_followup",
+        model_role="finalizer",
     )
 
 
@@ -310,4 +315,5 @@ def create_evaluator_agent(settings: OrchestratorSettings) -> Any:
         instruction="Avalie o rascunho contra critérios de aceite e priorize melhorias concretas.",
         tools=[inspect_json_records, extract_document_outline],
         output_key="refinement_evaluation",
+        model_role="reasoning",
     )

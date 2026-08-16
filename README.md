@@ -113,6 +113,28 @@ explicitamente durante o bootstrap.
 
 Edite `.env` e configure `GOOGLE_API_KEY` quando quiser executar uma chamada real ao modelo.
 
+O orquestrador aceita uma cesta determinística de modelos por papel. Cada override é
+opcional e volta para `ADK_MODEL` quando ausente:
+
+```bash
+ADK_MODEL="gemini-3.5-flash-lite"
+ADK_MODEL_ROUTER="gemini-3.5-flash"
+ADK_MODEL_REASONING="gemini-3.5-flash"
+ADK_MODEL_WORKER="gemini-3.5-flash-lite"
+ADK_MODEL_FINALIZER="gemini-3.5-flash"
+ADK_MODEL_FALLBACK="gemini-3.5-flash-lite"
+```
+
+Roteador, críticos, avaliadores e aprovações usam o nível de raciocínio. Planejadores,
+pesquisadores, executores e brokers usam o nível worker. Sumarizadores e agentes de
+fechamento usam o nível finalizer. A cesta efetiva é registrada em
+`metrics.custom.model_basket` no contrato de execução.
+
+Após os retries do cliente, erros `429` e `503` fazem fallback no limite da chamada,
+sem reiniciar o workflow. Uma cota diária esgotada abre um circuito em memória para o
+modelo primário; chamadas seguintes usam diretamente `ADK_MODEL_FALLBACK` até o processo
+ser reiniciado. Eventos registram modelo solicitado, modelo utilizado e motivo do fallback.
+
 Chamadas ao Gemini usam retry no cliente para erros transitórios (`408`, `429` e `5xx`),
 sem repetir o workflow completo. Os valores padrão totalizam quatro tentativas com backoff
 exponencial, jitter e espera máxima de oito segundos. Para ajustar a política:
