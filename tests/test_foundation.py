@@ -167,11 +167,12 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     progressive_nodes = _workflow_nodes(workflows["progressive_multi_agent_response"])
     assert [agent.name for agent in progressive_nodes] == [
         "progressive_agent_a",
+        "publish_progressive_response_a",
         "progressive_agent_b",
+        "publish_progressive_response_b",
         "progressive_agent_c",
-        "progressive_response_publisher_agent",
+        "publish_progressive_response_c",
     ]
-    assert progressive_nodes[-1].output_key == "progressive_agent_responses"
 
 
 def test_progressive_workflow_without_final_summarizer_when_disabled():
@@ -193,12 +194,13 @@ def test_progressive_workflow_without_final_summarizer_when_disabled():
     nodes = _workflow_nodes(workflow)
     assert [agent.name for agent in nodes] == [
         "progressive_agent_a",
+        "publish_progressive_response_a",
         "progressive_agent_b",
+        "publish_progressive_response_b",
         "progressive_agent_c",
-        "progressive_response_publisher_agent",
+        "publish_progressive_response_c",
     ]
     assert "response_chain_summarizer_agent" not in {agent.name for agent in nodes}
-    assert nodes[-1].output_key == "progressive_agent_responses"
 
 
 def test_progressive_workflow_adds_final_summarizer_when_enabled():
@@ -220,14 +222,55 @@ def test_progressive_workflow_adds_final_summarizer_when_enabled():
     nodes = _workflow_nodes(workflow)
     assert [agent.name for agent in nodes] == [
         "progressive_agent_a",
+        "publish_progressive_response_a",
         "progressive_agent_b",
+        "publish_progressive_response_b",
         "progressive_agent_c",
-        "progressive_response_publisher_agent",
+        "publish_progressive_response_c",
         "response_chain_summarizer_agent",
     ]
     assert nodes[-1].output_key == "progressive_final_response"
     assert "final_summarizer_enabled=enabled" in nodes[-1].instruction
     assert "summarizer_response" in nodes[-1].instruction
+
+
+def test_progressive_publish_nodes_materialize_each_response_incrementally():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_progressive_multi_agent_response_workflow
+
+    workflow = create_progressive_multi_agent_response_workflow(
+        OrchestratorSettings(workspace_enabled=False)
+    )
+    nodes = {node.name: node for node in _workflow_nodes(workflow)}
+    state = {}
+    ctx = SimpleNamespace(state=state)
+
+    state["progressive_response_a"] = '{"content":"Primeira contribuição"}'
+    nodes["publish_progressive_response_a"]._func(ctx=ctx, node_input="ignored")
+    assert [item["response_id"] for item in state["progressive_agent_responses"]] == [
+        "response-x"
+    ]
+
+    state["progressive_response_b"] = '{"content":"Segunda contribuição"}'
+    nodes["publish_progressive_response_b"]._func(ctx=ctx, node_input="ignored")
+    assert [item["response_id"] for item in state["progressive_agent_responses"]] == [
+        "response-x",
+        "response-z",
+    ]
+
+    state["progressive_response_c"] = '{"content":"Síntese"}'
+    nodes["publish_progressive_response_c"]._func(ctx=ctx, node_input="ignored")
+    responses = state["progressive_agent_responses"]
+    assert [item["response_id"] for item in responses] == [
+        "response-x",
+        "response-z",
+        "response-c",
+    ]
+    assert responses[1]["depends_on_response_ids"] == ["response-x"]
+    assert responses[2]["depends_on_response_ids"] == ["response-x", "response-z"]
+    assert all(item["metadata"]["published_incrementally"] for item in responses)
 
 
 def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
