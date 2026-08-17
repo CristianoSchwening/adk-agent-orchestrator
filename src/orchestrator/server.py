@@ -646,7 +646,14 @@ async def stop_loop3_schedule() -> dict[str, str]:
 
 
 def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
-    """Map contract subtasks → AgentVisibleResponse-shaped dicts."""
+    """Return canonical responses, with a legacy subtask fallback."""
+
+    canonical = getattr(contract, "progressive_agent_responses", None) or []
+    if canonical:
+        return [
+            response.to_dict() if hasattr(response, "to_dict") else dict(response)
+            for response in canonical
+        ]
 
     ROLE_MAP = {
         "plan": "Planner",

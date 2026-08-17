@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -21,7 +22,7 @@ from orchestrator.agents import (
     create_root_agent,
 )
 from orchestrator.config import OrchestratorSettings
-from orchestrator.contracts import ExecutionContractDTO
+from orchestrator.contracts import AgentVisibleResponse, ExecutionContractDTO
 from orchestrator.mapping.adk import map_adk_execution, map_duration_ms
 from orchestrator.workspace import (
     FileWorkspaceRepository,
@@ -225,12 +226,21 @@ async def run_once_contract(
     if monitor is not None:
         for agent_name in sorted(monitor.started_agents):
             monitor.complete(agent_name=agent_name)
-        refreshed_session = await _get_session(runtime, resolved_session_id)
-        session = refreshed_session or session
-        if session is not None and hasattr(session, "state"):
-            session.state["workspace_trace_count"] = len(monitor.paths)
-            session.state["workspace_violation_count"] = len(monitor.violations)
         events.extend(_workspace_contract_events(monitor))
+
+    refreshed_session = await _get_session(runtime, resolved_session_id)
+    session = refreshed_session or session
+    if monitor is not None and session is not None and hasattr(session, "state"):
+        session.state["workspace_trace_count"] = len(monitor.paths)
+        session.state["workspace_violation_count"] = len(monitor.violations)
+    progressive_responses = _materialize_progressive_agent_responses(events)
+    if progressive_responses:
+        if isinstance(session, dict):
+            session.setdefault("state", {})["progressive_agent_responses"] = (
+                progressive_responses
+            )
+        elif session is not None and hasattr(session, "state"):
+            session.state["progressive_agent_responses"] = progressive_responses
 
     return map_adk_execution(
         session=session
@@ -259,6 +269,105 @@ def _extract_final_response(
     if not workspace_enabled:
         return text
     return extract_operational_result(text, objective=objective)
+
+
+def _materialize_progressive_agent_responses(events: list[Any]) -> list[dict[str, Any]]:
+    """Recover canonical progressive responses from specialist model events.
+
+    ADK workflow branches may scope state deltas independently. The model events are the
+    durable execution record, so materializing from them guarantees that the public
+    contract preserves authored responses even when a branch-local state update is not
+    merged into the parent workflow state.
+    """
+
+    response_specs = {
+        "progressive_agent_a": {
+            "response_id": "response-x",
+            "agent_role": "planning_specialist",
+            "publication_order": 1,
+            "depends_on_response_ids": [],
+        },
+        "progressive_agent_b": {
+            "response_id": "response-z",
+            "agent_role": "research_validation_specialist",
+            "publication_order": 2,
+            "depends_on_response_ids": [],
+        },
+        "progressive_agent_c": {
+            "response_id": "response-c",
+            "agent_role": "synthesis_specialist",
+            "publication_order": 3,
+            "depends_on_response_ids": ["response-x", "response-z"],
+        },
+    }
+    materialized: dict[str, dict[str, Any]] = {}
+    for event in events:
+        agent_name = str(getattr(event, "author", "") or "")
+        spec = response_specs.get(agent_name)
+        if spec is None:
+            continue
+        text = _runtime_event_text(event)
+        if not text:
+            continue
+        payload = _decode_progressive_response_payload(text)
+        content = str(payload.get("content") or "").strip()
+        if not content:
+            continue
+        raw_metadata = payload.get("metadata")
+        metadata = dict(raw_metadata) if isinstance(raw_metadata, dict) else {}
+        created_at = _event_datetime(event)
+        materialized[agent_name] = AgentVisibleResponse(
+            response_id=str(spec["response_id"]),
+            agent_name=agent_name,
+            agent_role=str(payload.get("agent_role") or spec["agent_role"]),
+            content=content,
+            depends_on_response_ids=list(spec["depends_on_response_ids"]),
+            visibility="user_visible",
+            status="published",
+            publication_order=int(spec["publication_order"]),
+            created_at=created_at,
+            metadata={
+                **metadata,
+                "workflow": "progressive_multi_agent_response",
+                "state_key": "progressive_agent_responses",
+                "materialized_from_event": True,
+            },
+        ).to_dict()
+    return sorted(materialized.values(), key=lambda item: item["publication_order"])
+
+
+def _decode_progressive_response_payload(text: str) -> dict[str, Any]:
+    candidate = text.strip()
+    if candidate.startswith("```"):
+        lines = candidate.splitlines()
+        if len(lines) > 2 and lines[-1].strip() == "```":
+            candidate = "\n".join(lines[1:-1]).strip()
+    try:
+        payload: Any = json.loads(candidate)
+    except json.JSONDecodeError:
+        return {"content": candidate}
+    if isinstance(payload, dict) and isinstance(payload.get("workspace"), dict):
+        result = payload.get("result")
+        if isinstance(result, str):
+            return _decode_progressive_response_payload(result)
+        if isinstance(result, dict):
+            payload = result
+    if isinstance(payload, dict) and isinstance(payload.get("content"), str):
+        nested = _decode_progressive_response_payload(payload["content"])
+        if isinstance(nested, dict) and (
+            nested.get("response_id") or nested.get("agent_name")
+        ):
+            return nested
+    return payload if isinstance(payload, dict) else {"content": str(payload)}
+
+
+def _event_datetime(event: Any) -> str:
+    timestamp = getattr(event, "timestamp", None)
+    if isinstance(timestamp, int | float):
+        return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+    if timestamp:
+        return str(timestamp)
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _build_workspace_monitor(

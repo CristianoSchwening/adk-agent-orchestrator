@@ -301,6 +301,64 @@ def test_router_normalizer_preserves_complete_or_invalid_outputs():
     ) == '"sequential"'
 
 
+def test_progressive_events_are_materialized_into_canonical_responses():
+    from orchestrator.runner.bootstrap import _materialize_progressive_agent_responses
+
+    def event(author: str, payload: dict, timestamp: float):
+        part = SimpleNamespace(text=f"```json\n{json.dumps(payload)}\n```")
+        return SimpleNamespace(
+            author=author,
+            content=SimpleNamespace(parts=[part]),
+            timestamp=timestamp,
+        )
+
+    events = [
+        event(
+            "progressive_agent_b",
+            {"content": "Pesquisa independente", "agent_role": "researcher"},
+            2.0,
+        ),
+        event("progressive_agent_a", {"content": "Plano independente"}, 1.0),
+        event("progressive_agent_c", {"content": "Síntese conjunta"}, 3.0),
+    ]
+
+    responses = _materialize_progressive_agent_responses(events)
+
+    assert [item["response_id"] for item in responses] == [
+        "response-x",
+        "response-z",
+        "response-c",
+    ]
+    assert responses[0]["depends_on_response_ids"] == []
+    assert responses[1]["depends_on_response_ids"] == []
+    assert responses[2]["depends_on_response_ids"] == ["response-x", "response-z"]
+    assert all(item["metadata"]["materialized_from_event"] for item in responses)
+
+
+def test_progressive_event_materializer_unwraps_nested_response_content():
+    from orchestrator.runner.bootstrap import _materialize_progressive_agent_responses
+
+    nested = {
+        "response_id": "response-c",
+        "agent_name": "progressive_agent_c",
+        "content": "Relatório consolidado",
+    }
+    outer = {
+        "response_id": "response-c",
+        "agent_name": "progressive_agent_c",
+        "content": json.dumps(nested),
+    }
+    event = SimpleNamespace(
+        author="progressive_agent_c",
+        content=SimpleNamespace(parts=[SimpleNamespace(text=json.dumps(outer))]),
+        timestamp=3.0,
+    )
+
+    responses = _materialize_progressive_agent_responses([event])
+
+    assert responses[0]["content"] == "Relatório consolidado"
+
+
 def test_workspace_schema_is_preserved_on_graph_router():
     from orchestrator.agents import create_root_agent
 

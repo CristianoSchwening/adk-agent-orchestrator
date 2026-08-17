@@ -321,9 +321,10 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     progressive_nodes = _workflow_nodes(workflows["progressive_multi_agent_response"])
     assert [agent.name for agent in progressive_nodes] == [
         "progressive_agent_a",
-        "publish_progressive_response_a",
         "progressive_agent_b",
+        "publish_progressive_response_a",
         "publish_progressive_response_b",
+        "progressive_specialists_join",
         "progressive_agent_c",
         "publish_progressive_response_c",
     ]
@@ -348,9 +349,10 @@ def test_progressive_workflow_without_final_summarizer_when_disabled():
     nodes = _workflow_nodes(workflow)
     assert [agent.name for agent in nodes] == [
         "progressive_agent_a",
-        "publish_progressive_response_a",
         "progressive_agent_b",
+        "publish_progressive_response_a",
         "publish_progressive_response_b",
+        "progressive_specialists_join",
         "progressive_agent_c",
         "publish_progressive_response_c",
     ]
@@ -376,9 +378,10 @@ def test_progressive_workflow_adds_final_summarizer_when_enabled():
     nodes = _workflow_nodes(workflow)
     assert [agent.name for agent in nodes] == [
         "progressive_agent_a",
-        "publish_progressive_response_a",
         "progressive_agent_b",
+        "publish_progressive_response_a",
         "publish_progressive_response_b",
+        "progressive_specialists_join",
         "progressive_agent_c",
         "publish_progressive_response_c",
         "response_chain_summarizer_agent",
@@ -422,9 +425,44 @@ def test_progressive_publish_nodes_materialize_each_response_incrementally():
         "response-z",
         "response-c",
     ]
-    assert responses[1]["depends_on_response_ids"] == ["response-x"]
+    assert responses[1]["depends_on_response_ids"] == []
     assert responses[2]["depends_on_response_ids"] == ["response-x", "response-z"]
     assert all(item["metadata"]["published_incrementally"] for item in responses)
+
+
+def test_progressive_workflow_fans_out_independent_specialists_before_join():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_progressive_multi_agent_response_workflow
+
+    workflow = create_progressive_multi_agent_response_workflow(
+        OrchestratorSettings(workspace_enabled=False)
+    )
+    edge_pairs = {
+        (edge.from_node.name, edge.to_node.name) for edge in workflow.graph.edges
+    }
+
+    assert ("__START__", "progressive_agent_a") in edge_pairs
+    assert ("__START__", "progressive_agent_b") in edge_pairs
+    assert (
+        "publish_progressive_response_a",
+        "progressive_specialists_join",
+    ) in edge_pairs
+    assert (
+        "publish_progressive_response_b",
+        "progressive_specialists_join",
+    ) in edge_pairs
+    assert (
+        "progressive_specialists_join",
+        "progressive_agent_c",
+    ) in edge_pairs
+
+    nodes = {node.name: node for node in _workflow_nodes(workflow)}
+    assert 'depends_on_response_ids=[]' in nodes["progressive_agent_b"].instruction
+    assert "não dependa de progressive_response_a" in nodes[
+        "progressive_agent_b"
+    ].instruction
 
 
 def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
