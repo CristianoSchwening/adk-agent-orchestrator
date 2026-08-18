@@ -1,143 +1,205 @@
 # adk-agent-orchestrator
 
-Repositório **greenfield** para a reimplementação do orquestrador usando **Google Agent Development Kit (ADK) para Python**.
+Orquestrador multiagente construído sobre o **Google Agent Development Kit (ADK) para Python**, com SPA React, loops de verificação, monitoramento de workspace verbalizado e controles event-driven.
 
-Esta entrega implementa a **Fase 5 — Avaliação e Produção** sobre o contrato UI/API da Fase 4:
+## Como funciona
 
-- `RootOrchestratorAgent` como grafo `Workflow`, com roteador LLM e workflows aninhados.
-- `App` e `Runner` oficiais do ADK.
-- `InMemorySessionService` para sessões locais.
-- `InMemoryArtifactService` para artefatos locais.
-- Configuração por `.env`/variáveis de ambiente.
-- Workflows equivalentes usando apenas primitivas ADK Python:
-  - `Workflow` em cadeia para Planner → Executor → Critic → Summarizer.
-  - `Workflow` com fan-out e `JoinNode` para especialistas em paralelo.
-  - `Workflow` com arestas condicionais para `review_critic` e `iterative_refinement`.
-  - `Workflow` em cadeia com tool ADK para `human_in_the_loop`.
-- Tools locais seguras para filesystem, HTTP, documentos, dados e planejamento de modelo.
-- Catálogo de tools consultável pelo agente raiz.
-- Factory lazy para integração externa via ADK `MCPToolset`.
-- Timeouts, erros padronizados e métricas locais de uso de tools.
-- Contrato JSON versionado `orchestrator.execution.v1` para UI/API.
-- DTOs para task, subtasks, events, metrics, decision_metadata e artifacts.
-- Mapper de ADK Session/Events/Artifacts para contrato de execução.
-- Snapshot JSON em `docs/contracts/` para consumidores Web/Android/API.
-- Datasets determinísticos de avaliação em `eval/datasets/`.
-- Critérios de qualidade, segurança, custo e latência.
-- Workflow de CI para testes, lint, compileall e avaliação.
-- Observabilidade com logs/metric payloads compatíveis com Google Cloud.
-- Runbooks de incidente, rollback e atualização de agentes.
-- Testes de smoke para configuração, tools, contrato, avaliação, políticas e workflows.
+Você envia um objetivo em texto. O `RootOrchestratorAgent` roteia para um dos sete workflows disponíveis (sequencial, paralelo, iterativo, com loop de verificação, etc.). Cada agente no caminho responde com um JSON estruturado que o `WorkspaceMonitor` valida. O resultado é um contrato versionado (`orchestrator.execution.v1`) com task, subtasks, events, métricas e respostas progressivas — consumido diretamente pela SPA React ou por qualquer cliente HTTP.
 
-> A implementação não reaproveita runtime legado (`Workforce`, `TaskBoard` ou `Subtask`). O novo desenho parte das primitivas oficiais do ADK Python.
-
-## Arquitetura da Fase 5
-
-```text
-User / CLI / ADK Web
-        │
-        ▼
-RootOrchestratorAgent (ADK Workflow)
-        │
-        ├── capture_objective tool
-        ├── get_orchestrator_status tool
-        ├── workflow_router_agent (ADK LlmAgent)
-        ├── sequential_workflow (ADK Workflow)
-        ├── parallel_workflow (fan-out + JoinNode)
-        ├── review_critic_workflow (arestas condicionais)
-        ├── iterative_refinement_workflow (arestas condicionais)
-        ├── human_in_the_loop_workflow (ADK Workflow + tool)
-        ├── Phase 3 local tools + MCP toolsets
-        ├── Phase 4 execution contract mapper
-        └── Phase 5 evaluation + observability readiness
-        │
-        ▼
-ADK App + Runner
-        │
-        ├── InMemorySessionService
-        └── InMemoryArtifactService
+```
+objetivo → router → workflow → agentes → contrato → React / API
 ```
 
-## Estrutura
-
-```text
-adk-agent-orchestrator/
-├── pyproject.toml
-├── .env.example
-├── src/orchestrator/
-│   ├── agent.py                 # módulo de descoberta do ADK com root_agent
-│   ├── agents/root.py           # factory do RootOrchestratorAgent
-│   ├── agents/specialists.py    # factories dos agentes especialistas
-│   ├── agents/workflows.py      # composição dos workflows ADK da Fase 2
-│   ├── runner/bootstrap.py      # App + Runner + SessionService + ArtifactService
-│   ├── tools/foundation.py      # tools de status/captura
-│   ├── tools/human.py           # tool de aprovação humana
-│   ├── tools/local.py           # tools locais da Fase 3
-│   ├── tools/catalog.py         # catálogo de tools
-│   ├── tools/metrics.py         # métricas de uso de tools
-│   ├── mcp/factory.py           # factory lazy para MCPToolset
-│   ├── contracts/dto.py         # DTOs versionados do contrato de execução
-│   ├── mapping/adk.py           # mapper ADK -> contrato UI/API
-│   ├── evaluation/runner.py     # avaliação determinística contínua
-│   ├── observability/gcp.py     # logs/métricas JSON para Google Cloud
-│   ├── policies/budget.py       # policy de orçamento para loops ADK
-│   └── main.py                  # CLI smoke
-├── tests/test_foundation.py
-├── docs/architecture.md
-└── .github/workflows/ci.yml
-```
-
-## Pré-requisitos
-
-- Python `>=3.10,<3.14` para instalação declarada do projeto.
-- `pip`.
-- Chave `GOOGLE_API_KEY` ou configuração Vertex AI compatível com ADK.
-
-A restrição `<3.14` evita instalar o ADK em versões de Python ainda não declaradas como suportadas pelo ecossistema atual.
-
-## Setup local
+Para experimentar sem chave de modelo:
 
 ```bash
-cd adk-agent-orchestrator
+npm --prefix webapp-react run build
+python run_server.py
+# Abra http://localhost:5000 e clique em Load Demo
+```
+
+---
+
+## Setup completo
+
+**Pré-requisitos:** Python `>=3.10,<3.14`, Node.js `>=18`, chave `GOOGLE_API_KEY` (ou Vertex AI).
+
+```bash
 python3.13 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 python -m pip install --upgrade pip
-python -m pip install -c constraints-3.13.txt -e '.[dev]'
-cp .env.example .env
+python -m pip install -c constraints-3.13.txt -e ".[dev]"
+cp .env.example .env               # configure GOOGLE_API_KEY
+npm --prefix webapp-react ci
+npm --prefix webapp-react run build
+python run_server.py
 ```
 
-Escolha o arquivo `constraints-3.10.txt`, `constraints-3.11.txt`,
-`constraints-3.12.txt` ou `constraints-3.13.txt` conforme a versão do Python.
-O runtime é certificado para `google-adk[mcp]==2.6.1`; uma versão diferente falha
-explicitamente durante o bootstrap.
+Escolha `constraints-3.10.txt` a `constraints-3.13.txt` conforme sua versão do Python. O runtime é certificado para `google-adk[mcp]==2.6.1`.
 
-Edite `.env` e configure `GOOGLE_API_KEY` quando quiser executar uma chamada real ao modelo.
-
-O orquestrador aceita uma cesta determinística de modelos por papel. Cada override é
-opcional e volta para `ADK_MODEL` quando ausente:
+**Desenvolvimento da SPA** (hot-reload):
 
 ```bash
-ADK_MODEL="gemini-3.5-flash-lite"
-ADK_MODEL_ROUTER="gemini-3.5-flash"
-ADK_MODEL_REASONING="gemini-3.5-flash"
-ADK_MODEL_WORKER="gemini-3.5-flash-lite"
-ADK_MODEL_FINALIZER="gemini-3.5-flash"
-ADK_MODEL_FALLBACK="gemini-3.5-flash-lite"
+npm --prefix webapp-react run dev   # encaminha /api para localhost:5000
 ```
 
-Roteador, críticos, avaliadores e aprovações usam o nível de raciocínio. Planejadores,
-pesquisadores, executores e brokers usam o nível worker. Sumarizadores e agentes de
-fechamento usam o nível finalizer. A cesta efetiva é registrada em
-`metrics.custom.model_basket` no contrato de execução.
+**Via ADK CLI:**
 
-Após os retries do cliente, erros `429` e `503` fazem fallback no limite da chamada,
-sem reiniciar o workflow. Uma cota diária esgotada abre um circuito em memória para o
-modelo primário; chamadas seguintes usam diretamente `ADK_MODEL_FALLBACK` até o processo
-ser reiniciado. Eventos registram modelo solicitado, modelo utilizado e motivo do fallback.
+```bash
+adk run src/orchestrator
+adk web --port 8000   # interface de desenvolvimento do ADK
+```
 
-Chamadas ao Gemini usam retry no cliente para erros transitórios (`408`, `429` e `5xx`),
-sem repetir o workflow completo. Os valores padrão totalizam quatro tentativas com backoff
-exponencial, jitter e espera máxima de oito segundos. Para ajustar a política:
+---
+
+## Workflows disponíveis
+
+| Workflow | Primitiva ADK | Comportamento |
+|---|---|---|
+| `sequential` | `Workflow` em cadeia | Planner → Executor → Critic → Summarizer |
+| `parallel` | fan-out + `JoinNode` | Especialistas em paralelo consolidados pelo Summarizer |
+| `review_critic` | arestas condicionais | Ciclo Author ↔ Critic dentro do orçamento de iteração |
+| `iterative_refinement` | arestas condicionais | Drafter → Evaluator → Editor com critério de parada por qualidade |
+| `human_in_the_loop` | `Workflow` + function tool | Aprovação humana estruturada antes do follow-up |
+| `progressive_multi_agent_response` | `Workflow` + DTOs | Respostas incrementais com grafo de dependência entre agentes |
+| `loop2_verification` | `VerificationLoop` + rubrica | Reexecução automática até aprovação ou esgotamento do orçamento |
+
+---
+
+## API REST
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/status` | Status do servidor e versão do ADK |
+| `POST` | `/api/run` | Executar objetivo com modelo real |
+| `POST` | `/api/run/demo` | Executar objetivo em modo demo (sem modelo) |
+| `GET` | `/api/loop3/config` | Configuração e histórico do EventLoop |
+| `POST` | `/api/loop3/trigger` | Disparo manual do EventLoop |
+| `POST` | `/api/loop3/webhook/{token}` | Disparo via webhook |
+| `POST` | `/api/loop3/schedule` | Configurar agendamento cron |
+| `DELETE` | `/api/loop3/schedule` | Cancelar agendamento |
+
+Exemplo de chamada real:
+
+```bash
+curl -X POST http://localhost:5000/api/run \
+  -H "Content-Type: application/json" \
+  -d '{"objective": "Resumir os principais padrões de design de agentes", "workflow": "sequential"}'
+```
+
+---
+
+## Testes e qualidade
+
+```bash
+pytest -q
+ruff check src tests
+python -m compileall -q src tests
+python -m orchestrator.evaluation eval/datasets/phase5_smoke.json
+adk-orchestrator-smoke "Validar workflows ADK"
+```
+
+CI matricial em `3.10`, `3.11`, `3.12` e `3.13` com pytest + ruff + avaliação determinística a cada push/PR.
+
+---
+
+## Arquitetura
+
+```text
+User / SPA React / ADK Web
+          │
+          ▼
+RootOrchestratorAgent (ADK Workflow)
+          │
+          ├── workflow_router_agent (LlmAgent)
+          ├── sequential_workflow
+          ├── parallel_workflow (fan-out + JoinNode)
+          ├── review_critic_workflow
+          ├── iterative_refinement_workflow
+          ├── human_in_the_loop_workflow
+          ├── progressive_multi_agent_response_workflow
+          ├── VerificationLoop (Loop 2)  ←→  QualityStopCondition / BudgetPolicy
+          ├── EventLoop (Loop 3)         ←→  cron / webhook / manual
+          ├── WorkspaceMonitor           →   verbalized_workspace traces
+          ├── local tools + MCPToolset
+          ├── execution contract mapper
+          └── evaluation + observability
+          │
+          ▼
+FastAPI server  ←→  React SPA
+          │
+          ├── ADK App + Runner
+          ├── InMemorySessionService
+          └── InMemoryArtifactService
+```
+
+### Módulos principais
+
+```text
+src/orchestrator/
+├── agent.py              # módulo de descoberta do ADK (root_agent)
+├── config.py             # OrchestratorSettings + cesta de modelos
+├── server.py             # FastAPI + endpoints REST
+├── agents/               # root, specialists, workflows ADK
+├── loops/                # VerificationLoop (L2), EventLoop (L3), rubric, stop_condition
+├── workspace/            # WorkspaceMonitor, VerbalizedWorkspace, FileWorkspaceRepository
+├── contracts/dto.py      # DTOs do contrato orchestrator.execution.v1
+├── mapping/adk.py        # mapper ADK Session → contrato
+├── tools/                # tools locais, catálogo, métricas, MCP factory
+├── evaluation/           # runner determinístico + critérios
+├── observability/gcp.py  # logs/métricas JSON para Google Cloud
+├── policies/budget.py    # BudgetPolicy para loops ADK
+└── runner/bootstrap.py   # App + Runner + serviços in-memory
+```
+
+---
+
+## Funcionalidades em detalhe
+
+### Loop 2 — Verificação por rubrica
+
+`VerificationLoop` avalia saídas contra uma rubrica ponderada (completeness, clarity, accuracy, actionability). Cada iteração pontua, marca respostas anteriores como *superseded* e solicita refinamento. `QualityStopCondition` implementa `should_stop_loop` do ADK combinando o grader com `BudgetPolicy` (iterações, chamadas de modelo, tempo).
+
+### Loop 3 — Event-Driven
+
+`EventLoop` expõe três formas de acionar o agente: **manual** (`POST /api/loop3/trigger`), **webhook** (`POST /api/loop3/webhook/{token}`) e **cron** (agendamento configurável, mínimo 10 s). Histórico das últimas 20 execuções disponível em `GET /api/loop3/config`.
+
+### Workspace verbalizado
+
+`WorkspaceMonitor` exige que cada agente responda com `{ "workspace": {...}, "result": "..." }`. Snapshots versionados (`orchestrator.verbalized_workspace.v1`) são gravados em `observability/verbalized_workspace/traces/`. Em modo `strict` (padrão), resposta inválida encerra o agente com lifecycle `violation → failed`. Em modo `audit`, a violação é registrada sem interromper.
+
+### Contrato de execução
+
+O mapper em `src/orchestrator/mapping/adk.py` projeta `ADK Session / Events / Artifacts` no contrato `orchestrator.execution.v1`:
+
+```
+task · subtasks · events · metrics · decision_metadata · artifacts · progressive_agent_responses
+```
+
+Snapshot de exemplo: [`docs/contracts/execution_contract_v1.example.json`](docs/contracts/execution_contract_v1.example.json).
+
+### SPA React
+
+Servida pelo FastAPI em `/`. Inclui Chat view, DAG view, Execution Inspector, Event Log, Event Loop panel (Loop 3) e theme toggle. Stack: Vite + Tailwind + shadcn/ui.
+
+---
+
+## Configuração avançada
+
+### Cesta de modelos
+
+```bash
+ADK_MODEL="gemini-flash-latest"           # modelo base
+ADK_MODEL_ROUTER="gemini-2.0-flash"
+ADK_MODEL_REASONING="gemini-2.0-flash"    # críticos e avaliadores
+ADK_MODEL_WORKER="gemini-flash-latest"    # planejadores e executores
+ADK_MODEL_FINALIZER="gemini-2.0-flash"    # sumarizadores
+ADK_MODEL_FALLBACK="gemini-flash-latest"  # fallback após circuit break
+```
+
+Erros `429` e `503` após retries ativam um circuit breaker em memória; chamadas seguintes usam `ADK_MODEL_FALLBACK` até o processo reiniciar.
+
+### Retry de modelo
 
 ```bash
 ADK_MODEL_RETRY_ATTEMPTS="4"
@@ -147,95 +209,37 @@ ADK_MODEL_RETRY_EXPONENTIAL_BASE="2"
 ADK_MODEL_RETRY_JITTER_SECONDS="1"
 ```
 
-## Executar testes e checks
-
-```bash
-pytest -q
-ruff check .
-python -m compileall -q src tests
-```
-
-## Configuração de Tools e MCP
+### Tools e MCP
 
 ```bash
 ADK_TOOL_TIMEOUT_SECONDS="10"
 ADK_MCP_SERVERS='[{"name":"filesystem","transport":"stdio","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","."]}]'
 ```
 
-Consulte detalhes em [`docs/tools.md`](docs/tools.md).
-
-## Avaliação e produção
+### Workspace verbalizado
 
 ```bash
-python -m orchestrator.evaluation eval/datasets/phase5_smoke.json
+ADK_WORKSPACE_ENABLED="true"
+ADK_WORKSPACE_MODE="strict"           # strict | audit
+ADK_WORKSPACE_ROOT="observability/verbalized_workspace/traces"
+ADK_WORKSPACE_MAX_BYTES="65536"
 ```
 
-Consulte [`docs/evaluation.md`](docs/evaluation.md), [`docs/observability.md`](docs/observability.md) e [`docs/runbooks/`](docs/runbooks/).
-
-## Contrato de execução para UI/API
+### Progressive multi-agent response
 
 ```bash
-adk-orchestrator-smoke --contract-json "Validar contrato Fase 4"
+ADK_PROGRESSIVE_FINAL_SUMMARIZER_ENABLED="disabled"   # enabled | disabled | auto
+ADK_PROGRESSIVE_FINAL_RESPONSE_STRATEGY="all_visible_responses"
+# last_agent_response | summarizer_response | root_selected_response | all_visible_responses
 ```
 
-A versão atual do contrato é `orchestrator.execution.v1` e inclui `task`, `subtasks`, `events`, `metrics`, `decision_metadata` e `artifacts`. Consulte [`docs/contracts/README.md`](docs/contracts/README.md) e o snapshot [`docs/contracts/execution_contract_v1.example.json`](docs/contracts/execution_contract_v1.example.json).
+---
 
-## Webapp React
+## Documentação adicional
 
-A aplicação principal é a SPA React em [`webapp-react`](webapp-react), servida pelo FastAPI em `/` e `/app`. Ela oferece execução demo e real, respostas progressivas em Chat/DAG, verificação iterativa e controles event-driven (manual, webhook e agendamento).
-
-Build do bundle React (obrigatório antes de iniciar o servidor):
-
-```bash
-cd webapp-react
-npm ci
-npm run build
-```
-
-Subir o servidor:
-
-```bash
-python run_server.py
-```
-
-Abra `http://localhost:5000` e use **Load Demo** para validar a interface sem uma chave de modelo.
-
-Desenvolvimento isolado do painel:
-
-```bash
-cd webapp-react
-npm run dev
-```
-
-O servidor Vite encaminha `/api` para `http://localhost:5000`, portanto mantenha também `python run_server.py` em execução durante o desenvolvimento.
-
-O diretório [`webapp/ui`](webapp/ui) permanece como implementação anterior/especializada do Event Log e gera os artefatos em [`webapp/static`](webapp/static).
-
-## Executar via CLI própria
-
-```bash
-adk-orchestrator-smoke "Validar workflows ADK da Fase 2"
-```
-
-## Executar via ADK CLI/Web
-
-O ADK espera um módulo com `root_agent`. Este repositório disponibiliza `src/orchestrator/agent.py` para esse propósito.
-
-```bash
-adk run src/orchestrator
-```
-
-ou, para interface web de desenvolvimento:
-
-```bash
-adk web --port 8000
-```
-
-> `adk web` é recomendado apenas para desenvolvimento e depuração local.
-
-## Próximos passos
-
-1. Expor o contrato por uma API HTTP para Web/Android.
-2. Adicionar datasets online com modelos reais em pipeline separado.
-3. Persistir histórico de avaliações e métricas em BigQuery/Monitoring.
-4. Ligar `BudgetPolicy` a callbacks/state avançados do ADK.
+- [`docs/architecture.md`](docs/architecture.md) — decisões arquiteturais e fluxo de execução
+- [`docs/tools.md`](docs/tools.md) — catálogo de tools e configuração MCP
+- [`docs/evaluation.md`](docs/evaluation.md) — critérios e datasets de avaliação
+- [`docs/observability.md`](docs/observability.md) — logs e métricas para Google Cloud
+- [`docs/contracts/README.md`](docs/contracts/README.md) — contrato de execução versionado
+- [`docs/runbooks/`](docs/runbooks/) — runbooks de incidente, rollback e atualização de agentes
