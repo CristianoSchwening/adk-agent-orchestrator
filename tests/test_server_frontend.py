@@ -113,6 +113,43 @@ def test_run_routes_requested_workflow_to_runtime(monkeypatch) -> None:
     }
 
 
+def test_run_preserves_canonical_progressive_response_payload(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from orchestrator import server
+
+    canonical = {
+        "response_id": "response-x",
+        "agent_name": "progressive_agent_a",
+        "agent_role": "dynamic_specialist",
+        "content": "Conteúdo estruturado original",
+        "depends_on_response_ids": [],
+        "visibility": "user_visible",
+        "status": "published",
+        "publication_order": 1,
+        "created_at": "2026-08-17T00:00:00+00:00",
+        "metadata": {"source": "runtime", "nested": {"preserved": True}},
+    }
+
+    async def fake_run_once_contract(objective, *, settings, workflow):
+        return SimpleNamespace(
+            to_dict=lambda: {
+                "decision_metadata": {"selected_workflow": workflow},
+                "progressive_agent_responses": [canonical],
+            }
+        )
+
+    monkeypatch.setattr(server, "run_once_contract", fake_run_once_contract)
+
+    response = client.post(
+        "/api/run",
+        json={"objective": "Teste estruturado", "workflow": "progressive_multi_agent_response"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["progressive_agent_responses"] == [canonical]
+
+
 def test_run_maps_legacy_verification_name_to_iterative_workflow(monkeypatch) -> None:
     from orchestrator import server
 

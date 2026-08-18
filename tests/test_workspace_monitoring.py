@@ -359,6 +359,52 @@ def test_progressive_event_materializer_unwraps_nested_response_content():
     assert responses[0]["content"] == "Relatório consolidado"
 
 
+def test_progressive_event_materializer_unwraps_json_with_surrounding_text():
+    from orchestrator.runner.bootstrap import _materialize_progressive_agent_responses
+
+    nested = json.dumps(
+        {
+            "response_id": "response-c",
+            "agent_name": "progressive_agent_c",
+            "agent_role": "audited_synthesizer",
+            "content": "Síntese auditada",
+        }
+    )
+    outer = json.dumps({"content": f"Resultado estruturado:\n{nested}\nFim."})
+    event = SimpleNamespace(
+        author="progressive_agent_c",
+        content=SimpleNamespace(parts=[SimpleNamespace(text=outer)]),
+        timestamp=3.0,
+    )
+
+    responses = _materialize_progressive_agent_responses([event])
+
+    assert responses[0]["agent_role"] == "audited_synthesizer"
+    assert responses[0]["content"] == "Síntese auditada"
+
+
+def test_progressive_internal_outputs_are_materialized_for_auditability():
+    from orchestrator.runner.bootstrap import _materialize_progressive_internal_outputs
+
+    events = [
+        SimpleNamespace(
+            author="progressive_role_router_agent",
+            content=SimpleNamespace(parts=[SimpleNamespace(text='{"specialist_a": {}}')]),
+        ),
+        SimpleNamespace(
+            author="progressive_requirements_verifier_agent",
+            content=SimpleNamespace(parts=[SimpleNamespace(text='{"verification_passed": false}')]),
+        ),
+    ]
+
+    outputs = _materialize_progressive_internal_outputs(events)
+
+    assert outputs == {
+        "progressive_role_plan": '{"specialist_a": {}}',
+        "progressive_verification": '{"verification_passed": false}',
+    }
+
+
 def test_workspace_schema_is_preserved_on_graph_router():
     from orchestrator.agents import create_root_agent
 

@@ -234,6 +234,7 @@ async def run_once_contract(
         session.state["workspace_trace_count"] = len(monitor.paths)
         session.state["workspace_violation_count"] = len(monitor.violations)
     progressive_responses = _materialize_progressive_agent_responses(events)
+    progressive_internal_outputs = _materialize_progressive_internal_outputs(events)
     if progressive_responses:
         if isinstance(session, dict):
             session.setdefault("state", {})["progressive_agent_responses"] = (
@@ -241,6 +242,11 @@ async def run_once_contract(
             )
         elif session is not None and hasattr(session, "state"):
             session.state["progressive_agent_responses"] = progressive_responses
+    if progressive_internal_outputs:
+        if isinstance(session, dict):
+            session.setdefault("state", {}).update(progressive_internal_outputs)
+        elif session is not None and hasattr(session, "state"):
+            session.state.update(progressive_internal_outputs)
 
     return map_adk_execution(
         session=session
@@ -336,6 +342,24 @@ def _materialize_progressive_agent_responses(events: list[Any]) -> list[dict[str
     return sorted(materialized.values(), key=lambda item: item["publication_order"])
 
 
+def _materialize_progressive_internal_outputs(events: list[Any]) -> dict[str, str]:
+    """Persist internal role-selection and verification outputs for auditability."""
+
+    state_keys = {
+        "progressive_role_router_agent": "progressive_role_plan",
+        "progressive_requirements_verifier_agent": "progressive_verification",
+    }
+    outputs: dict[str, str] = {}
+    for event in events:
+        state_key = state_keys.get(str(getattr(event, "author", "") or ""))
+        if state_key is None:
+            continue
+        text = _runtime_event_text(event)
+        if text:
+            outputs[state_key] = text
+    return outputs
+
+
 def _decode_progressive_response_payload(text: str) -> dict[str, Any]:
     candidate = text.strip()
     if candidate.startswith("```"):
@@ -345,7 +369,14 @@ def _decode_progressive_response_payload(text: str) -> dict[str, Any]:
     try:
         payload: Any = json.loads(candidate)
     except json.JSONDecodeError:
-        return {"content": candidate}
+        start = candidate.find("{")
+        end = candidate.rfind("}")
+        if start < 0 or end <= start:
+            return {"content": candidate}
+        try:
+            payload = json.loads(candidate[start : end + 1])
+        except json.JSONDecodeError:
+            return {"content": candidate}
     if isinstance(payload, dict) and isinstance(payload.get("workspace"), dict):
         result = payload.get("result")
         if isinstance(result, str):

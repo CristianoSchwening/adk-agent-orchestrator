@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from types import SimpleNamespace
 
@@ -320,13 +321,16 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     ]
     progressive_nodes = _workflow_nodes(workflows["progressive_multi_agent_response"])
     assert [agent.name for agent in progressive_nodes] == [
+        "progressive_role_router_agent",
         "progressive_agent_a",
         "progressive_agent_b",
         "publish_progressive_response_a",
         "publish_progressive_response_b",
         "progressive_specialists_join",
+        "progressive_requirements_verifier_agent",
         "progressive_agent_c",
         "publish_progressive_response_c",
+        "progressive_canonical_finalizer",
     ]
 
 
@@ -348,13 +352,16 @@ def test_progressive_workflow_without_final_summarizer_when_disabled():
 
     nodes = _workflow_nodes(workflow)
     assert [agent.name for agent in nodes] == [
+        "progressive_role_router_agent",
         "progressive_agent_a",
         "progressive_agent_b",
         "publish_progressive_response_a",
         "publish_progressive_response_b",
         "progressive_specialists_join",
+        "progressive_requirements_verifier_agent",
         "progressive_agent_c",
         "publish_progressive_response_c",
+        "progressive_canonical_finalizer",
     ]
     assert "response_chain_summarizer_agent" not in {agent.name for agent in nodes}
 
@@ -377,18 +384,21 @@ def test_progressive_workflow_adds_final_summarizer_when_enabled():
 
     nodes = _workflow_nodes(workflow)
     assert [agent.name for agent in nodes] == [
+        "progressive_role_router_agent",
         "progressive_agent_a",
         "progressive_agent_b",
         "publish_progressive_response_a",
         "publish_progressive_response_b",
         "progressive_specialists_join",
+        "progressive_requirements_verifier_agent",
         "progressive_agent_c",
         "publish_progressive_response_c",
         "response_chain_summarizer_agent",
+        "progressive_canonical_finalizer",
     ]
-    assert nodes[-1].output_key == "progressive_final_response"
-    assert "final_summarizer_enabled=enabled" in nodes[-1].instruction
-    assert "summarizer_response" in nodes[-1].instruction
+    assert nodes[-2].output_key == "progressive_final_response"
+    assert "final_summarizer_enabled=enabled" in nodes[-2].instruction
+    assert "summarizer_response" in nodes[-2].instruction
 
 
 def test_progressive_publish_nodes_materialize_each_response_incrementally():
@@ -430,6 +440,38 @@ def test_progressive_publish_nodes_materialize_each_response_incrementally():
     assert all(item["metadata"]["published_incrementally"] for item in responses)
 
 
+def test_progressive_canonical_finalizer_emits_plain_synthesis_content():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_progressive_multi_agent_response_workflow
+
+    workflow = create_progressive_multi_agent_response_workflow(
+        OrchestratorSettings(workspace_enabled=False)
+    )
+    nodes = {node.name: node for node in _workflow_nodes(workflow)}
+    ctx = SimpleNamespace(state={})
+    nested = json.dumps(
+        {
+            "content": json.dumps(
+                {
+                    "response_id": "response-c",
+                    "agent_name": "progressive_agent_c",
+                    "content": "Síntese final auditada",
+                }
+            )
+        }
+    )
+
+    result = nodes["progressive_canonical_finalizer"]._func(
+        ctx=ctx,
+        node_input=nested,
+    )
+
+    assert result == "Síntese final auditada"
+    assert ctx.state["progressive_canonical_final_response"] == result
+
+
 def test_progressive_workflow_fans_out_independent_specialists_before_join():
     if not is_adk_installed():
         return
@@ -443,8 +485,9 @@ def test_progressive_workflow_fans_out_independent_specialists_before_join():
         (edge.from_node.name, edge.to_node.name) for edge in workflow.graph.edges
     }
 
-    assert ("__START__", "progressive_agent_a") in edge_pairs
-    assert ("__START__", "progressive_agent_b") in edge_pairs
+    assert ("__START__", "progressive_role_router_agent") in edge_pairs
+    assert ("progressive_role_router_agent", "progressive_agent_a") in edge_pairs
+    assert ("progressive_role_router_agent", "progressive_agent_b") in edge_pairs
     assert (
         "publish_progressive_response_a",
         "progressive_specialists_join",
@@ -455,14 +498,26 @@ def test_progressive_workflow_fans_out_independent_specialists_before_join():
     ) in edge_pairs
     assert (
         "progressive_specialists_join",
+        "progressive_requirements_verifier_agent",
+    ) in edge_pairs
+    assert (
+        "progressive_requirements_verifier_agent",
         "progressive_agent_c",
+    ) in edge_pairs
+    assert (
+        "publish_progressive_response_c",
+        "progressive_canonical_finalizer",
     ) in edge_pairs
 
     nodes = {node.name: node for node in _workflow_nodes(workflow)}
     assert 'depends_on_response_ids=[]' in nodes["progressive_agent_b"].instruction
-    assert "não dependa de progressive_response_a" in nodes[
-        "progressive_agent_b"
+    assert "progressive_response_a" in nodes["progressive_agent_b"].instruction
+    assert "specialist_a" in nodes["progressive_role_router_agent"].instruction
+    assert "specialist_b" in nodes["progressive_role_router_agent"].instruction
+    assert "calculation_audit" in nodes[
+        "progressive_requirements_verifier_agent"
     ].instruction
+    assert "corrections_required" in nodes["progressive_agent_c"].instruction
 
 
 def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
@@ -481,12 +536,14 @@ def test_progressive_workflow_auto_mode_lets_root_decide_finalization():
 
     workflow = create_progressive_multi_agent_response_workflow(settings)
 
-    finalizer = _workflow_nodes(workflow)[-1]
+    nodes = _workflow_nodes(workflow)
+    finalizer = nodes[-2]
     assert finalizer.name == "response_chain_summarizer_agent"
     assert finalizer.output_key == "progressive_final_response"
     assert "final_summarizer_enabled=auto" in finalizer.instruction
     assert "ponto de decisão do root" in finalizer.instruction
     assert "root_selected_response" in finalizer.instruction
+    assert nodes[-1].name == "progressive_canonical_finalizer"
 
 
 def test_progressive_workflow_settings_from_env(monkeypatch):
