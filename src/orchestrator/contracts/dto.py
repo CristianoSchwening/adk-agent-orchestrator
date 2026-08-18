@@ -101,6 +101,7 @@ class DecisionMetadataDTO:
     """Workflow routing and orchestration decision metadata."""
 
     selected_workflow: str | None = None
+    selection_source: str | None = None
     rationale: str | None = None
     confidence: float | None = None
     alternatives: list[str] = field(default_factory=list)

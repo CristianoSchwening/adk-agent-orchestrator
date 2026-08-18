@@ -1,6 +1,6 @@
 """ADK agent factories."""
 
-from orchestrator.agents.root import create_root_agent
+from orchestrator.agents.root import WORKFLOW_ROUTE_SCHEMA, create_root_agent
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_critic_agent,
@@ -24,6 +24,7 @@ from orchestrator.agents.workflows import (
 
 __all__ = [
     "PHASE_2_WORKFLOW_NAMES",
+    "WORKFLOW_ROUTE_SCHEMA",
     "create_agent_help_request_workflow",
     "create_approval_agent",
     "create_critic_agent",
