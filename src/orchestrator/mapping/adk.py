@@ -42,8 +42,14 @@ WORKFLOW_STATE_KEYS: dict[str, tuple[str, str]] = {
     "progressive_response_a": ("progressive_multi_agent_response", "response-a"),
     "progressive_response_b": ("progressive_multi_agent_response", "response-b"),
     "progressive_response_c": ("progressive_multi_agent_response", "response-c"),
+    "progressive_role_plan": ("progressive_multi_agent_response", "role-plan"),
+    "progressive_verification": ("progressive_multi_agent_response", "verification"),
     "progressive_agent_responses": ("progressive_multi_agent_response", "publish"),
     "progressive_final_response": ("progressive_multi_agent_response", "finalize"),
+    "progressive_canonical_final_response": (
+        "progressive_multi_agent_response",
+        "canonical-finalize",
+    ),
     "grader_result": ("loop", "grade"),
 }
 

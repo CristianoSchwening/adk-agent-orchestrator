@@ -123,12 +123,7 @@ async def run_objective(body: RunRequest) -> JSONResponse:
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    data = contract.to_dict()
-
-    if contract.decision_metadata.selected_workflow == "progressive_multi_agent_response":
-        data["progressive_agent_responses"] = _build_progressive_responses(contract)
-
-    return JSONResponse(content=data)
+    return JSONResponse(content=contract.to_dict())
 
 
 @app.post("/api/run/demo")
@@ -643,49 +638,6 @@ async def configure_loop3_schedule(body: ScheduleRequest) -> dict[str, Any]:
 async def stop_loop3_schedule() -> dict[str, str]:
     event_loop.stop_schedule()
     return {"status": "stopped"}
-
-
-def _build_progressive_responses(contract: Any) -> list[dict[str, Any]]:
-    """Map contract subtasks → AgentVisibleResponse-shaped dicts."""
-
-    ROLE_MAP = {
-        "plan": "Planner",
-        "execute": "Executor",
-        "critique": "Critic",
-        "summarize": "Summarizer",
-        "research": "Researcher",
-        "refine": "Refiner",
-        "approval": "Approver",
-    }
-
-    responses = []
-    prev_id: str | None = None
-    for order, subtask in enumerate(contract.subtasks, start=1):
-        rid = str(uuid.uuid4())
-        role = ROLE_MAP.get(subtask.name, subtask.name.capitalize())
-        responses.append(
-            {
-                "response_id": rid,
-                "agent_name": subtask.agent_name or subtask.name,
-                "agent_role": role,
-                "content": subtask.output_summary or subtask.name,
-                "depends_on_response_ids": [prev_id] if prev_id else [],
-                "visibility": "user_visible",
-                "status": (
-                    "published"
-                    if subtask.status == "completed"
-                    else subtask.status
-                ),
-                "publication_order": order,
-                "created_at": subtask.finished_at or utc_now_iso(),
-                "metadata": {
-                    "subtask_id": subtask.subtask_id,
-                    "workflow": subtask.workflow,
-                },
-            }
-        )
-        prev_id = rid
-    return responses
 
 
 if WEBAPP_DIR.exists():

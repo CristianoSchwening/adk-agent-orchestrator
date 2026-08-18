@@ -527,11 +527,22 @@ def _progressive_response_payload(value: Any) -> dict[str, Any]:
         try:
             raw = json.loads(candidate)
         except json.JSONDecodeError:
-            return {"content": candidate}
+            start = candidate.find("{")
+            end = candidate.rfind("}")
+            if start < 0 or end <= start:
+                return {"content": candidate}
+            try:
+                raw = json.loads(candidate[start : end + 1])
+            except json.JSONDecodeError:
+                return {"content": candidate}
     if not isinstance(raw, dict):
         return {"content": str(raw)}
     if isinstance(raw.get("workspace"), dict) and "result" in raw:
         return _progressive_response_payload(raw["result"])
+    if isinstance(raw.get("content"), str):
+        nested = _progressive_response_payload(raw["content"])
+        if nested.get("response_id") or nested.get("agent_name"):
+            return nested
     return raw
 
 
@@ -592,6 +603,24 @@ def _progressive_publish_node(
     return FunctionNode(func=publish, name=name)
 
 
+def _progressive_canonical_final_node() -> Any:
+    """Emit the audited synthesis content as the workflow's mandatory final output."""
+
+    _, FunctionNode, _, _, _ = load_workflow_classes()
+
+    def finalize(ctx: Any, node_input: Any) -> str:
+        source = ctx.state.get("progressive_final_response", node_input)
+        payload = _progressive_response_payload(source)
+        content = str(payload.get("content") or payload.get("result") or source).strip()
+        nested = _progressive_response_payload(content)
+        if nested.get("response_id") or nested.get("agent_name"):
+            content = str(nested.get("content") or content).strip()
+        ctx.state["progressive_canonical_final_response"] = content
+        return content
+
+    return FunctionNode(func=finalize, name="progressive_canonical_finalizer")
+
+
 def create_progressive_multi_agent_response_workflow(
     settings: OrchestratorSettings | None = None,
     *,
@@ -615,17 +644,45 @@ def create_progressive_multi_agent_response_workflow(
     final_summarizer_mode = progressive_config.final_summarizer_enabled
     final_response_strategy = progressive_config.final_response_strategy
 
+    role_router = llm(
+        name="progressive_role_router_agent",
+        description="Selects complementary specialist roles from the objective.",
+        instruction=f"""
+        Analise o objetivo original e selecione exatamente dois papéis especialistas
+        complementares para execução paralela. Os papéis devem nascer do problema, não
+        de uma lista fixa. Evite sobreposição e garanta cobertura conjunta do pedido.
+
+        Retorne progressive_role_plan como JSON com:
+        - specialist_a: role, mission, deliverables, required_evidence;
+        - specialist_b: role, mission, deliverables, required_evidence;
+        - required_deliverables: checklist completo extraído do objetivo;
+        - conflicts_and_ambiguities: requisitos contraditórios ou incompletos;
+        - calculation_checks: contas, unidades, moedas, limites e comparações a validar;
+        - max_model_calls: {policy.max_model_calls}.
+
+        Não resolva a tarefa. Produza somente a decomposição operacional que orientará
+        os especialistas e o verificador.
+        """,
+        output_key="progressive_role_plan",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+        model_role="router",
+    )
+
     agent_a = llm(
         name="progressive_agent_a",
-        description="Publishes the first specialist contribution for the user.",
+        description="Executes the first dynamically selected specialist brief.",
         instruction=f"""
-        Você é o Agente A no workflow progressive_multi_agent_response_workflow.
-        Publique a primeira contribuição especializada para o usuário em formato
+        Leia progressive_role_plan e assuma exatamente o papel, a missão, os entregáveis
+        e as exigências de evidência definidos em specialist_a. Trabalhe de forma
+        independente do Agente B e cubra integralmente seu brief. Não invente fontes nem
+        apresente estimativas como fatos verificados. Publique a contribuição em formato
         AgentVisibleResponse com os campos obrigatórios {required_fields}.
 
         Regras:
-        - Use response_id="response-x", agent_name="progressive_agent_a" e um
-          agent_role claro para a sua especialidade.
+        - Use response_id="response-x", agent_name="progressive_agent_a" e copie para
+          agent_role o papel escolhido em progressive_role_plan.specialist_a.role.
         - Use depends_on_response_ids=[] porque esta é a primeira resposta.
         - Use visibility="user_visible", status="published" e publication_order=1.
         - Inclua metadata.workflow="progressive_multi_agent_response" e
@@ -640,33 +697,78 @@ def create_progressive_multi_agent_response_workflow(
 
     agent_b = llm(
         name="progressive_agent_b",
-        description="Publishes a second specialist contribution that depends on Agent A.",
+        description="Executes the second dynamically selected specialist brief.",
         instruction=f"""
-        Você é o Agente B. Leia progressive_response_a como contexto anterior e publique
-        uma nova contribuição no formato AgentVisibleResponse com os campos obrigatórios
-        {required_fields}.
+        Leia progressive_role_plan e assuma exatamente o papel, a missão, os entregáveis
+        e as exigências de evidência definidos em specialist_b. Trabalhe em paralelo ao
+        Agente A usando o objetivo original e o seu próprio brief; não dependa de
+        progressive_response_a. Publique uma contribuição no formato
+        AgentVisibleResponse com os campos obrigatórios {required_fields}.
 
         Regras:
-        - Declare explicitamente depends_on_response_ids=["response-x"].
+        - Declare explicitamente depends_on_response_ids=[] porque esta análise é
+          independente e paralela ao Agente A.
         - Use response_id="response-z", agent_name="progressive_agent_b",
           visibility="user_visible", status="published" e publication_order=2.
-        - Complemente, conteste ou aprofunde a resposta X sem ocultar a causalidade.
+        - Copie para agent_role o papel escolhido em
+          progressive_role_plan.specialist_b.role.
+        - Use as tools disponíveis quando o objetivo exigir evidência externa; não
+          apresente estimativas como cotações verificadas.
         - Respeite o limite operacional de {policy.max_model_calls} chamadas de modelo
           como metadata.max_model_calls quando aplicável.
         """,
         output_key="progressive_response_b",
-        tools=[read_text_file, extract_document_outline, inspect_json_records],
+        tools=[
+            read_text_file,
+            fetch_http_text,
+            extract_document_outline,
+            inspect_json_records,
+        ],
         parallel_worker=False,
         disallow_transfer_to_parent=True,
         disallow_transfer_to_peers=True,
+    )
+
+    verifier = llm(
+        name="progressive_requirements_verifier_agent",
+        description="Audits requirement coverage, assumptions and calculations.",
+        instruction="""
+        Atue como verificador independente antes da síntese. A barreira de junção
+        garante que progressive_response_a e progressive_response_b terminaram. Compare
+        ambas com o objetivo original e com progressive_role_plan.
+
+        Produza progressive_verification como JSON contendo:
+        - requirement_coverage: um item por required_deliverables, com status
+          covered, partial ou missing e evidência da resposta correspondente;
+        - calculation_audit: para cada conta material, entradas, fórmula, unidade/moeda,
+          resultado recalculado, resultado alegado e status consistent/inconsistent;
+        - unsupported_claims: valores ou fatos sem fonte ou tratados indevidamente como
+          confirmados;
+        - contradictions: conflitos entre objetivo, respostas X/Z e premissas;
+        - corrections_required: correções concretas obrigatórias para a síntese;
+        - verification_passed: true somente se não houver requisito material ausente nem
+          cálculo inconsistente sem correção proposta.
+
+        Refaça as contas; não aceite conclusões apenas porque dois agentes concordam.
+        Não publique resposta ao usuário: este parecer é insumo interno do Agente C.
+        """,
+        output_key="progressive_verification",
+        parallel_worker=False,
+        disallow_transfer_to_parent=True,
+        disallow_transfer_to_peers=True,
+        model_role="reasoning",
     )
 
     agent_c = llm(
         name="progressive_agent_c",
         description="Publishes a third contribution that can depend on multiple prior answers.",
         instruction=f"""
-        Você é o Agente C. Leia progressive_response_a e progressive_response_b como
-        contexto anterior e publique uma terceira contribuição no formato
+        Você é o Agente C. A barreira de junção garante que progressive_response_a e
+        progressive_response_b foram concluídas e progressive_verification contém a
+        auditoria independente. Reconcilie criticamente as duas respostas com o objetivo
+        original, progressive_role_plan e o parecer do verificador. Aplique todas as
+        corrections_required e cubra itens partial ou missing explicitamente. Publique
+        uma terceira contribuição no formato
         AgentVisibleResponse com os campos obrigatórios {required_fields}.
 
         Regras:
@@ -674,13 +776,17 @@ def create_progressive_multi_agent_response_workflow(
           que uma resposta pode depender das respostas X e Z anteriores.
         - Use response_id="response-c", agent_name="progressive_agent_c",
           visibility="user_visible", status="published" e publication_order=3.
-        - Mostre claramente onde você usa ou reconcilia as contribuições anteriores.
+        - Mostre claramente onde usa ou reconcilia as contribuições anteriores.
+        - Não aceite cálculos marcados inconsistent; recalcule ou declare a limitação.
+        - Diferencie valores pesquisados, estimativas e exemplos hipotéticos.
+        - Entregue o formato solicitado pelo usuário, não apenas um resumo das respostas.
         """,
         output_key="progressive_response_c",
         tools=[fetch_http_text, extract_document_outline, inspect_json_records],
         parallel_worker=False,
         disallow_transfer_to_parent=True,
         disallow_transfer_to_peers=True,
+        model_role="finalizer",
     )
 
     publish_a = _progressive_publish_node(
@@ -699,7 +805,7 @@ def create_progressive_multi_agent_response_workflow(
         agent_name="progressive_agent_b",
         default_role="research_specialist",
         publication_order=2,
-        depends_on_response_ids=["response-x"],
+        depends_on_response_ids=[],
     )
     publish_c = _progressive_publish_node(
         name="publish_progressive_response_c",
@@ -711,23 +817,40 @@ def create_progressive_multi_agent_response_workflow(
         depends_on_response_ids=["response-x", "response-z"],
     )
 
-    nodes = [agent_a, publish_a, agent_b, publish_b, agent_c, publish_c]
+    Workflow, _, JoinNode, Edge, START = load_workflow_classes()
+    specialists_join = JoinNode(name="progressive_specialists_join")
+    canonical_finalizer = _progressive_canonical_final_node()
+    edges = [
+        Edge(from_node=START, to_node=role_router),
+        Edge(from_node=role_router, to_node=agent_a),
+        Edge(from_node=role_router, to_node=agent_b),
+        Edge(from_node=agent_a, to_node=publish_a),
+        Edge(from_node=agent_b, to_node=publish_b),
+        Edge(from_node=publish_a, to_node=specialists_join),
+        Edge(from_node=publish_b, to_node=specialists_join),
+        Edge(from_node=specialists_join, to_node=verifier),
+        Edge(from_node=verifier, to_node=agent_c),
+        Edge(from_node=agent_c, to_node=publish_c),
+    ]
     if final_summarizer_mode in {"enabled", "auto"}:
-        nodes.append(
-            _create_response_chain_summarizer_agent(
-                llm,
-                mode=final_summarizer_mode,
-                strategy=final_response_strategy,
-            )
+        final_summarizer = _create_response_chain_summarizer_agent(
+            llm,
+            mode=final_summarizer_mode,
+            strategy=final_response_strategy,
         )
+        edges.append(Edge(from_node=publish_c, to_node=final_summarizer))
+        edges.append(Edge(from_node=final_summarizer, to_node=canonical_finalizer))
+    else:
+        edges.append(Edge(from_node=publish_c, to_node=canonical_finalizer))
 
-    return _workflow(
-        "progressive_multi_agent_response_workflow",
-        (
-            "ADK workflow for successive user-visible specialist responses with authored "
-            "message order and dependency causality stored in progressive_agent_responses."
+    return Workflow(
+        name="progressive_multi_agent_response_workflow",
+        description=(
+            "ADK workflow that selects objective-specific roles, fans out independent "
+            "specialists, verifies requirements and calculations, and publishes a "
+            "causally linked synthesis."
         ),
-        *nodes,
+        edges=edges,
     )
 
 
