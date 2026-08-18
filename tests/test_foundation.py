@@ -5,6 +5,8 @@ import json
 import os
 from types import SimpleNamespace
 
+import pytest
+
 from orchestrator.adk_compat import is_adk_installed
 from orchestrator.agents import PHASE_2_WORKFLOW_NAMES
 from orchestrator.config import (
@@ -642,12 +644,41 @@ def test_root_route_node_persists_workflow_decision_when_adk_is_installed():
     route_node = next(node for node in root.graph.nodes if node.name == "normalize_workflow_route")
     ctx = SimpleNamespace(state={})
 
-    selected = route_node._func(ctx=ctx, node_input="Use parallel for independent research.")
+    selected = route_node._func(
+        ctx=ctx,
+        node_input={
+            "selected_workflow": "parallel",
+            "rationale": "The research tasks are independent.",
+        },
+    )
 
     assert selected == "parallel"
     assert ctx.state["selected_workflow"] == "parallel"
     assert ctx.state["workflow"] == "parallel"
+    assert ctx.state["workflow_selection_source"] == "model"
+    assert ctx.state["decision_rationale"] == "The research tasks are independent."
     assert "parallel" not in ctx.state["workflow_alternatives"]
+
+
+def test_root_route_node_rejects_fuzzy_or_unknown_routes_when_adk_is_installed():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_root_agent
+
+    root = create_root_agent(OrchestratorSettings(workspace_enabled=False))
+    route_node = next(node for node in root.graph.nodes if node.name == "normalize_workflow_route")
+    ctx = SimpleNamespace(state={})
+
+    with pytest.raises(ValueError, match="invalid structured output"):
+        route_node._func(ctx=ctx, node_input="Use parallel for independent research.")
+    with pytest.raises(ValueError, match="unsupported workflow"):
+        route_node._func(
+            ctx=ctx,
+            node_input={"selected_workflow": "unknown", "rationale": "Invalid route."},
+        )
+
+    assert ctx.state == {}
 
 
 def test_specialist_factories_can_be_created_when_adk_is_installed():

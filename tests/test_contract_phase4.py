@@ -66,6 +66,9 @@ def test_explicit_workflow_is_recorded_in_initial_session_state():
 
     assert state["workflow"] == "parallel"
     assert state["selected_workflow"] == "parallel"
+    assert state["workflow_selection_source"] == "explicit"
+    assert state["decision_rationale"] == "Workflow explicitly requested by the caller."
+    assert "parallel" not in state["workflow_alternatives"]
 
 
 def test_status_reports_contract_capabilities():

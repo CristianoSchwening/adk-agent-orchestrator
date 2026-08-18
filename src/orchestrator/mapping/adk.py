@@ -151,6 +151,7 @@ def map_adk_execution(
         ),
         decision_metadata=DecisionMetadataDTO(
             selected_workflow=_selected_workflow(state),
+            selection_source=_optional_string(state.get("workflow_selection_source")),
             rationale=_optional_string(state.get("decision_rationale")),
             confidence=_optional_float(state.get("decision_confidence")),
             alternatives=_string_list(state.get("workflow_alternatives")),

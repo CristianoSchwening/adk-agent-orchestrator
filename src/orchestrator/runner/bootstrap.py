@@ -18,6 +18,7 @@ from orchestrator.adk_compat import (
 )
 from orchestrator.agents import (
     PHASE_2_WORKFLOW_NAMES,
+    WORKFLOW_ROUTE_SCHEMA,
     create_phase2_workflows,
     create_root_agent,
 )
@@ -115,6 +116,11 @@ def initial_session_state(
     if selected_workflow is not None:
         state["workflow"] = selected_workflow
         state["selected_workflow"] = selected_workflow
+        state["workflow_selection_source"] = "explicit"
+        state["decision_rationale"] = "Workflow explicitly requested by the caller."
+        state["workflow_alternatives"] = [
+            workflow for workflow in PHASE_2_WORKFLOW_NAMES if workflow != selected_workflow
+        ]
     return state
 
 
@@ -513,7 +519,7 @@ def _normalize_router_output(
     event_type: str,
     objective: str,
 ) -> str:
-    """Wrap a valid bare workflow route in the operational workspace contract."""
+    """Represent a valid router decision using the operational workspace contract."""
 
     if agent_name != "workflow_router_agent" or event_type not in {
         "model",
@@ -526,7 +532,17 @@ def _normalize_router_output(
         decoded = json.loads(candidate)
     except json.JSONDecodeError:
         decoded = candidate
-    if not isinstance(decoded, str) or decoded not in PHASE_2_WORKFLOW_NAMES:
+    if isinstance(decoded, str):
+        route = decoded
+        rationale = "Route selected by the workflow router."
+    elif isinstance(decoded, dict):
+        route = decoded.get("selected_workflow")
+        rationale = decoded.get("rationale")
+    else:
+        return text
+    if route not in WORKFLOW_ROUTE_SCHEMA["properties"]["selected_workflow"]["enum"]:
+        return text
+    if not isinstance(rationale, str) or not rationale.strip():
         return text
 
     return json.dumps(
@@ -542,15 +558,16 @@ def _normalize_router_output(
                 "decisions": [
                     {
                         "type": "workflow_route",
-                        "selected_workflow": decoded,
+                        "selected_workflow": route,
+                        "rationale": rationale.strip(),
                     }
                 ],
                 "uncertainties": [],
                 "blockers": [],
                 "criticisms": [],
-                "next_action": f"Execute the {decoded} workflow.",
+                "next_action": f"Execute the {route} workflow.",
             },
-            "result": decoded,
+            "result": route,
         },
         ensure_ascii=False,
     )

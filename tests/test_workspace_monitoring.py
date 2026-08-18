@@ -211,7 +211,7 @@ def test_workspace_can_be_disabled_for_plain_agent_outputs():
     agent = create_root_agent(OrchestratorSettings(workspace_enabled=False))
     router = next(node for node in agent.graph.nodes if node.name == "workflow_router_agent")
 
-    assert router.output_schema is None
+    assert router.output_schema is not None
     assert "WORKSPACE OPERACIONAL VERBALIZADO" not in router.instruction
     assert (
         _extract_final_response(
@@ -276,6 +276,30 @@ def test_router_bare_route_is_normalized_to_workspace_contract():
     assert result == "sequential"
     assert workspace.objective == "answer a simple question"
     assert workspace.decisions[0]["selected_workflow"] == "sequential"
+
+
+def test_structured_router_decision_is_normalized_to_workspace_contract():
+    from orchestrator.runner.bootstrap import _normalize_router_output
+
+    normalized = _normalize_router_output(
+        json.dumps(
+            {
+                "selected_workflow": "parallel",
+                "rationale": "The subtasks can run independently.",
+            }
+        ),
+        agent_name="workflow_router_agent",
+        event_type="model",
+        objective="compare independent sources",
+    )
+    workspace, result = parse_agent_step(normalized, objective="fallback")
+
+    assert result == "parallel"
+    assert workspace.decisions[0] == {
+        "type": "workflow_route",
+        "selected_workflow": "parallel",
+        "rationale": "The subtasks can run independently.",
+    }
 
 
 def test_router_normalizer_preserves_complete_or_invalid_outputs():
@@ -405,11 +429,12 @@ def test_progressive_internal_outputs_are_materialized_for_auditability():
     }
 
 
-def test_workspace_schema_is_preserved_on_graph_router():
+def test_graph_router_uses_dedicated_route_schema():
     from orchestrator.agents import create_root_agent
+    from orchestrator.agents.root import WORKFLOW_ROUTE_SCHEMA
 
     agent = create_root_agent(OrchestratorSettings(workspace_enabled=True))
     router = next(node for node in agent.graph.nodes if node.name == "workflow_router_agent")
 
-    assert router.output_schema == AGENT_STEP_RESPONSE_SCHEMA
-    assert "WORKSPACE OPERACIONAL VERBALIZADO" in router.instruction
+    assert router.output_schema == WORKFLOW_ROUTE_SCHEMA
+    assert "WORKSPACE OPERACIONAL VERBALIZADO" not in router.instruction
