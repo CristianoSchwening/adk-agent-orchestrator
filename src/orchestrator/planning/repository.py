@@ -17,7 +17,13 @@ _SAFE_COMPONENT = re.compile(r"[^A-Za-z0-9_.-]+")
 class FileTaskPlanRepository:
     """Store one immutable-intent plan per JSON file inside a controlled root."""
 
-    def __init__(self, root: str | Path, *, repository_root: str | Path, max_bytes: int = 262_144) -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        repository_root: str | Path,
+        max_bytes: int = 262_144,
+    ) -> None:
         self.repository_root = Path(repository_root).resolve()
         candidate = Path(root)
         if not candidate.is_absolute():
@@ -26,15 +32,21 @@ class FileTaskPlanRepository:
         try:
             self.root.relative_to(self.repository_root)
         except ValueError as exc:
-            raise TaskPlanValidationError(["task-plan root must stay inside the repository"]) from exc
+            raise TaskPlanValidationError(
+                ["task-plan root must stay inside the repository"]
+            ) from exc
         self.max_bytes = max_bytes
         self._lock = Lock()
 
     def save(self, plan: TaskPlan) -> Path:
         validate_task_plan(plan)
-        payload = json.dumps(plan.to_dict(), ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
+        payload = json.dumps(
+            plan.to_dict(), ensure_ascii=False, indent=2, sort_keys=True
+        ).encode("utf-8")
         if len(payload) > self.max_bytes:
-            raise TaskPlanValidationError([f"task plan exceeds configured limit of {self.max_bytes} bytes"])
+            raise TaskPlanValidationError(
+                [f"task plan exceeds configured limit of {self.max_bytes} bytes"]
+            )
         target = self._path(plan.plan_id)
         with self._lock:
             target.parent.mkdir(parents=True, exist_ok=True)
