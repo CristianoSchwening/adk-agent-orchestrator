@@ -73,6 +73,8 @@ adk web --port 8000   # interface de desenvolvimento do ADK
 | `GET` | `/api/status` | Status do servidor e versão do ADK |
 | `POST` | `/api/run` | Executar objetivo com modelo real |
 | `POST` | `/api/run/demo` | Executar objetivo em modo demo (sem modelo) |
+| `POST` | `/api/task-plans` | Validar e persistir um plano de tarefas sem executá-lo |
+| `GET` | `/api/task-plans/{plan_id}` | Consultar um plano de tarefas persistido |
 | `GET` | `/api/loop3/config` | Configuração e histórico do EventLoop |
 | `POST` | `/api/loop3/trigger` | Disparo manual do EventLoop |
 | `POST` | `/api/loop3/webhook/{token}` | Disparo via webhook |
@@ -238,6 +240,7 @@ ADK_PROGRESSIVE_FINAL_RESPONSE_STRATEGY="all_visible_responses"
 ## Documentação adicional
 
 - [`docs/architecture.md`](docs/architecture.md) — decisões arquiteturais e fluxo de execução
+- [`docs/task-plans.md`](docs/task-plans.md) — modelo, validação e persistência de planos de tarefas
 - [`docs/tools.md`](docs/tools.md) — catálogo de tools e configuração MCP
 - [`docs/evaluation.md`](docs/evaluation.md) — critérios e datasets de avaliação
 - [`docs/observability.md`](docs/observability.md) — logs e métricas para Google Cloud

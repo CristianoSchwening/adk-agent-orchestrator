@@ -159,6 +159,7 @@ def map_adk_execution(
         ),
         artifacts=artifact_dtos,
         progressive_agent_responses=progressive_responses,
+        task_plan=_map_task_plan(state.get("task_plan")),
     )
 
 
@@ -427,3 +428,16 @@ def _string_list(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
     return [str(item) for item in value]
+
+
+def _map_task_plan(value: Any) -> dict[str, Any] | None:
+    """Project only structurally valid task plans from session state."""
+
+    if not isinstance(value, dict):
+        return None
+    try:
+        from orchestrator.planning import TaskPlan, validate_task_plan
+
+        return validate_task_plan(TaskPlan.from_dict(value)).to_dict()
+    except (TypeError, ValueError):
+        return None

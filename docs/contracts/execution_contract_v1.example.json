@@ -96,6 +96,7 @@
       }
     }
   ],
+  "task_plan": null,
   "progressive_agent_responses": [
     {
       "response_id": "response-x",

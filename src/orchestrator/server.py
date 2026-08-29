@@ -24,6 +24,12 @@ from orchestrator.contracts.dto import (
     utc_now_iso,
 )
 from orchestrator.loops import STANDARD_QUALITY_RUBRIC, EventLoop, VerificationLoop
+from orchestrator.planning import (
+    FileTaskPlanRepository,
+    TaskPlan,
+    TaskPlanValidationError,
+    validate_task_plan,
+)
 from orchestrator.runner.bootstrap import run_once_contract
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
@@ -61,6 +67,15 @@ class StatusResponse(BaseModel):
 
 
 event_loop = EventLoop()
+
+
+def _task_plan_repository(settings: OrchestratorSettings | None = None) -> FileTaskPlanRepository:
+    resolved = settings or OrchestratorSettings.from_env()
+    return FileTaskPlanRepository(
+        resolved.task_plan_root,
+        repository_root=Path(__file__).resolve().parents[2],
+        max_bytes=resolved.task_plan_max_bytes,
+    )
 
 RUN_WORKFLOW_ALIASES = {
     # Legacy UI name for the closest production ADK workflow.
@@ -124,6 +139,33 @@ async def run_objective(body: RunRequest) -> JSONResponse:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return JSONResponse(content=contract.to_dict())
+
+
+@app.post("/api/task-plans", status_code=201)
+async def create_task_plan(payload: dict[str, Any]) -> dict[str, Any]:
+    """Validate and persist a domain-neutral task plan without executing it."""
+
+    try:
+        plan = validate_task_plan(TaskPlan.from_dict(payload))
+        path = _task_plan_repository().save(plan)
+    except TaskPlanValidationError as exc:
+        raise HTTPException(status_code=422, detail={"errors": exc.errors}) from exc
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail={"errors": [str(exc)]}) from exc
+    return {"task_plan": plan.to_dict(), "stored_as": path.name}
+
+
+@app.get("/api/task-plans/{plan_id}")
+async def get_task_plan(plan_id: str) -> dict[str, Any]:
+    """Return one previously validated task plan."""
+
+    try:
+        plan = _task_plan_repository().get(plan_id)
+    except TaskPlanValidationError as exc:
+        raise HTTPException(status_code=422, detail={"errors": exc.errors}) from exc
+    if plan is None:
+        raise HTTPException(status_code=404, detail="task plan not found")
+    return {"task_plan": plan.to_dict()}
 
 
 @app.post("/api/run/demo")
@@ -350,6 +392,52 @@ async def run_demo(body: RunRequest) -> JSONResponse:
             },
         ],
         "progressive_agent_responses": [],
+        "task_plan": {
+            "schema_version": "orchestrator.task_plan.v1",
+            "plan_id": "PLAN-DEMO-001",
+            "goal": {
+                "objective": objective,
+                "constraints": [],
+                "success_criteria": ["The requested outcome is delivered."],
+            },
+            "tasks": [
+                {
+                    "task_id": "TASK-DEMO-001",
+                    "title": "Understand the objective",
+                    "description": "Clarify the outcome and relevant constraints.",
+                    "task_type": "analysis",
+                    "depends_on": [],
+                    "required_capabilities": ["planning"],
+                    "acceptance_criteria": ["Objective and constraints are explicit."],
+                    "strategy": "single_agent",
+                    "requires_review": False,
+                    "requires_approval": False,
+                    "metadata": {},
+                },
+                {
+                    "task_id": "TASK-DEMO-002",
+                    "title": "Produce the outcome",
+                    "description": "Execute the planned work and consolidate the result.",
+                    "task_type": "execution",
+                    "depends_on": ["TASK-DEMO-001"],
+                    "required_capabilities": ["execution", "synthesis"],
+                    "acceptance_criteria": ["Final outcome satisfies the stated goal."],
+                    "strategy": workflow if workflow in PHASE_2_WORKFLOW_NAMES else "sequential",
+                    "requires_review": False,
+                    "requires_approval": False,
+                    "metadata": {},
+                },
+            ],
+            "deliverables": [
+                {"deliverable_id": "DEL-DEMO-001", "description": "Final response"}
+            ],
+            "status": "validated",
+            "assumptions": [],
+            "workstream_id": None,
+            "revision": 1,
+            "created_at": now,
+            "updated_at": now,
+        },
     }
 
     if workflow == "loop2_verification":
