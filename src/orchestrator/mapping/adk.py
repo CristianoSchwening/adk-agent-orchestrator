@@ -136,6 +136,9 @@ def map_adk_execution(
                 "workspace_trace_count": state.get("workspace_trace_count"),
                 "workspace_violation_count": state.get("workspace_violation_count"),
                 "workspace_enforcement": state.get("workspace_enforcement"),
+                "task_plan_status": state.get("task_plan_status"),
+                "task_plan_source": state.get("task_plan_source"),
+                "task_plan_path": state.get("task_plan_path"),
                 "model_basket": state.get("model_basket"),
                 "model_fallback_count": sum(
                     1 for route in model_routing if route.get("fallback_used") is True

@@ -438,3 +438,14 @@ def test_graph_router_uses_dedicated_route_schema():
 
     assert router.output_schema == WORKFLOW_ROUTE_SCHEMA
     assert "WORKSPACE OPERACIONAL VERBALIZADO" not in router.instruction
+
+
+def test_task_planner_uses_dedicated_structured_schema():
+    from orchestrator.agents import TASK_PLAN_DRAFT_SCHEMA, create_root_agent
+
+    agent = create_root_agent(OrchestratorSettings(workspace_enabled=True))
+    planner = next(node for node in agent.graph.nodes if node.name == "task_planner_agent")
+
+    assert planner.output_schema == TASK_PLAN_DRAFT_SCHEMA
+    assert planner.output_key == "task_plan_draft"
+    assert "WORKSPACE OPERACIONAL VERBALIZADO" not in planner.instruction

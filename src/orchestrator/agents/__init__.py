@@ -1,6 +1,16 @@
 """ADK agent factories."""
 
-from orchestrator.agents.root import WORKFLOW_ROUTE_SCHEMA, create_root_agent
+from orchestrator.agents.root import (
+    WORKFLOW_ROUTE_SCHEMA,
+    create_planned_workflow,
+    create_root_agent,
+)
+from orchestrator.agents.task_planner import (
+    TASK_PLAN_DRAFT_SCHEMA,
+    create_task_plan_normalizer,
+    create_task_planner_agent,
+    task_plan_from_draft,
+)
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_critic_agent,
@@ -25,6 +35,7 @@ from orchestrator.agents.workflows import (
 __all__ = [
     "PHASE_2_WORKFLOW_NAMES",
     "WORKFLOW_ROUTE_SCHEMA",
+    "TASK_PLAN_DRAFT_SCHEMA",
     "create_agent_help_request_workflow",
     "create_approval_agent",
     "create_critic_agent",
@@ -40,5 +51,9 @@ __all__ = [
     "create_phase2_workflows",
     "create_review_critic_workflow",
     "create_root_agent",
+    "create_planned_workflow",
+    "create_task_plan_normalizer",
+    "create_task_planner_agent",
     "create_sequential_workflow",
+    "task_plan_from_draft",
 ]

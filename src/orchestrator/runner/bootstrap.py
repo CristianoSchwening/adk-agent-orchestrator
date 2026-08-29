@@ -19,12 +19,13 @@ from orchestrator.adk_compat import (
 from orchestrator.agents import (
     PHASE_2_WORKFLOW_NAMES,
     WORKFLOW_ROUTE_SCHEMA,
-    create_phase2_workflows,
+    create_planned_workflow,
     create_root_agent,
 )
 from orchestrator.config import OrchestratorSettings
 from orchestrator.contracts import AgentVisibleResponse, ExecutionContractDTO
 from orchestrator.mapping.adk import map_adk_execution, map_duration_ms
+from orchestrator.planning import FileTaskPlanRepository, TaskPlan, validate_task_plan
 from orchestrator.workspace import (
     FileWorkspaceRepository,
     WorkspaceMonitor,
@@ -69,7 +70,7 @@ def build_runtime(
         raise ValueError(f"unsupported workflow '{workflow}'; expected one of: {supported}")
 
     root_agent = (
-        create_phase2_workflows(resolved_settings)[workflow]
+        create_planned_workflow(resolved_settings, workflow_name=workflow)
         if workflow is not None
         else create_root_agent(resolved_settings)
     )
@@ -201,7 +202,7 @@ async def run_once_contract(
                 agent_name = str(
                     getattr(event, "author", None) or "root_orchestrator_agent"
                 )
-                model_output = _normalize_router_output(
+                model_output = _normalize_structured_agent_output(
                     _runtime_event_text(event),
                     agent_name=agent_name,
                     event_type=event_type,
@@ -220,7 +221,7 @@ async def run_once_contract(
                 )
         if event.is_final_response() and event.content and event.content.parts:
             agent_name = str(getattr(event, "author", None) or "root_orchestrator_agent")
-            final_output = _normalize_router_output(
+            final_output = _normalize_structured_agent_output(
                 event.content.parts[0].text or "",
                 agent_name=agent_name,
                 event_type="final_response",
@@ -239,6 +240,7 @@ async def run_once_contract(
 
     refreshed_session = await _get_session(runtime, resolved_session_id)
     session = refreshed_session or session
+    _persist_generated_task_plan(runtime, session)
     if monitor is not None and session is not None and hasattr(session, "state"):
         session.state["workspace_trace_count"] = len(monitor.paths)
         session.state["workspace_violation_count"] = len(monitor.violations)
@@ -515,14 +517,17 @@ def _runtime_event_text(event: Any) -> str:
     return str(getattr(event, "message", None) or "")
 
 
-def _normalize_router_output(
+def _normalize_structured_agent_output(
     text: str,
     *,
     agent_name: str,
     event_type: str,
     objective: str,
 ) -> str:
-    """Represent a valid router decision using the operational workspace contract."""
+    """Represent structured planning/routing output using the workspace contract."""
+
+    if agent_name == "task_planner_agent" and event_type in {"model", "final_response"}:
+        return _normalize_task_planner_output(text, objective=objective)
 
     if agent_name != "workflow_router_agent" or event_type not in {
         "model",
@@ -574,6 +579,71 @@ def _normalize_router_output(
         },
         ensure_ascii=False,
     )
+
+
+def _normalize_task_planner_output(text: str, *, objective: str) -> str:
+    """Wrap an ADK task-plan draft for strict verbalized-workspace monitoring."""
+
+    try:
+        payload = json.loads(text.strip())
+    except json.JSONDecodeError:
+        return text
+    if not isinstance(payload, dict) or not isinstance(payload.get("tasks"), list):
+        return text
+    tasks = payload["tasks"]
+    return json.dumps(
+        {
+            "workspace": {
+                "objective": objective,
+                "interpretation": "Decompose the objective into a validated task plan.",
+                "current_step": "Create the task dependency graph.",
+                "plan": [
+                    {
+                        "task_id": task.get("task_id"),
+                        "title": task.get("title"),
+                        "depends_on": task.get("depends_on", []),
+                    }
+                    for task in tasks
+                    if isinstance(task, dict)
+                ],
+                "assumptions": payload.get("assumptions", []),
+                "hypotheses": [],
+                "evidence": [],
+                "decisions": [
+                    {"type": "task_plan_draft", "task_count": len(tasks)}
+                ],
+                "uncertainties": [],
+                "blockers": [],
+                "criticisms": [],
+                "next_action": "Validate the task plan before workflow routing.",
+            },
+            "result": json.dumps(payload, ensure_ascii=False),
+        },
+        ensure_ascii=False,
+    )
+
+
+def _persist_generated_task_plan(runtime: AdkRuntime, session: Any) -> None:
+    """Persist a validated LLM-generated plan using the Increment 1 repository."""
+
+    if session is None:
+        return
+    state = (
+        session.get("state", {})
+        if isinstance(session, dict)
+        else getattr(session, "state", {})
+    )
+    raw_plan = state.get("task_plan") if state is not None else None
+    if not isinstance(raw_plan, dict):
+        return
+    plan = validate_task_plan(TaskPlan.from_dict(raw_plan))
+    repository = FileTaskPlanRepository(
+        runtime.settings.task_plan_root,
+        repository_root=REPOSITORY_ROOT,
+        max_bytes=runtime.settings.task_plan_max_bytes,
+    )
+    path = repository.save(plan)
+    state["task_plan_path"] = str(path.relative_to(REPOSITORY_ROOT))
 
 
 def _runtime_event_diagnostic(event: Any) -> str | None:
