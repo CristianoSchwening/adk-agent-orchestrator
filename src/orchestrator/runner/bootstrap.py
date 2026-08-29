@@ -581,6 +581,23 @@ def _normalize_structured_agent_output(
     )
 
 
+def _normalize_router_output(
+    text: str,
+    *,
+    agent_name: str,
+    event_type: str,
+    objective: str,
+) -> str:
+    """Backward-compatible entry point for existing workspace integrations."""
+
+    return _normalize_structured_agent_output(
+        text,
+        agent_name=agent_name,
+        event_type=event_type,
+        objective=objective,
+    )
+
+
 def _normalize_task_planner_output(text: str, *, objective: str) -> str:
     """Wrap an ADK task-plan draft for strict verbalized-workspace monitoring."""
 
