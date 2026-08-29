@@ -34,6 +34,10 @@ def get_orchestrator_status() -> dict[str, Any]:
         "certified_adk_version": CERTIFIED_ADK_VERSION,
         "capabilities": [
             "root_agent",
+            "llm_task_planner_agent",
+            "structured_task_plan_output",
+            "deterministic_task_plan_validation",
+            "atomic_task_plan_persistence",
             "runner",
             "in_memory_session_service",
             "in_memory_artifact_service",

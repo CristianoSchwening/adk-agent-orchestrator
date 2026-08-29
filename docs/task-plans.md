@@ -62,7 +62,30 @@ GET /api/task-plans/{plan_id}
 O contrato de execução aceita um campo opcional `task_plan`. Clientes anteriores continuam
 compatíveis porque o restante de `orchestrator.execution.v1` não foi removido ou renomeado.
 
+## Planner assistido por LLM
+
+O Incremento 2 adiciona `task_planner_agent`, um `LlmAgent` oficial do ADK com
+`output_schema` dedicado. Ele produz somente um rascunho estrutural, sem metadados de
+persistência. Um `FunctionNode` ADK materializa IDs de plano, versão, timestamps e status,
+executa o mesmo validador determinístico do Incremento 1 e publica o plano no estado da
+sessão como `task_plan`.
+
+O fluxo automático passa a ser:
+
+```text
+LlmAgent(task_planner_agent)
+  → FunctionNode(normalize_task_plan)
+  → LlmAgent(workflow_router_agent)
+  → workflow ADK selecionado
+```
+
+Quando o cliente escolhe explicitamente um workflow, o mesmo estágio de planejamento é
+executado antes daquele workflow. Planos válidos são persistidos pelo repositório JSON ao
+final da execução e projetados no contrato público.
+
+O planner cria tarefas, mas não as executa, não seleciona agentes e não implementa um
+scheduler próprio. Essas responsabilidades permanecem reservadas ao futuro dispatcher.
+
 ## Próximos incrementos
 
-O planner assistido por modelo produzirá esse mesmo contrato. O dispatcher futuro consumirá
-somente planos que tenham passado pelo validador determinístico.
+O dispatcher futuro consumirá somente planos que tenham passado pelo validador determinístico.

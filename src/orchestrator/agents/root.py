@@ -6,6 +6,10 @@ import json
 from typing import Any
 
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
+from orchestrator.agents.task_planner import (
+    create_task_plan_normalizer,
+    create_task_planner_agent,
+)
 from orchestrator.agents.workflows import PHASE_2_WORKFLOW_NAMES, create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.model import create_gemini_model
@@ -34,6 +38,9 @@ capturar objetivos de forma estruturada, explicar capacidades disponíveis e usa
 locais seguras quando elas ajudarem a responder.
 
 Regras:
+- Receba o TaskPlan validado produzido pelo task_planner_agent e use suas dependências,
+  estratégias e necessidades de revisão como sinais para escolher o workflow global.
+- Não refaça a decomposição e não altere o TaskPlan durante o roteamento.
 - Use a tool capture_objective quando o usuário informar um objetivo.
 - Use a tool get_orchestrator_status quando precisar explicar capacidades atuais.
 - Use list_available_tools antes de prometer uma capacidade de ferramenta.
@@ -109,6 +116,8 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
         "output_schema": WORKFLOW_ROUTE_SCHEMA,
     }
     router = Agent(**kwargs)
+    task_planner = create_task_planner_agent(resolved_settings)
+    task_plan_normalizer = create_task_plan_normalizer()
 
     def normalize_route(ctx: Any, node_input: Any) -> str:
         payload = _route_payload(node_input)
@@ -123,13 +132,43 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
         return selected_route
 
     route_node = FunctionNode(func=normalize_route, name="normalize_workflow_route")
-    edges = [Edge(from_node=START, to_node=router), Edge(from_node=router, to_node=route_node)]
+    edges = [
+        Edge(from_node=START, to_node=task_planner),
+        Edge(from_node=task_planner, to_node=task_plan_normalizer),
+        Edge(from_node=task_plan_normalizer, to_node=router),
+        Edge(from_node=router, to_node=route_node),
+    ]
     edges.extend(
         Edge(from_node=route_node, to_node=workflow, route=route)
         for route, workflow in phase2_workflows.items()
     )
     return Workflow(
         name="root_orchestrator_agent",
-        description="Graph-based root orchestrator with one routed workflow per objective.",
+        description="ADK task planning followed by one routed workflow per objective.",
         edges=edges,
+    )
+
+
+def create_planned_workflow(
+    settings: OrchestratorSettings,
+    *,
+    workflow_name: str,
+) -> Any:
+    """Wrap an explicitly selected workflow with the ADK task-planning stage."""
+
+    Workflow, _, _, Edge, START = load_workflow_classes()
+    workflows = create_phase2_workflows(settings)
+    if workflow_name not in workflows:
+        raise ValueError(f"unsupported workflow: {workflow_name}")
+    planner = create_task_planner_agent(settings)
+    normalizer = create_task_plan_normalizer()
+    target = workflows[workflow_name]
+    return Workflow(
+        name=f"planned_{workflow_name}_workflow",
+        description="ADK task planning followed by the explicitly selected workflow.",
+        edges=[
+            Edge(from_node=START, to_node=planner),
+            Edge(from_node=planner, to_node=normalizer),
+            Edge(from_node=normalizer, to_node=target),
+        ],
     )

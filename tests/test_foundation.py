@@ -206,6 +206,7 @@ def test_agents_use_role_specific_models():
     }
 
     assert root_models["workflow_router_agent"] == "gemini-router"
+    assert root_models["task_planner_agent"] == "gemini-reasoning"
     assert sequential_models == {
         "sequential_planner_agent": "gemini-worker",
         "sequential_executor_agent": "gemini-worker",
@@ -622,6 +623,8 @@ def test_root_agent_can_be_created_when_adk_is_installed():
 
     assert root_agent.name == "root_orchestrator_agent"
     assert [agent.name for agent in _workflow_nodes(root_agent)] == [
+        "task_planner_agent",
+        "normalize_task_plan",
         "workflow_router_agent",
         "normalize_workflow_route",
         "sequential_workflow",
@@ -679,6 +682,67 @@ def test_root_route_node_rejects_fuzzy_or_unknown_routes_when_adk_is_installed()
         )
 
     assert ctx.state == {}
+
+
+def test_task_plan_normalizer_persists_validated_plan_when_adk_is_installed():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_root_agent
+
+    root = create_root_agent(OrchestratorSettings(workspace_enabled=False))
+    normalizer = next(node for node in root.graph.nodes if node.name == "normalize_task_plan")
+    ctx = SimpleNamespace(state={})
+    draft = {
+        "goal": {
+            "objective": "Prepare a reusable proposal",
+            "constraints": ["Remain domain neutral"],
+            "success_criteria": ["Proposal is actionable"],
+        },
+        "tasks": [
+            {
+                "task_id": "TASK-001",
+                "title": "Prepare proposal",
+                "description": "Create the requested proposal.",
+                "task_type": "creation",
+                "depends_on": [],
+                "required_capabilities": ["synthesis"],
+                "acceptance_criteria": ["Proposal satisfies the goal"],
+                "strategy": "single_agent",
+                "requires_review": False,
+                "requires_approval": False,
+            }
+        ],
+        "deliverables": [
+            {"deliverable_id": "DEL-001", "description": "Final proposal"}
+        ],
+        "assumptions": [],
+    }
+
+    forwarded = json.loads(normalizer._func(ctx=ctx, node_input=draft))
+
+    assert ctx.state["task_plan_status"] == "validated"
+    assert ctx.state["task_plan_source"] == "llm"
+    assert ctx.state["task_plan"]["schema_version"] == "orchestrator.task_plan.v1"
+    assert forwarded["objective"] == "Prepare a reusable proposal"
+
+
+def test_explicit_workflow_is_wrapped_by_adk_task_planner_when_installed():
+    if not is_adk_installed():
+        return
+
+    from orchestrator.agents import create_planned_workflow
+
+    workflow = create_planned_workflow(
+        OrchestratorSettings(workspace_enabled=False),
+        workflow_name="parallel",
+    )
+
+    assert [node.name for node in _workflow_nodes(workflow)] == [
+        "task_planner_agent",
+        "normalize_task_plan",
+        "parallel_workflow",
+    ]
 
 
 def test_specialist_factories_can_be_created_when_adk_is_installed():
