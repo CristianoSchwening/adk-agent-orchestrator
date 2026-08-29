@@ -11,7 +11,7 @@ from importlib import import_module, metadata, util
 from typing import Any
 
 ADK_DISTRIBUTION = "google-adk"
-CERTIFIED_ADK_VERSION = "2.6.1"
+CERTIFIED_ADK_VERSION = "2.8.0"
 
 
 def is_adk_installed() -> bool:
