@@ -14,7 +14,7 @@ authors = [
 ]
 dependencies = [
   "fastapi>=0.115.0,<1.0.0",
-  "google-adk[mcp]==2.6.1",
+  "google-adk[mcp]==2.8.0",
   "python-dotenv>=1.0.1,<2.0.0",
   "uvicorn>=0.30.0,<1.0.0"
 ]

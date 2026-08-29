@@ -39,7 +39,7 @@ npm --prefix webapp-react run build
 python run_server.py
 ```
 
-Escolha `constraints-3.10.txt` a `constraints-3.13.txt` conforme sua versão do Python. O runtime é certificado para `google-adk[mcp]==2.6.1`.
+Escolha `constraints-3.10.txt` a `constraints-3.13.txt` conforme sua versão do Python. O runtime é certificado para `google-adk[mcp]==2.8.0`.
 
 **Desenvolvimento da SPA** (hot-reload):
 

@@ -1,4 +1,4 @@
-﻿# Generated from pip resolution for google-adk[mcp]==2.6.1.
+# Generated from pip resolution for google-adk[mcp]==2.8.0.
 # Regenerate when the certified ADK version changes.
 
 aiohappyeyeballs==2.7.1
@@ -19,9 +19,9 @@ cryptography==50.0.0
 distro==1.9.0
 fastapi==0.141.1
 frozenlist==1.8.0
-google-adk==2.6.1
+google-adk==2.8.0
 google-auth==2.56.2
-google-genai==2.16.0
+google-genai==2.19.0
 graphviz==0.21
 h11==0.16.0
 httpcore==1.0.9
