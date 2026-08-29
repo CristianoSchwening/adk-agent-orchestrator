@@ -185,6 +185,7 @@ def test_contract_snapshot_shape_is_stable():
         "decision_metadata",
         "artifacts",
         "progressive_agent_responses",
+        "task_plan",
     }
     assert snapshot["task"]["status"] == "completed"
     assert snapshot["decision_metadata"]["selected_workflow"] == "sequential"

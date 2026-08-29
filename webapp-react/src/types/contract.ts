@@ -90,4 +90,37 @@ export interface ExecutionContractDTO {
   decision_metadata: DecisionMetadataDTO
   artifacts: ArtifactDTO[]
   progressive_agent_responses: AgentVisibleResponse[]
+  task_plan?: TaskPlanDTO | null
+}
+
+export interface PlannedTaskDTO {
+  task_id: string
+  title: string
+  description: string
+  task_type: string
+  depends_on: string[]
+  required_capabilities: string[]
+  acceptance_criteria: string[]
+  strategy: string
+  requires_review: boolean
+  requires_approval: boolean
+  metadata: Record<string, unknown>
+}
+
+export interface TaskPlanDTO {
+  schema_version: string
+  plan_id: string
+  status: string
+  revision: number
+  goal: {
+    objective: string
+    constraints: string[]
+    success_criteria: string[]
+  }
+  tasks: PlannedTaskDTO[]
+  deliverables: Array<{ deliverable_id: string; description: string }>
+  assumptions: string[]
+  workstream_id: string | null
+  created_at: string
+  updated_at: string
 }

@@ -177,3 +177,59 @@ def test_run_rejects_unknown_workflow_before_runtime() -> None:
 
     assert response.status_code == 422
     assert "supported_workflows" in response.json()["detail"]
+
+
+def test_task_plan_api_validates_persists_and_reads(monkeypatch, tmp_path) -> None:
+    from orchestrator import server
+    from orchestrator.planning import FileTaskPlanRepository
+
+    repository = FileTaskPlanRepository("plans", repository_root=tmp_path)
+    monkeypatch.setattr(server, "_task_plan_repository", lambda settings=None: repository)
+    payload = {
+        "plan_id": "PLAN-API-001",
+        "status": "validated",
+        "goal": {
+            "objective": "Prepare a reusable report",
+            "constraints": [],
+            "success_criteria": ["Report is complete"],
+        },
+        "tasks": [
+            {
+                "task_id": "TASK-001",
+                "title": "Prepare report",
+                "description": "Create the requested report.",
+                "task_type": "creation",
+                "depends_on": [],
+                "required_capabilities": ["writing"],
+                "acceptance_criteria": ["Report is complete"],
+                "strategy": "single_agent",
+            }
+        ],
+        "deliverables": [
+            {"deliverable_id": "DEL-001", "description": "Final report"}
+        ],
+    }
+
+    created = client.post("/api/task-plans", json=payload)
+    fetched = client.get("/api/task-plans/PLAN-API-001")
+
+    assert created.status_code == 201
+    assert created.json()["stored_as"] == "PLAN-API-001.json"
+    assert fetched.status_code == 200
+    assert fetched.json()["task_plan"]["goal"]["objective"] == "Prepare a reusable report"
+
+
+def test_task_plan_api_reports_structural_errors(monkeypatch, tmp_path) -> None:
+    from orchestrator import server
+    from orchestrator.planning import FileTaskPlanRepository
+
+    repository = FileTaskPlanRepository("plans", repository_root=tmp_path)
+    monkeypatch.setattr(server, "_task_plan_repository", lambda settings=None: repository)
+
+    response = client.post(
+        "/api/task-plans",
+        json={"plan_id": "INVALID", "goal": {"objective": "Do something"}},
+    )
+
+    assert response.status_code == 422
+    assert "at least one task is required" in response.json()["detail"]["errors"]

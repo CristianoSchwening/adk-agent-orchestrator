@@ -223,6 +223,8 @@ class OrchestratorSettings:
     workspace_mode: WorkspaceEnforcementMode = "strict"
     workspace_root: str = "observability/verbalized_workspace/traces"
     workspace_max_bytes: int = 65_536
+    task_plan_root: str = "data/task_plans"
+    task_plan_max_bytes: int = 262_144
     progressive_multi_agent_response: ProgressiveMultiAgentResponseSettings = field(
         default_factory=ProgressiveMultiAgentResponseSettings
     )
@@ -306,6 +308,15 @@ class OrchestratorSettings:
                 os.getenv("ADK_WORKSPACE_MAX_BYTES"),
                 cls.workspace_max_bytes,
                 "ADK_WORKSPACE_MAX_BYTES",
+            ),
+            task_plan_root=(
+                os.getenv("ADK_TASK_PLAN_ROOT", cls.task_plan_root).strip()
+                or cls.task_plan_root
+            ),
+            task_plan_max_bytes=_parse_positive_int(
+                os.getenv("ADK_TASK_PLAN_MAX_BYTES"),
+                cls.task_plan_max_bytes,
+                "ADK_TASK_PLAN_MAX_BYTES",
             ),
             progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings.from_env(),
         )

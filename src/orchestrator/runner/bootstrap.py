@@ -96,6 +96,7 @@ def initial_session_state(
     settings: OrchestratorSettings,
     *,
     selected_workflow: str | None = None,
+    task_plan: dict[str, Any] | None = None,
 ) -> dict[str, object]:
     """Return the initial ADK session state tracked by the public contract."""
 
@@ -121,6 +122,8 @@ def initial_session_state(
         state["workflow_alternatives"] = [
             workflow for workflow in PHASE_2_WORKFLOW_NAMES if workflow != selected_workflow
         ]
+    if task_plan is not None:
+        state["task_plan"] = task_plan
     return state
 
 

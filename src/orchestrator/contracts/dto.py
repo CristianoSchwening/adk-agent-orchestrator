@@ -191,6 +191,7 @@ class ExecutionContractDTO:
     decision_metadata: DecisionMetadataDTO
     artifacts: list[ArtifactDTO] = field(default_factory=list)
     progressive_agent_responses: list[AgentVisibleResponse] = field(default_factory=list)
+    task_plan: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the contract into a JSON-compatible dictionary."""

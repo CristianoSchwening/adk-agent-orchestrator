@@ -10,6 +10,7 @@ import {
   FileText,
   Gauge,
   Image,
+  ListChecks,
   Route,
   ServerCog,
   Wrench,
@@ -124,6 +125,33 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
               ))}
             </div>
           ) : <p className="text-xs text-muted-foreground">Nenhuma subtarefa disponível.</p>}
+        </InspectorSection>
+
+        <InspectorSection title="Plano de tarefas" icon={ListChecks} detail={contract?.task_plan ? `${contract.task_plan.tasks.length} tarefas` : undefined}>
+          {contract?.task_plan ? (
+            <div className="space-y-3 text-xs">
+              <div>
+                <div className="font-medium">{contract.task_plan.goal.objective}</div>
+                <div className="mt-1 text-[10px] text-muted-foreground">{contract.task_plan.plan_id} · revisão {contract.task_plan.revision}</div>
+              </div>
+              <div className="space-y-2 border-t border-border pt-2">
+                {contract.task_plan.tasks.map((task) => (
+                  <div key={task.task_id} className="rounded-lg bg-secondary/70 px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{task.title}</span>
+                      <Badge variant="outline" className="ml-auto">{task.strategy}</Badge>
+                    </div>
+                    <div className="mt-1 text-[10px] text-muted-foreground">
+                      {task.task_id}{task.depends_on.length ? ` · depende de ${task.depends_on.join(', ')}` : ' · tarefa inicial'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
+                {contract.task_plan.deliverables.length} entregável(is) · plano validado, ainda não executado dinamicamente
+              </div>
+            </div>
+          ) : <p className="text-xs text-muted-foreground">Nenhum plano de tarefas associado a esta execução.</p>}
         </InspectorSection>
 
         <InspectorSection title="Decisão de roteamento" icon={Route}>
