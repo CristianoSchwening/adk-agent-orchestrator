@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from uuid import uuid4
 
 from orchestrator.dispatching.models import PlanRun, TaskRun
@@ -24,6 +25,28 @@ _TYPE_DEFAULTS = {
     "summary": "summarizer_agent",
     "synthesis": "summarizer_agent",
 }
+
+STRATEGY_WORKFLOWS = {
+    "sequential": "sequential",
+    "parallel": "parallel",
+    "review_critic": "review_critic",
+    "iterative_refinement": "iterative_refinement",
+    "human_in_the_loop": "human_in_the_loop",
+    # Verification reuses the bounded author/critic workflow. It remains a
+    # distinct TaskPlan intent and is recorded as such in TaskRun.
+    "verification": "review_critic",
+}
+
+
+@dataclass(frozen=True)
+class ExecutionSelection:
+    """Resolved ADK execution target for one planned task."""
+
+    strategy: str
+    node_key: str
+    node_kind: str
+    assigned_agent: str | None
+    reason: str
 
 
 class TaskDispatcher:
@@ -65,6 +88,36 @@ class TaskDispatcher:
         default = _TYPE_DEFAULTS.get(_normalize(task.task_type), "executor_agent")
         return default, f"task_type_fallback:{_normalize(task.task_type) or 'unspecified'}"
 
+    def select_execution(self, task: PlannedTask) -> ExecutionSelection:
+        """Resolve task strategy and policy flags to an existing ADK node."""
+
+        strategy = task.strategy
+        reason_parts = [f"planned_strategy:{strategy}"]
+        if task.requires_approval and strategy != "human_in_the_loop":
+            strategy = "human_in_the_loop"
+            reason_parts.append("policy_override:requires_approval")
+        elif task.requires_review and strategy in {"single_agent", "sequential"}:
+            strategy = "review_critic"
+            reason_parts.append("policy_override:requires_review")
+
+        agent, agent_reason = self.select_agent(task)
+        if strategy == "single_agent":
+            return ExecutionSelection(
+                strategy=strategy,
+                node_key=agent,
+                node_kind="agent",
+                assigned_agent=agent,
+                reason=":".join([*reason_parts, agent_reason]),
+            )
+        workflow = STRATEGY_WORKFLOWS[strategy]
+        return ExecutionSelection(
+            strategy=strategy,
+            node_key=workflow,
+            node_kind="workflow",
+            assigned_agent=agent,
+            reason=":".join([*reason_parts, f"workflow:{workflow}", agent_reason]),
+        )
+
     def transition(
         self,
         plan: TaskPlan,
@@ -73,6 +126,8 @@ class TaskDispatcher:
         status: str,
         *,
         assigned_agent: str | None = None,
+        execution_strategy: str | None = None,
+        execution_node: str | None = None,
         selection_reason: str | None = None,
         result: object = None,
         error: str | None = None,
@@ -89,6 +144,8 @@ class TaskDispatcher:
             )
         current.status = status  # type: ignore[assignment]
         current.assigned_agent = assigned_agent or current.assigned_agent
+        current.execution_strategy = execution_strategy or current.execution_strategy
+        current.execution_node = execution_node or current.execution_node
         current.selection_reason = selection_reason or current.selection_reason
         current.result = result
         current.error = error

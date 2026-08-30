@@ -78,6 +78,21 @@ parallel_workflow (Workflow)
 └── parallel_summarizer_agent
 ```
 
+Esses workflows são preservados como exemplos didáticos autocontidos. A camada de dispatch
+por estratégia é apenas uma composição adicional: ela usa `ctx.run_node()` do ADK para
+executar a factory existente adequada à estratégia de cada `PlannedTask`. Portanto, os
+fluxos continuam utilizáveis e testáveis de forma independente do Root Orchestrator.
+
+| Estratégia da tarefa | Nó ADK executado |
+| --- | --- |
+| `single_agent` | Especialista escolhido por capacidades |
+| `sequential` | `sequential_workflow` |
+| `parallel` | `parallel_workflow` com fan-out e `JoinNode` |
+| `review_critic` | `review_critic_workflow` |
+| `iterative_refinement` | `iterative_refinement_workflow` |
+| `human_in_the_loop` | `human_in_the_loop_workflow` |
+| `verification` | `review_critic_workflow`, preservando a intenção no `TaskRun` |
+
 ## Tools e MCP da Fase 3
 
 A Fase 3 adiciona um catálogo de tools locais e desejadas, function tools seguras para filesystem/HTTP/documentos/dados/modelo e uma factory lazy para `MCPToolset`. Timeouts, erros padronizados e métricas process-local ficam em `src/orchestrator/tools/`.

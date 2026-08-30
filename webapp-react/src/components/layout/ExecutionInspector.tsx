@@ -68,6 +68,7 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
   const tools = collectToolNames(contract)
   const completed = contract?.subtasks.filter((subtask) => subtask.status === 'completed').length ?? 0
   const mcpCount = Number(contract?.metrics.custom.mcp_server_count ?? 0)
+  const taskRuns = new Map(contract?.task_run?.tasks.map((task) => [task.task_id, task]) ?? [])
 
   return (
     <aside className="h-full min-h-0 overflow-y-auto border-l border-border bg-background p-3">
@@ -138,17 +139,25 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
                 {contract.task_plan.tasks.map((task) => (
                   <div key={task.task_id} className="rounded-lg bg-secondary/70 px-3 py-2">
                     <div className="flex items-center gap-2">
+                      {taskRuns.has(task.task_id) && statusIcon(taskRuns.get(task.task_id)?.status ?? 'pending')}
                       <span className="font-medium">{task.title}</span>
-                      <Badge variant="outline" className="ml-auto">{task.strategy}</Badge>
+                      <Badge variant="outline" className="ml-auto">
+                        {taskRuns.get(task.task_id)?.execution_strategy ?? task.strategy}
+                      </Badge>
                     </div>
                     <div className="mt-1 text-[10px] text-muted-foreground">
                       {task.task_id}{task.depends_on.length ? ` · depende de ${task.depends_on.join(', ')}` : ' · tarefa inicial'}
                     </div>
+                    {taskRuns.get(task.task_id)?.execution_node && (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Nó ADK: {taskRuns.get(task.task_id)?.execution_node} · agente: {taskRuns.get(task.task_id)?.assigned_agent ?? 'workflow composto'}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
               <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
-                {contract.task_plan.deliverables.length} entregável(is) · plano validado, ainda não executado dinamicamente
+                {contract.task_plan.deliverables.length} entregável(is) · {contract.task_run ? `execução ${humanizeStatus(contract.task_run.status)}` : 'aguardando execução'}
               </div>
             </div>
           ) : <p className="text-xs text-muted-foreground">Nenhum plano de tarefas associado a esta execução.</p>}

@@ -91,6 +91,30 @@ export interface ExecutionContractDTO {
   artifacts: ArtifactDTO[]
   progressive_agent_responses: AgentVisibleResponse[]
   task_plan?: TaskPlanDTO | null
+  task_run?: PlanRunDTO | null
+}
+
+export interface TaskRunDTO {
+  task_id: string
+  status: string
+  assigned_agent: string | null
+  execution_strategy: string
+  execution_node: string | null
+  selection_reason: string | null
+  attempt: number
+  result: unknown
+  error: string | null
+  updated_at: string
+}
+
+export interface PlanRunDTO {
+  schema_version: string
+  run_id: string
+  plan_id: string
+  status: string
+  tasks: TaskRunDTO[]
+  created_at: string
+  updated_at: string
 }
 
 export interface PlannedTaskDTO {
