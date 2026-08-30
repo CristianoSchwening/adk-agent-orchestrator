@@ -526,6 +526,12 @@ def _normalize_structured_agent_output(
 ) -> str:
     """Represent structured planning/routing output using the workspace contract."""
 
+    if agent_name == "context_intelligence_agent" and event_type in {
+        "model",
+        "final_response",
+    }:
+        return _normalize_context_intelligence_output(text, objective=objective)
+
     if agent_name == "task_planner_agent" and event_type in {"model", "final_response"}:
         return _normalize_task_planner_output(text, objective=objective)
 
@@ -633,6 +639,44 @@ def _normalize_task_planner_output(text: str, *, objective: str) -> str:
                 "blockers": [],
                 "criticisms": [],
                 "next_action": "Validate the task plan before workflow routing.",
+            },
+            "result": json.dumps(payload, ensure_ascii=False),
+        },
+        ensure_ascii=False,
+    )
+
+
+def _normalize_context_intelligence_output(text: str, *, objective: str) -> str:
+    """Wrap a context draft for strict verbalized-workspace monitoring."""
+
+    try:
+        payload = json.loads(text.strip())
+    except json.JSONDecodeError:
+        return text
+    if not isinstance(payload, dict) or not isinstance(payload.get("workstream"), dict):
+        return text
+    entities = payload.get("entities") or []
+    return json.dumps(
+        {
+            "workspace": {
+                "objective": objective,
+                "interpretation": "Build a minimal context package before planning.",
+                "current_step": "Identify workstream, entities and contextual tool needs.",
+                "plan": [],
+                "assumptions": [],
+                "hypotheses": [],
+                "evidence": [],
+                "decisions": [
+                    {
+                        "type": "context_package_draft",
+                        "workstream": payload["workstream"].get("name"),
+                        "entity_count": len(entities),
+                    }
+                ],
+                "uncertainties": [],
+                "blockers": [],
+                "criticisms": [],
+                "next_action": "Create a TaskPlan using this context package.",
             },
             "result": json.dumps(payload, ensure_ascii=False),
         },

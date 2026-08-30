@@ -623,6 +623,8 @@ def test_root_agent_can_be_created_when_adk_is_installed():
 
     assert root_agent.name == "root_orchestrator_agent"
     assert [agent.name for agent in _workflow_nodes(root_agent)] == [
+        "context_intelligence_agent",
+        "normalize_context_package",
         "task_planner_agent",
         "normalize_task_plan",
         "workflow_router_agent",
@@ -686,7 +688,7 @@ def test_task_plan_normalizer_persists_validated_plan_when_adk_is_installed():
 
     root = create_root_agent(OrchestratorSettings(workspace_enabled=False))
     normalizer = next(node for node in root.graph.nodes if node.name == "normalize_task_plan")
-    ctx = SimpleNamespace(state={})
+    ctx = SimpleNamespace(state={"workstream_id": "WS-TEST"})
     draft = {
         "goal": {
             "objective": "Prepare a reusable proposal",
@@ -718,6 +720,7 @@ def test_task_plan_normalizer_persists_validated_plan_when_adk_is_installed():
     assert ctx.state["task_plan_status"] == "validated"
     assert ctx.state["task_plan_source"] == "llm"
     assert ctx.state["task_plan"]["schema_version"] == "orchestrator.task_plan.v1"
+    assert ctx.state["task_plan"]["workstream_id"] == "WS-TEST"
     assert forwarded["objective"] == "Prepare a reusable proposal"
 
 
@@ -733,6 +736,8 @@ def test_explicit_workflow_is_wrapped_by_adk_task_planner_when_installed():
     )
 
     assert [node.name for node in _workflow_nodes(workflow)] == [
+        "context_intelligence_agent",
+        "normalize_context_package",
         "task_planner_agent",
         "normalize_task_plan",
         "select_explicit_workflow",

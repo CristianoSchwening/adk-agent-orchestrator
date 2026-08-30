@@ -92,6 +92,41 @@ export interface ExecutionContractDTO {
   progressive_agent_responses: AgentVisibleResponse[]
   task_plan?: TaskPlanDTO | null
   task_run?: PlanRunDTO | null
+  context_package?: ContextPackageDTO | null
+  task_contexts?: Record<string, TaskContextDTO>
+}
+
+export interface ContextEntityDTO {
+  entity_id: string
+  name: string
+  entity_type: string
+  description: string
+  aliases: string[]
+  related_capabilities: string[]
+}
+
+export interface ContextPackageDTO {
+  schema_version: string
+  context_id: string
+  objective: string
+  workstream: { workstream_id: string; name: string; summary: string }
+  entities: ContextEntityDTO[]
+  constraints: string[]
+  terminology: Record<string, string>
+  tool_categories: string[]
+  created_at: string
+}
+
+export interface TaskContextDTO {
+  schema_version: string
+  task_id: string
+  workstream_id: string
+  objective: string
+  constraints: string[]
+  entities: ContextEntityDTO[]
+  terminology: Record<string, string>
+  contextual_tools: string[]
+  dependency_results: Record<string, unknown>
 }
 
 export interface TaskRunDTO {
