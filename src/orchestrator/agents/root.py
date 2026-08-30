@@ -6,6 +6,10 @@ import json
 from typing import Any
 
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
+from orchestrator.agents.context_intelligence import (
+    create_context_intelligence_agent,
+    create_context_package_normalizer,
+)
 from orchestrator.agents.task_dispatcher import create_task_dispatcher_node
 from orchestrator.agents.task_planner import (
     create_task_plan_normalizer,
@@ -119,6 +123,8 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     }
     router = Agent(**kwargs)
     task_planner = create_task_planner_agent(resolved_settings)
+    context_intelligence = create_context_intelligence_agent(resolved_settings)
+    context_normalizer = create_context_package_normalizer()
     task_plan_normalizer = create_task_plan_normalizer()
     task_dispatcher = create_task_dispatcher_node(resolved_settings)
 
@@ -136,7 +142,9 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
 
     route_node = FunctionNode(func=normalize_route, name="normalize_workflow_route")
     edges = [
-        Edge(from_node=START, to_node=task_planner),
+        Edge(from_node=START, to_node=context_intelligence),
+        Edge(from_node=context_intelligence, to_node=context_normalizer),
+        Edge(from_node=context_normalizer, to_node=task_planner),
         Edge(from_node=task_planner, to_node=task_plan_normalizer),
         Edge(from_node=task_plan_normalizer, to_node=router),
         Edge(from_node=router, to_node=route_node),
@@ -161,6 +169,8 @@ def create_planned_workflow(
     if workflow_name not in workflows:
         raise ValueError(f"unsupported workflow: {workflow_name}")
     planner = create_task_planner_agent(settings)
+    context_intelligence = create_context_intelligence_agent(settings)
+    context_normalizer = create_context_package_normalizer()
     normalizer = create_task_plan_normalizer()
     target = create_task_dispatcher_node(settings)
 
@@ -178,7 +188,9 @@ def create_planned_workflow(
         name=f"planned_{workflow_name}_workflow",
         description="ADK task planning followed by the explicitly selected workflow.",
         edges=[
-            Edge(from_node=START, to_node=planner),
+            Edge(from_node=START, to_node=context_intelligence),
+            Edge(from_node=context_intelligence, to_node=context_normalizer),
+            Edge(from_node=context_normalizer, to_node=planner),
             Edge(from_node=planner, to_node=normalizer),
             Edge(from_node=normalizer, to_node=selector),
             Edge(from_node=selector, to_node=target),

@@ -16,6 +16,7 @@ from orchestrator.agents.specialists import (
 )
 from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
+from orchestrator.context import ContextPackage, build_task_context
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
 from orchestrator.planning import TaskPlan
 
@@ -60,6 +61,10 @@ def create_task_dispatcher_node(
         if not isinstance(raw_plan, dict):
             raise ValueError("dispatcher requires a validated task_plan in session state")
         plan = TaskPlan.from_dict(raw_plan)
+        raw_context = ctx.state.get("context_package")
+        if not isinstance(raw_context, dict):
+            raise ValueError("dispatcher requires a ContextPackage in session state")
+        context_package = ContextPackage.from_dict(raw_context)
         run_id = ctx.state.get("task_run_id")
         run = repo.get(str(run_id)) if run_id else None
         if run is None:
@@ -85,17 +90,31 @@ def create_task_dispatcher_node(
             repo.save(run)
             dispatcher.transition(plan, run, task.task_id, "running")
             repo.save(run)
+            target = (
+                agents[selection.node_key]
+                if selection.node_kind == "agent"
+                else strategy_workflows[selection.node_key]
+            )
+            dependency_results = {
+                item.task_id: item.result
+                for item in run.tasks
+                if item.task_id in task.depends_on and item.status == "completed"
+            }
+            task_context = build_task_context(
+                context_package,
+                task,
+                dependency_results=dependency_results,
+                allowed_tool_names=_tool_names(target),
+            )
+            task_contexts = dict(ctx.state.get("task_contexts") or {})
+            task_contexts[task.task_id] = task_context.to_dict()
+            ctx.state["task_contexts"] = task_contexts
             task_input = json.dumps(
                 {
-                    "goal": plan.goal.objective,
                     "selected_workflow": ctx.state.get("selected_workflow"),
                     "task_execution_strategy": selection.strategy,
                     "task": task.__dict__,
-                    "completed_dependencies": {
-                        item.task_id: item.result
-                        for item in run.tasks
-                        if item.task_id in task.depends_on and item.status == "completed"
-                    },
+                    "context": task_context.to_dict(),
                     "instruction": (
                         "Execute somente esta tarefa e satisfaça seus critérios de aceite."
                     ),
@@ -103,11 +122,6 @@ def create_task_dispatcher_node(
                 ensure_ascii=False,
             )
             try:
-                target = (
-                    agents[selection.node_key]
-                    if selection.node_kind == "agent"
-                    else strategy_workflows[selection.node_key]
-                )
                 result = await ctx.run_node(
                     target,
                     node_input=task_input,
@@ -137,3 +151,23 @@ def create_task_dispatcher_node(
         name="sequential_task_dispatcher",
         rerun_on_resume=True,
     )
+
+
+def _tool_names(node: Any) -> set[str]:
+    """Collect the real tools exposed by an agent or nested workflow."""
+
+    names: set[str] = set()
+    pending = [node]
+    while pending:
+        current = pending.pop()
+        for tool in list(getattr(current, "tools", None) or []):
+            name = getattr(tool, "name", None) or getattr(tool, "__name__", None)
+            if name:
+                names.add(str(name))
+        graph = getattr(current, "graph", None)
+        pending.extend(
+            child
+            for child in (getattr(graph, "nodes", None) or [])
+            if getattr(child, "name", None) != "__START__"
+        )
+    return names

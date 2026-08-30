@@ -449,3 +449,16 @@ def test_task_planner_uses_dedicated_structured_schema():
     assert planner.output_schema == TASK_PLAN_DRAFT_SCHEMA
     assert planner.output_key == "task_plan_draft"
     assert "WORKSPACE OPERACIONAL VERBALIZADO" not in planner.instruction
+
+
+def test_context_intelligence_uses_dedicated_structured_schema():
+    from orchestrator.agents import CONTEXT_PACKAGE_DRAFT_SCHEMA, create_root_agent
+
+    agent = create_root_agent(OrchestratorSettings(workspace_enabled=True))
+    context_agent = next(
+        node for node in agent.graph.nodes if node.name == "context_intelligence_agent"
+    )
+
+    assert context_agent.output_schema == CONTEXT_PACKAGE_DRAFT_SCHEMA
+    assert context_agent.output_key == "context_package_draft"
+    assert "WORKSPACE OPERACIONAL VERBALIZADO" not in context_agent.instruction
