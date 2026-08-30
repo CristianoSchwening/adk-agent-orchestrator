@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
+from orchestrator.agents.task_dispatcher import create_task_dispatcher_node
 from orchestrator.agents.task_planner import (
     create_task_plan_normalizer,
     create_task_planner_agent,
@@ -39,7 +40,8 @@ locais seguras quando elas ajudarem a responder.
 
 Regras:
 - Receba o TaskPlan validado produzido pelo task_planner_agent e use suas dependências,
-  estratégias e necessidades de revisão como sinais para escolher o workflow global.
+  estratégias e necessidades de revisão como sinais para definir o fluxo global. No
+  incremento atual, o dispatcher registra essa decisão e executa as tarefas uma por vez.
 - Não refaça a decomposição e não altere o TaskPlan durante o roteamento.
 - Use a tool capture_objective quando o usuário informar um objetivo.
 - Use a tool get_orchestrator_status quando precisar explicar capacidades atuais.
@@ -118,6 +120,7 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     router = Agent(**kwargs)
     task_planner = create_task_planner_agent(resolved_settings)
     task_plan_normalizer = create_task_plan_normalizer()
+    task_dispatcher = create_task_dispatcher_node(resolved_settings)
 
     def normalize_route(ctx: Any, node_input: Any) -> str:
         payload = _route_payload(node_input)
@@ -138,13 +141,10 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
         Edge(from_node=task_plan_normalizer, to_node=router),
         Edge(from_node=router, to_node=route_node),
     ]
-    edges.extend(
-        Edge(from_node=route_node, to_node=workflow, route=route)
-        for route, workflow in phase2_workflows.items()
-    )
+    edges.append(Edge(from_node=route_node, to_node=task_dispatcher))
     return Workflow(
         name="root_orchestrator_agent",
-        description="ADK task planning followed by one routed workflow per objective.",
+        description="ADK planning, flow selection and sequential task dispatch.",
         edges=edges,
     )
 
@@ -162,13 +162,25 @@ def create_planned_workflow(
         raise ValueError(f"unsupported workflow: {workflow_name}")
     planner = create_task_planner_agent(settings)
     normalizer = create_task_plan_normalizer()
-    target = workflows[workflow_name]
+    target = create_task_dispatcher_node(settings)
+
+    def select_explicit_workflow(ctx: Any, node_input: Any) -> Any:
+        ctx.state["selected_workflow"] = workflow_name
+        ctx.state["workflow"] = workflow_name
+        ctx.state["workflow_selection_source"] = "explicit"
+        return node_input
+
+    selector = load_workflow_classes()[1](
+        func=select_explicit_workflow,
+        name="select_explicit_workflow",
+    )
     return Workflow(
         name=f"planned_{workflow_name}_workflow",
         description="ADK task planning followed by the explicitly selected workflow.",
         edges=[
             Edge(from_node=START, to_node=planner),
             Edge(from_node=planner, to_node=normalizer),
-            Edge(from_node=normalizer, to_node=target),
+            Edge(from_node=normalizer, to_node=selector),
+            Edge(from_node=selector, to_node=target),
         ],
     )
