@@ -5,12 +5,6 @@ from orchestrator.agents.root import (
     create_planned_workflow,
     create_root_agent,
 )
-from orchestrator.agents.task_planner import (
-    TASK_PLAN_DRAFT_SCHEMA,
-    create_task_plan_normalizer,
-    create_task_planner_agent,
-    task_plan_from_draft,
-)
 from orchestrator.agents.specialists import (
     create_approval_agent,
     create_critic_agent,
@@ -19,6 +13,13 @@ from orchestrator.agents.specialists import (
     create_refiner_agent,
     create_researcher_agent,
     create_summarizer_agent,
+)
+from orchestrator.agents.task_dispatcher import create_task_dispatcher_node
+from orchestrator.agents.task_planner import (
+    TASK_PLAN_DRAFT_SCHEMA,
+    create_task_plan_normalizer,
+    create_task_planner_agent,
+    task_plan_from_draft,
 )
 from orchestrator.agents.workflows import (
     PHASE_2_WORKFLOW_NAMES,
@@ -54,6 +55,7 @@ __all__ = [
     "create_planned_workflow",
     "create_task_plan_normalizer",
     "create_task_planner_agent",
+    "create_task_dispatcher_node",
     "create_sequential_workflow",
     "task_plan_from_draft",
 ]

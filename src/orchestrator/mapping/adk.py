@@ -139,6 +139,8 @@ def map_adk_execution(
                 "task_plan_status": state.get("task_plan_status"),
                 "task_plan_source": state.get("task_plan_source"),
                 "task_plan_path": state.get("task_plan_path"),
+                "task_run_status": state.get("task_run_status"),
+                "task_run_path": state.get("task_run_path"),
                 "model_basket": state.get("model_basket"),
                 "model_fallback_count": sum(
                     1 for route in model_routing if route.get("fallback_used") is True
@@ -163,6 +165,7 @@ def map_adk_execution(
         artifacts=artifact_dtos,
         progressive_agent_responses=progressive_responses,
         task_plan=_map_task_plan(state.get("task_plan")),
+        task_run=_map_task_run(state.get("task_run")),
     )
 
 
@@ -443,4 +446,15 @@ def _map_task_plan(value: Any) -> dict[str, Any] | None:
 
         return validate_task_plan(TaskPlan.from_dict(value)).to_dict()
     except (TypeError, ValueError):
+        return None
+
+
+def _map_task_run(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    try:
+        from orchestrator.dispatching import PlanRun
+
+        return PlanRun.from_dict(value).to_dict()
+    except (KeyError, TypeError, ValueError):
         return None

@@ -5,13 +5,14 @@ Orquestrador multiagente construído sobre o **Google Agent Development Kit (ADK
 ## Como funciona
 
 Você envia um objetivo em texto. Um `task_planner_agent` baseado em `LlmAgent` ADK cria um
-plano estruturado e um `FunctionNode` valida seu DAG. O `RootOrchestratorAgent` usa o plano
-para rotear a execução para um dos sete workflows disponíveis. Cada agente no caminho
+plano estruturado e um `FunctionNode` valida seu DAG. O `RootOrchestratorAgent` define o
+fluxo global e um dispatcher sequencial libera dependências, seleciona especialistas
+generalistas e os executa dinamicamente com `ctx.run_node()`. Cada agente no caminho
 responde com um JSON estruturado que o `WorkspaceMonitor` valida. O resultado é um contrato
 versionado (`orchestrator.execution.v1`) consumido pela SPA React ou por qualquer cliente HTTP.
 
 ```
-objetivo → task planner → validação → router → workflow → agentes → contrato → React / API
+objetivo → task planner → validação → router → dispatcher → agentes → contrato → React / API
 ```
 
 Para experimentar sem chave de modelo:
@@ -118,6 +119,7 @@ User / SPA React / ADK Web
 RootOrchestratorAgent (ADK Workflow)
           │
           ├── workflow_router_agent (LlmAgent)
+          ├── sequential_task_dispatcher (FunctionNode + ctx.run_node)
           ├── sequential_workflow
           ├── parallel_workflow (fan-out + JoinNode)
           ├── review_critic_workflow

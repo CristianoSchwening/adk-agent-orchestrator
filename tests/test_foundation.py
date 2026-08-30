@@ -627,13 +627,7 @@ def test_root_agent_can_be_created_when_adk_is_installed():
         "normalize_task_plan",
         "workflow_router_agent",
         "normalize_workflow_route",
-        "sequential_workflow",
-        "parallel_workflow",
-        "review_critic_workflow",
-        "iterative_refinement_workflow",
-        "human_in_the_loop_workflow",
-        "agent_help_request_workflow",
-        "progressive_multi_agent_response_workflow",
+        "sequential_task_dispatcher",
     ]
 
 
@@ -741,7 +735,8 @@ def test_explicit_workflow_is_wrapped_by_adk_task_planner_when_installed():
     assert [node.name for node in _workflow_nodes(workflow)] == [
         "task_planner_agent",
         "normalize_task_plan",
-        "parallel_workflow",
+        "select_explicit_workflow",
+        "sequential_task_dispatcher",
     ]
 
 
