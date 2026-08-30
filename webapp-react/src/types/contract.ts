@@ -92,8 +92,19 @@ export interface ExecutionContractDTO {
   progressive_agent_responses: AgentVisibleResponse[]
   task_plan?: TaskPlanDTO | null
   task_run?: PlanRunDTO | null
+  task_plan_history?: TaskPlanDTO[]
+  task_run_history?: PlanRunDTO[]
+  last_replan_request?: ReplanRequestDTO | null
   context_package?: ContextPackageDTO | null
   task_contexts?: Record<string, TaskContextDTO>
+}
+
+export interface ReplanRequestDTO {
+  trigger: 'task_failed' | 'blocker_detected' | 'assumption_invalidated' | 'objective_changed' | 'acceptance_criteria_failed'
+  rationale: string
+  task_id: string | null
+  evidence: Record<string, unknown>
+  requested_at: string
 }
 
 export interface ContextEntityDTO {
@@ -180,6 +191,9 @@ export interface TaskPlanDTO {
   deliverables: Array<{ deliverable_id: string; description: string }>
   assumptions: string[]
   workstream_id: string | null
+  lineage_id: string | null
+  parent_plan_id: string | null
+  replan_trigger: string | null
   created_at: string
   updated_at: string
 }

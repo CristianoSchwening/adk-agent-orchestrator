@@ -8,13 +8,15 @@ Você envia um objetivo em texto. Um `context_intelligence_agent` cria primeiro 
 mínimo com workstream, entidades e necessidades de tools. Depois, um `task_planner_agent`
 baseado em `LlmAgent` ADK cria um plano estruturado e um `FunctionNode` valida seu DAG. O `RootOrchestratorAgent` define o
 fluxo global e um dispatcher sequencial libera dependências, seleciona especialistas
-generalistas e aplica a estratégia de cada tarefa com `ctx.run_node()`. Estratégias
+generalistas e aplica a estratégia de cada tarefa com `ctx.run_node()`. Um guardião só
+autoriza nova revisão do plano diante de falha, bloqueio, premissa invalidada, mudança de
+objetivo ou critério de aceite não satisfeito, preservando a linhagem completa. Estratégias
 compostas reutilizam os workflows ADK didáticos existentes. Cada agente no caminho
 responde com um JSON estruturado que o `WorkspaceMonitor` valida. O resultado é um contrato
 versionado (`orchestrator.execution.v1`) consumido pela SPA React ou por qualquer cliente HTTP.
 
 ```
-objetivo → contexto → task planner → validação → router → dispatcher → agentes → contrato
+objetivo → contexto → task planner → validação → router → dispatcher ⇄ replanejamento → agentes → contrato
 ```
 
 Para experimentar sem chave de modelo:

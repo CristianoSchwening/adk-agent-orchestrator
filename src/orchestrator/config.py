@@ -227,6 +227,7 @@ class OrchestratorSettings:
     task_plan_max_bytes: int = 262_144
     task_run_root: str = "data/task_runs"
     task_run_max_bytes: int = 524_288
+    max_replans: int = 2
     progressive_multi_agent_response: ProgressiveMultiAgentResponseSettings = field(
         default_factory=ProgressiveMultiAgentResponseSettings
     )
@@ -328,6 +329,9 @@ class OrchestratorSettings:
                 os.getenv("ADK_TASK_RUN_MAX_BYTES"),
                 cls.task_run_max_bytes,
                 "ADK_TASK_RUN_MAX_BYTES",
+            ),
+            max_replans=_parse_positive_int(
+                os.getenv("ADK_MAX_REPLANS"), cls.max_replans, "ADK_MAX_REPLANS"
             ),
             progressive_multi_agent_response=ProgressiveMultiAgentResponseSettings.from_env(),
         )

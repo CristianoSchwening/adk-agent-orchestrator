@@ -68,6 +68,9 @@ class TaskPlan:
     status: TaskPlanStatus = "draft"
     assumptions: list[str] = field(default_factory=list)
     workstream_id: str | None = None
+    lineage_id: str | None = None
+    parent_plan_id: str | None = None
+    replan_trigger: str | None = None
     revision: int = 1
     created_at: str = field(default_factory=utc_now_iso)
     updated_at: str = field(default_factory=utc_now_iso)
@@ -91,6 +94,9 @@ class TaskPlan:
             status=value.get("status", "draft"),
             assumptions=[str(item) for item in value.get("assumptions") or []],
             workstream_id=value.get("workstream_id"),
+            lineage_id=value.get("lineage_id"),
+            parent_plan_id=value.get("parent_plan_id"),
+            replan_trigger=value.get("replan_trigger"),
             revision=int(value.get("revision", 1)),
             created_at=str(value.get("created_at") or utc_now_iso()),
             updated_at=str(value.get("updated_at") or utc_now_iso()),

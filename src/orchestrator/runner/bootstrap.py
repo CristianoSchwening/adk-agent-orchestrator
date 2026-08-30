@@ -535,6 +535,15 @@ def _normalize_structured_agent_output(
     if agent_name == "task_planner_agent" and event_type in {"model", "final_response"}:
         return _normalize_task_planner_output(text, objective=objective)
 
+    if agent_name == "controlled_replanner_agent" and event_type in {
+        "model",
+        "final_response",
+    }:
+        return _normalize_task_planner_output(text, objective=objective)
+
+    if agent_name == "replan_guard_agent" and event_type in {"model", "final_response"}:
+        return _normalize_replan_guard_output(text, objective=objective)
+
     if agent_name != "workflow_router_agent" or event_type not in {
         "model",
         "final_response",
@@ -639,6 +648,41 @@ def _normalize_task_planner_output(text: str, *, objective: str) -> str:
                 "blockers": [],
                 "criticisms": [],
                 "next_action": "Validate the task plan before workflow routing.",
+            },
+            "result": json.dumps(payload, ensure_ascii=False),
+        },
+        ensure_ascii=False,
+    )
+
+
+def _normalize_replan_guard_output(text: str, *, objective: str) -> str:
+    """Wrap a controlled-replanning decision for workspace monitoring."""
+
+    try:
+        payload = json.loads(text.strip())
+    except json.JSONDecodeError:
+        return text
+    if not isinstance(payload, dict) or not isinstance(payload.get("trigger"), str):
+        return text
+    return json.dumps(
+        {
+            "workspace": {
+                "objective": objective,
+                "interpretation": "Evaluate whether an authorized replan trigger occurred.",
+                "current_step": "Guard the current plan revision.",
+                "plan": [],
+                "assumptions": [],
+                "hypotheses": [],
+                "evidence": payload.get("evidence", []),
+                "decisions": [{"type": "replan_guard", **payload}],
+                "uncertainties": [],
+                "blockers": [],
+                "criticisms": [],
+                "next_action": (
+                    "Create a new plan revision."
+                    if payload["trigger"] != "none"
+                    else "Continue the current plan."
+                ),
             },
             "result": json.dumps(payload, ensure_ascii=False),
         },

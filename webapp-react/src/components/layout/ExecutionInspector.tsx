@@ -155,6 +155,11 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
               <div>
                 <div className="font-medium">{contract.task_plan.goal.objective}</div>
                 <div className="mt-1 text-[10px] text-muted-foreground">{contract.task_plan.plan_id} · revisão {contract.task_plan.revision}</div>
+                {contract.task_plan.replan_trigger && (
+                  <div className="mt-1 text-[10px] text-amber-600">
+                    Replanejado por {humanizeStatus(contract.task_plan.replan_trigger)}
+                  </div>
+                )}
               </div>
               <div className="space-y-2 border-t border-border pt-2">
                 {contract.task_plan.tasks.map((task) => (
@@ -184,6 +189,7 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
               </div>
               <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
                 {contract.task_plan.deliverables.length} entregável(is) · {contract.task_run ? `execução ${humanizeStatus(contract.task_run.status)}` : 'aguardando execução'}
+                {(contract.task_plan_history?.length ?? 0) > 0 && ` · ${contract.task_plan_history?.length} versão(ões) anterior(es) preservada(s)`}
               </div>
             </div>
           ) : <p className="text-xs text-muted-foreground">Nenhum plano de tarefas associado a esta execução.</p>}

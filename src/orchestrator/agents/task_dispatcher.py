@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from orchestrator.adk_compat import load_workflow_classes
+from orchestrator.agents.replanner import create_replan_guard_agent, create_replanner_agent
 from orchestrator.agents.specialists import (
     create_critic_agent,
     create_executor_agent,
@@ -18,7 +19,8 @@ from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.context import ContextPackage, build_task_context
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
-from orchestrator.planning import TaskPlan
+from orchestrator.planning import FileTaskPlanRepository, TaskPlan
+from orchestrator.replanning import ReplanRequest, revise_task_plan
 
 
 def create_task_dispatcher_node(
@@ -34,6 +36,11 @@ def create_task_dispatcher_node(
         settings.task_run_root,
         repository_root=repository_root or Path.cwd(),
         max_bytes=settings.task_run_max_bytes,
+    )
+    plan_repo = FileTaskPlanRepository(
+        settings.task_plan_root,
+        repository_root=repository_root or Path.cwd(),
+        max_bytes=settings.task_plan_max_bytes,
     )
     agents = {
         "planner_agent": create_planner_agent(
@@ -55,6 +62,8 @@ def create_task_dispatcher_node(
     # These are the original public/didactic workflows. The strategy dispatcher
     # composes them; it does not replace or hide their standalone factories.
     strategy_workflows = create_phase2_workflows(settings)
+    guard = create_replan_guard_agent(settings)
+    replanner = create_replanner_agent(settings)
 
     async def dispatch(ctx: Any, node_input: Any) -> dict[str, Any]:
         raw_plan = ctx.state.get("task_plan")
@@ -73,9 +82,42 @@ def create_task_dispatcher_node(
             ctx.state["task_run_id"] = run.run_id
 
         while run.status == "running":
+            pending_request = ctx.state.get("replan_request")
+            if isinstance(pending_request, dict):
+                ctx.state["replan_request"] = None
+                plan, run = await _replan(
+                    ctx,
+                    plan=plan,
+                    run=run,
+                    request=ReplanRequest(**pending_request),
+                    replanner=replanner,
+                    dispatcher=dispatcher,
+                    plan_repo=plan_repo,
+                    run_repo=repo,
+                    max_replans=settings.max_replans,
+                    context_package=context_package.to_dict(),
+                )
+                continue
             task = dispatcher.next_ready(plan, run)
             if task is None:
-                raise RuntimeError("task run is active but has no ready task")
+                run.status = "failed"
+                repo.save(run)
+                plan, run = await _replan(
+                    ctx,
+                    plan=plan,
+                    run=run,
+                    request=ReplanRequest(
+                        trigger="blocker_detected",
+                        rationale="The active plan has no task eligible for execution.",
+                    ),
+                    replanner=replanner,
+                    dispatcher=dispatcher,
+                    plan_repo=plan_repo,
+                    run_repo=repo,
+                    max_replans=settings.max_replans,
+                    context_package=context_package.to_dict(),
+                )
+                continue
             selection = dispatcher.select_execution(task)
             dispatcher.transition(
                 plan,
@@ -130,8 +172,69 @@ def create_task_dispatcher_node(
             except Exception as exc:
                 dispatcher.transition(plan, run, task.task_id, "failed", error=str(exc))
                 repo.save(run)
-                ctx.state["task_run"] = run.to_dict()
-                raise
+                plan, run = await _replan(
+                    ctx,
+                    plan=plan,
+                    run=run,
+                    request=ReplanRequest(
+                        trigger="task_failed",
+                        rationale="The selected ADK node failed during task execution.",
+                        task_id=task.task_id,
+                        evidence={"error": str(exc)},
+                    ),
+                    replanner=replanner,
+                    dispatcher=dispatcher,
+                    plan_repo=plan_repo,
+                    run_repo=repo,
+                    max_replans=settings.max_replans,
+                    context_package=context_package.to_dict(),
+                )
+                continue
+
+            guard_decision = _structured_payload(
+                await ctx.run_node(
+                    guard,
+                    node_input=json.dumps(
+                        {
+                            "task": task.__dict__,
+                            "result": result,
+                            "acceptance_criteria": task.acceptance_criteria,
+                            "assumptions": plan.assumptions,
+                            "objective": plan.goal.objective,
+                        },
+                        ensure_ascii=False,
+                    ),
+                    name=f"replan_guard_{task.task_id.lower()}",
+                )
+            )
+            trigger = str(guard_decision.get("trigger") or "none")
+            if trigger != "none":
+                dispatcher.transition(
+                    plan,
+                    run,
+                    task.task_id,
+                    "failed",
+                    error=f"replan:{trigger}",
+                )
+                repo.save(run)
+                plan, run = await _replan(
+                    ctx,
+                    plan=plan,
+                    run=run,
+                    request=ReplanRequest(
+                        trigger=trigger,  # type: ignore[arg-type]
+                        rationale=str(guard_decision.get("rationale") or trigger),
+                        task_id=task.task_id,
+                        evidence={"result": result},
+                    ),
+                    replanner=replanner,
+                    dispatcher=dispatcher,
+                    plan_repo=plan_repo,
+                    run_repo=repo,
+                    max_replans=settings.max_replans,
+                    context_package=context_package.to_dict(),
+                )
+                continue
             dispatcher.transition(plan, run, task.task_id, "completed", result=result)
             repo.save(run)
 
@@ -171,3 +274,69 @@ def _tool_names(node: Any) -> set[str]:
             if getattr(child, "name", None) != "__START__"
         )
     return names
+
+
+def _structured_payload(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if hasattr(value, "model_dump"):
+        return value.model_dump()
+    parts = getattr(value, "parts", None) or []
+    text = "".join(str(getattr(part, "text", "") or "") for part in parts)
+    payload = json.loads((text or str(value)).strip())
+    if not isinstance(payload, dict):
+        raise ValueError("structured ADK output must be an object")
+    return payload
+
+
+async def _replan(
+    ctx: Any,
+    *,
+    plan: TaskPlan,
+    run: Any,
+    request: ReplanRequest,
+    replanner: Any,
+    dispatcher: TaskDispatcher,
+    plan_repo: FileTaskPlanRepository,
+    run_repo: FileTaskRunRepository,
+    max_replans: int,
+    context_package: dict[str, Any],
+) -> tuple[TaskPlan, Any]:
+    history = list(ctx.state.get("task_plan_history") or [])
+    if len(history) >= max_replans:
+        ctx.state["replan_status"] = "limit_exhausted"
+        ctx.state["task_run"] = run.to_dict()
+        raise RuntimeError(f"replanning limit of {max_replans} revisions exhausted")
+    draft = await ctx.run_node(
+        replanner,
+        node_input=json.dumps(
+            {
+                "previous_plan": plan.to_dict(),
+                "failed_run": run.to_dict(),
+                "context_package": context_package,
+                "replan_request": request.to_dict(),
+            },
+            ensure_ascii=False,
+        ),
+        name=f"controlled_replan_revision_{plan.revision + 1}",
+    )
+    revised = revise_task_plan(draft, plan, request)
+    plan_repo.save(plan)
+    plan_repo.save(revised)
+    history.append(plan.to_dict())
+    run_history = list(ctx.state.get("task_run_history") or [])
+    run_history.append(run.to_dict())
+    new_run = dispatcher.initialize(revised)
+    run_repo.save(new_run)
+    ctx.state.update(
+        {
+            "task_plan": revised.to_dict(),
+            "task_plan_history": history,
+            "task_run_history": run_history,
+            "task_run_id": new_run.run_id,
+            "replan_count": len(history),
+            "replan_status": "replanned",
+            "last_replan_request": request.to_dict(),
+        }
+    )
+    return revised, new_run

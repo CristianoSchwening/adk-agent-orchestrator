@@ -204,7 +204,7 @@ def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_p
     didactic = create_phase2_workflows(settings)
 
     assert result["status"] == "completed"
-    assert [target for target, _ in called] == [
+    assert [target for target, _ in called if target != "replan_guard_agent"] == [
         didactic[key].name for key in STRATEGY_WORKFLOWS.values()
     ]
     assert set(didactic) >= set(STRATEGY_WORKFLOWS.values())
