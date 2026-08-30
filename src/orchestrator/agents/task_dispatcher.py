@@ -1,4 +1,4 @@
-"""ADK-native sequential dispatcher for validated task plans."""
+"""ADK-native strategy dispatcher for validated task plans."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from orchestrator.agents.specialists import (
     create_researcher_agent,
     create_summarizer_agent,
 )
+from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
 from orchestrator.planning import TaskPlan
@@ -24,7 +25,7 @@ def create_task_dispatcher_node(
     *,
     repository_root: str | Path | None = None,
 ) -> Any:
-    """Create a resumable FunctionNode that schedules selected ADK agents dynamically."""
+    """Create a resumable node that schedules ADK agents or existing workflows."""
 
     _, FunctionNode, _, _, _ = load_workflow_classes()
     dispatcher = TaskDispatcher()
@@ -50,6 +51,9 @@ def create_task_dispatcher_node(
             settings, name="dispatched_summarizer_agent", output_key="dispatched_task_result"
         ),
     }
+    # These are the original public/didactic workflows. The strategy dispatcher
+    # composes them; it does not replace or hide their standalone factories.
+    strategy_workflows = create_phase2_workflows(settings)
 
     async def dispatch(ctx: Any, node_input: Any) -> dict[str, Any]:
         raw_plan = ctx.state.get("task_plan")
@@ -67,14 +71,16 @@ def create_task_dispatcher_node(
             task = dispatcher.next_ready(plan, run)
             if task is None:
                 raise RuntimeError("task run is active but has no ready task")
-            agent_name, reason = dispatcher.select_agent(task)
+            selection = dispatcher.select_execution(task)
             dispatcher.transition(
                 plan,
                 run,
                 task.task_id,
                 "assigned",
-                assigned_agent=agent_name,
-                selection_reason=reason,
+                assigned_agent=selection.assigned_agent,
+                execution_strategy=selection.strategy,
+                execution_node=selection.node_key,
+                selection_reason=selection.reason,
             )
             repo.save(run)
             dispatcher.transition(plan, run, task.task_id, "running")
@@ -83,6 +89,7 @@ def create_task_dispatcher_node(
                 {
                     "goal": plan.goal.objective,
                     "selected_workflow": ctx.state.get("selected_workflow"),
+                    "task_execution_strategy": selection.strategy,
                     "task": task.__dict__,
                     "completed_dependencies": {
                         item.task_id: item.result
@@ -96,10 +103,15 @@ def create_task_dispatcher_node(
                 ensure_ascii=False,
             )
             try:
+                target = (
+                    agents[selection.node_key]
+                    if selection.node_kind == "agent"
+                    else strategy_workflows[selection.node_key]
+                )
                 result = await ctx.run_node(
-                    agents[agent_name],
+                    target,
                     node_input=task_input,
-                    name=f"{agent_name}_{task.task_id.lower()}",
+                    name=f"{selection.node_key}_{task.task_id.lower()}",
                 )
             except Exception as exc:
                 dispatcher.transition(plan, run, task.task_id, "failed", error=str(exc))
@@ -121,6 +133,7 @@ def create_task_dispatcher_node(
 
     return FunctionNode(
         func=dispatch,
+        # Stable public name retained for compatibility with Increment 3.
         name="sequential_task_dispatcher",
         rerun_on_resume=True,
     )

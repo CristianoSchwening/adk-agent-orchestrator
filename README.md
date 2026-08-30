@@ -7,7 +7,8 @@ Orquestrador multiagente construído sobre o **Google Agent Development Kit (ADK
 Você envia um objetivo em texto. Um `task_planner_agent` baseado em `LlmAgent` ADK cria um
 plano estruturado e um `FunctionNode` valida seu DAG. O `RootOrchestratorAgent` define o
 fluxo global e um dispatcher sequencial libera dependências, seleciona especialistas
-generalistas e os executa dinamicamente com `ctx.run_node()`. Cada agente no caminho
+generalistas e aplica a estratégia de cada tarefa com `ctx.run_node()`. Estratégias
+compostas reutilizam os workflows ADK didáticos existentes. Cada agente no caminho
 responde com um JSON estruturado que o `WorkspaceMonitor` valida. O resultado é um contrato
 versionado (`orchestrator.execution.v1`) consumido pela SPA React ou por qualquer cliente HTTP.
 
@@ -68,6 +69,12 @@ adk web --port 8000   # interface de desenvolvimento do ADK
 | `human_in_the_loop` | `Workflow` + function tool | Aprovação humana estruturada antes do follow-up |
 | `progressive_multi_agent_response` | `Workflow` + DTOs | Respostas incrementais com grafo de dependência entre agentes |
 | `loop2_verification` | `VerificationLoop` + rubrica | Reexecução automática até aprovação ou esgotamento do orçamento |
+
+Os workflows acima continuam disponíveis como factories públicas e exemplos isolados. O
+dispatcher não os substitui: `sequential`, `parallel`, `review_critic`,
+`iterative_refinement` e `human_in_the_loop` são executados como nós dinâmicos quando uma
+tarefa solicita a estratégia correspondente. `single_agent` seleciona diretamente um
+especialista generalista; `verification` reutiliza o ciclo limitado de `review_critic`.
 
 ---
 

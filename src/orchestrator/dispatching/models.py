@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from orchestrator.planning.models import utc_now_iso
 
-TASK_RUN_SCHEMA_VERSION = "orchestrator.task_run.v1"
+TASK_RUN_SCHEMA_VERSION = "orchestrator.task_run.v2"
 TaskRunStatus = Literal["pending", "ready", "assigned", "running", "completed", "failed", "blocked"]
 PlanRunStatus = Literal["running", "completed", "failed"]
 
@@ -17,6 +17,8 @@ class TaskRun:
     task_id: str
     status: TaskRunStatus
     assigned_agent: str | None = None
+    execution_strategy: str = "single_agent"
+    execution_node: str | None = None
     selection_reason: str | None = None
     attempt: int = 0
     result: Any = None
