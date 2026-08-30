@@ -193,6 +193,11 @@ class ExecutionContractDTO:
     progressive_agent_responses: list[AgentVisibleResponse] = field(default_factory=list)
     task_plan: dict[str, Any] | None = None
     task_run: dict[str, Any] | None = None
+    task_plan_history: list[dict[str, Any]] = field(default_factory=list)
+    task_run_history: list[dict[str, Any]] = field(default_factory=list)
+    last_replan_request: dict[str, Any] | None = None
+    context_package: dict[str, Any] | None = None
+    task_contexts: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the contract into a JSON-compatible dictionary."""

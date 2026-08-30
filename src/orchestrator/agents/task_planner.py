@@ -129,7 +129,7 @@ def create_task_planner_agent(settings: OrchestratorSettings) -> Any:
     )
 
 
-def task_plan_from_draft(value: Any) -> TaskPlan:
+def task_plan_from_draft(value: Any, *, workstream_id: str | None = None) -> TaskPlan:
     """Decode an ADK structured output and materialize a versioned task plan."""
 
     payload = _structured_payload(value)
@@ -171,6 +171,7 @@ def task_plan_from_draft(value: Any) -> TaskPlan:
             if isinstance(item, dict)
         ],
         assumptions=[str(item) for item in payload.get("assumptions") or []],
+        workstream_id=workstream_id,
     )
     return validate_task_plan(plan)
 
@@ -181,7 +182,10 @@ def create_task_plan_normalizer() -> Any:
     _, FunctionNode, _, _, _ = load_workflow_classes()
 
     def normalize(ctx: Any, node_input: Any) -> str:
-        plan = task_plan_from_draft(node_input)
+        plan = task_plan_from_draft(
+            node_input,
+            workstream_id=ctx.state.get("workstream_id"),
+        )
         ctx.state["task_plan"] = plan.to_dict()
         ctx.state["task_plan_status"] = "validated"
         ctx.state["task_plan_source"] = "llm"

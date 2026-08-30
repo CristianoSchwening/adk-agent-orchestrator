@@ -141,16 +141,17 @@ def map_adk_execution(
                 "task_plan_path": state.get("task_plan_path"),
                 "task_run_status": state.get("task_run_status"),
                 "task_run_path": state.get("task_run_path"),
+                "replan_count": state.get("replan_count", 0),
+                "replan_status": state.get("replan_status"),
+                "context_package_status": state.get("context_package_status"),
+                "workstream_id": state.get("workstream_id"),
+                "context_entity_count": state.get("context_entity_count"),
                 "model_basket": state.get("model_basket"),
                 "model_fallback_count": sum(
                     1 for route in model_routing if route.get("fallback_used") is True
                 ),
                 "models_used": sorted(
-                    {
-                        str(route["used_model"])
-                        for route in model_routing
-                        if route.get("used_model")
-                    }
+                    {str(route["used_model"]) for route in model_routing if route.get("used_model")}
                 ),
             },
         ),
@@ -166,6 +167,11 @@ def map_adk_execution(
         progressive_agent_responses=progressive_responses,
         task_plan=_map_task_plan(state.get("task_plan")),
         task_run=_map_task_run(state.get("task_run")),
+        task_plan_history=_map_history(state.get("task_plan_history")),
+        task_run_history=_map_history(state.get("task_run_history")),
+        last_replan_request=_map_optional_dict(state.get("last_replan_request")),
+        context_package=_map_context_package(state.get("context_package")),
+        task_contexts=_map_task_contexts(state.get("task_contexts")),
     )
 
 
@@ -458,3 +464,34 @@ def _map_task_run(value: Any) -> dict[str, Any] | None:
         return PlanRun.from_dict(value).to_dict()
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def _map_history(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [dict(item) for item in value if isinstance(item, dict)]
+
+
+def _map_optional_dict(value: Any) -> dict[str, Any] | None:
+    return dict(value) if isinstance(value, dict) else None
+
+
+def _map_context_package(value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, dict):
+        return None
+    try:
+        from orchestrator.context import ContextPackage
+
+        return ContextPackage.from_dict(value).to_dict()
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _map_task_contexts(value: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(value, dict):
+        return {}
+    return {
+        str(task_id): dict(context)
+        for task_id, context in value.items()
+        if isinstance(context, dict)
+    }

@@ -6,6 +6,7 @@ import pytest
 
 from orchestrator.agents import create_phase2_workflows, create_task_dispatcher_node
 from orchestrator.config import OrchestratorSettings
+from orchestrator.context import ContextPackage, Workstream
 from orchestrator.dispatching import STRATEGY_WORKFLOWS, FileTaskRunRepository, TaskDispatcher
 from orchestrator.mapping import map_adk_execution
 from orchestrator.planning import Deliverable, Goal, PlannedTask, TaskPlan
@@ -185,7 +186,15 @@ def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_p
     called: list[tuple[str, str]] = []
 
     class FakeContext:
-        state = {"task_plan": task_plan.to_dict(), "selected_workflow": "sequential"}
+        state = {
+            "task_plan": task_plan.to_dict(),
+            "selected_workflow": "sequential",
+            "context_package": ContextPackage(
+                context_id="CTX-STRATEGIES",
+                objective=task_plan.goal.objective,
+                workstream=Workstream("WS-STRATEGIES", "Strategies", "Strategy tests"),
+            ).to_dict(),
+        }
 
         async def run_node(self, target, *, node_input, name):
             called.append((target.name, name))
@@ -195,7 +204,7 @@ def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_p
     didactic = create_phase2_workflows(settings)
 
     assert result["status"] == "completed"
-    assert [target for target, _ in called] == [
+    assert [target for target, _ in called if target != "replan_guard_agent"] == [
         didactic[key].name for key in STRATEGY_WORKFLOWS.values()
     ]
     assert set(didactic) >= set(STRATEGY_WORKFLOWS.values())

@@ -128,12 +128,38 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
           ) : <p className="text-xs text-muted-foreground">Nenhuma subtarefa disponível.</p>}
         </InspectorSection>
 
+        <InspectorSection title="Context Intelligence" icon={ServerCog} detail={contract?.context_package ? `${contract.context_package.entities.length} entidades` : undefined}>
+          {contract?.context_package ? (
+            <div className="space-y-3 text-xs">
+              <div>
+                <div className="font-medium">{contract.context_package.workstream.name}</div>
+                <div className="mt-1 text-[10px] text-muted-foreground">{contract.context_package.workstream.workstream_id} · {contract.context_package.workstream.summary}</div>
+              </div>
+              {contract.context_package.entities.length > 0 && (
+                <div className="flex flex-wrap gap-1 border-t border-border pt-2">
+                  {contract.context_package.entities.map((entity) => (
+                    <Badge key={entity.entity_id} variant="secondary">{entity.name} · {entity.entity_type}</Badge>
+                  ))}
+                </div>
+              )}
+              <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
+                Contextos mínimos materializados: {Object.keys(contract.task_contexts ?? {}).length}
+              </div>
+            </div>
+          ) : <p className="text-xs text-muted-foreground">O pacote de contexto será criado antes do planejamento.</p>}
+        </InspectorSection>
+
         <InspectorSection title="Plano de tarefas" icon={ListChecks} detail={contract?.task_plan ? `${contract.task_plan.tasks.length} tarefas` : undefined}>
           {contract?.task_plan ? (
             <div className="space-y-3 text-xs">
               <div>
                 <div className="font-medium">{contract.task_plan.goal.objective}</div>
                 <div className="mt-1 text-[10px] text-muted-foreground">{contract.task_plan.plan_id} · revisão {contract.task_plan.revision}</div>
+                {contract.task_plan.replan_trigger && (
+                  <div className="mt-1 text-[10px] text-amber-600">
+                    Replanejado por {humanizeStatus(contract.task_plan.replan_trigger)}
+                  </div>
+                )}
               </div>
               <div className="space-y-2 border-t border-border pt-2">
                 {contract.task_plan.tasks.map((task) => (
@@ -153,11 +179,17 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
                         Nó ADK: {taskRuns.get(task.task_id)?.execution_node} · agente: {taskRuns.get(task.task_id)?.assigned_agent ?? 'workflow composto'}
                       </div>
                     )}
+                    {(contract.task_contexts?.[task.task_id]?.contextual_tools.length ?? 0) > 0 && (
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Tools: {contract.task_contexts?.[task.task_id]?.contextual_tools.join(', ')}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
               <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
                 {contract.task_plan.deliverables.length} entregável(is) · {contract.task_run ? `execução ${humanizeStatus(contract.task_run.status)}` : 'aguardando execução'}
+                {(contract.task_plan_history?.length ?? 0) > 0 && ` · ${contract.task_plan_history?.length} versão(ões) anterior(es) preservada(s)`}
               </div>
             </div>
           ) : <p className="text-xs text-muted-foreground">Nenhum plano de tarefas associado a esta execução.</p>}
