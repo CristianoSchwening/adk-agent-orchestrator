@@ -196,8 +196,15 @@ def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_p
             ).to_dict(),
         }
 
-        async def run_node(self, target, *, node_input, name):
-            called.append((target.name, name))
+        async def run_node(self, target, *, node_input, run_id):
+            import inspect
+
+            from google.adk.agents.context import Context
+
+            inspect.signature(Context.run_node).bind(
+                self, target, node_input=node_input, run_id=run_id
+            )
+            called.append((target.name, run_id))
             return {"target": target.name}
 
     result = asyncio.run(node._func(ctx=FakeContext(), node_input="objective"))
@@ -208,3 +215,60 @@ def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_p
         didactic[key].name for key in STRATEGY_WORKFLOWS.values()
     ]
     assert set(didactic) >= set(STRATEGY_WORKFLOWS.values())
+
+@pytest.mark.parametrize("winerror", [5, 32, 33])
+def test_repository_retries_windows_replace_lock(tmp_path, monkeypatch, winerror):
+    from orchestrator.dispatching import repository as module
+
+    repository = FileTaskRunRepository("runs", repository_root=tmp_path)
+    run = TaskDispatcher().initialize(plan())
+    target = repository.save(run)
+    original_replace = module.os.replace
+    calls = []
+    delays = []
+
+    def locked_replace(source, destination):
+        calls.append(source)
+        if len(calls) < 3:
+            error = PermissionError("file temporarily locked")
+            error.winerror = winerror
+            raise error
+        original_replace(source, destination)
+
+    monkeypatch.setattr(module.os, "replace", locked_replace)
+    monkeypatch.setattr(module.time, "sleep", delays.append)
+    run.status = "completed"
+    assert repository.save(run) == target
+    assert repository.get(run.run_id) == run
+    assert delays == [0.05, 0.1]
+    assert not list(target.parent.glob("*.tmp"))
+
+
+@pytest.mark.parametrize("winerror, attempts", [(5, 6), (None, 1)])
+def test_repository_preserves_previous_state_on_replace_failure(
+    tmp_path, monkeypatch, winerror, attempts
+):
+    from orchestrator.dispatching import repository as module
+
+    repository = FileTaskRunRepository("runs", repository_root=tmp_path)
+    run = TaskDispatcher().initialize(plan())
+    target = repository.save(run)
+    previous = target.read_bytes()
+    calls = []
+    error = PermissionError("persistent access denial")
+    if winerror is not None:
+        error.winerror = winerror
+
+    def denied_replace(source, destination):
+        calls.append(source)
+        raise error
+
+    monkeypatch.setattr(module.os, "replace", denied_replace)
+    monkeypatch.setattr(module.time, "sleep", lambda delay: None)
+    run.status = "completed"
+    with pytest.raises(PermissionError) as caught:
+        repository.save(run)
+    assert caught.value is error
+    assert len(calls) == attempts
+    assert target.read_bytes() == previous
+    assert not list(target.parent.glob("*.tmp"))

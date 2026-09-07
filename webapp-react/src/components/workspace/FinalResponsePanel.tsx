@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button'
 
 interface FinalResponsePanelProps {
   response: string | null
+  failed?: boolean
 }
 
-export function FinalResponsePanel({ response }: FinalResponsePanelProps) {
+export function FinalResponsePanel({ response, failed = false }: FinalResponsePanelProps) {
   const [copied, setCopied] = useState(false)
   if (!response) return null
 
@@ -23,8 +24,8 @@ export function FinalResponsePanel({ response }: FinalResponsePanelProps) {
           <FileCheck2 className="size-4" />
         </span>
         <div>
-          <h2 className="text-sm font-semibold">Resposta consolidada</h2>
-          <p className="text-[11px] text-muted-foreground">Resultado final publicado pelo orquestrador</p>
+          <h2 className="text-sm font-semibold">{failed ? 'Execução interrompida — resultados parciais' : 'Resposta consolidada'}</h2>
+          <p className="text-[11px] text-muted-foreground">{failed ? 'As tarefas restantes não foram concluídas' : 'Resultado final publicado pelo orquestrador'}</p>
         </div>
         <Button variant="ghost" size="sm" className="ml-auto" onClick={copy}>
           {copied ? <Check className="size-4 text-emerald-500" /> : <Clipboard className="size-4" />}

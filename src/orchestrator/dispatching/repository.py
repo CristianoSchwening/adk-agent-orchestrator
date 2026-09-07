@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import tempfile
+import time
 from pathlib import Path
 from threading import Lock
 
@@ -34,9 +36,28 @@ class FileTaskRunRepository:
         target = self._path(run.run_id)
         with self._lock:
             target.parent.mkdir(parents=True, exist_ok=True)
-            temporary = target.with_suffix(".json.tmp")
-            temporary.write_bytes(payload)
-            os.replace(temporary, target)
+            # Separate instances can save concurrently; never share a temp file.
+            with tempfile.NamedTemporaryFile(
+                dir=target.parent, prefix=f"{target.name}.", suffix=".tmp", delete=False
+            ) as handle:
+                temporary = Path(handle.name)
+                handle.write(payload)
+            try:
+                for attempt in range(6):
+                    try:
+                        os.replace(temporary, target)
+                        break
+                    except PermissionError as exc:
+                        # Windows readers/scanners may briefly prevent replacement.
+                        if getattr(exc, "winerror", None) not in {5, 32, 33} or attempt == 5:
+                            raise
+                        time.sleep(0.05 * 2**attempt)
+            finally:
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    # Preserve the original failure if Windows still locks the temp.
+                    pass
         return target
 
     def get(self, run_id: str) -> PlanRun | None:

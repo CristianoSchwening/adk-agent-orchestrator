@@ -184,54 +184,59 @@ async def run_once_contract(
         session_id=resolved_session_id,
         objective=objective,
     )
-    async for event in runtime.runner.run_async(
-        user_id=runtime.settings.user_id,
-        session_id=resolved_session_id,
-        new_message=user_message,
-    ):
-        events.append(event)
-        if monitor is not None:
-            event_type = _runtime_event_type(event)
-            is_partial = bool(getattr(event, "partial", False))
-            if not is_partial and event_type in {
-                "model",
-                "final_response",
-                "tool_call",
-                "tool_response",
-            }:
-                agent_name = str(
-                    getattr(event, "author", None) or "root_orchestrator_agent"
-                )
-                model_output = _normalize_structured_agent_output(
-                    _runtime_event_text(event),
+    execution_error = None
+    try:
+        async for event in runtime.runner.run_async(
+            user_id=runtime.settings.user_id,
+            session_id=resolved_session_id,
+            new_message=user_message,
+        ):
+            events.append(event)
+            if monitor is not None:
+                event_type = _runtime_event_type(event)
+                is_partial = bool(getattr(event, "partial", False))
+                if not is_partial and event_type in {
+                    "model",
+                    "final_response",
+                    "tool_call",
+                    "tool_response",
+                }:
+                    agent_name = str(
+                        getattr(event, "author", None) or "root_orchestrator_agent"
+                    )
+                    model_output = _normalize_structured_agent_output(
+                        _runtime_event_text(event),
+                        agent_name=agent_name,
+                        event_type=event_type,
+                        objective=objective,
+                    )
+                    # ADK can emit non-partial bookkeeping/model events without a textual part.
+                    # They are not agent answers and must not fail strict workspace validation.
+                    if event_type == "model" and not model_output:
+                        continue
+                    monitor.observe(
+                        agent_name=agent_name,
+                        model_output=model_output,
+                        invocation_id=getattr(event, "invocation_id", None),
+                        event_type=event_type,
+                        event_diagnostic=_runtime_event_diagnostic(event),
+                    )
+            if event.is_final_response() and event.content and event.content.parts:
+                agent_name = str(getattr(event, "author", None) or "root_orchestrator_agent")
+                final_output = _normalize_structured_agent_output(
+                    event.content.parts[0].text or "",
                     agent_name=agent_name,
-                    event_type=event_type,
+                    event_type="final_response",
                     objective=objective,
                 )
-                # ADK can emit non-partial bookkeeping/model events without a textual part.
-                # They are not agent answers and must not fail strict workspace validation.
-                if event_type == "model" and not model_output:
-                    continue
-                monitor.observe(
-                    agent_name=agent_name,
-                    model_output=model_output,
-                    invocation_id=getattr(event, "invocation_id", None),
-                    event_type=event_type,
-                    event_diagnostic=_runtime_event_diagnostic(event),
+                final_response_text = _extract_final_response(
+                    final_output,
+                    objective=objective,
+                    workspace_enabled=runtime.settings.workspace_enabled,
                 )
-        if event.is_final_response() and event.content and event.content.parts:
-            agent_name = str(getattr(event, "author", None) or "root_orchestrator_agent")
-            final_output = _normalize_structured_agent_output(
-                event.content.parts[0].text or "",
-                agent_name=agent_name,
-                event_type="final_response",
-                objective=objective,
-            )
-            final_response_text = _extract_final_response(
-                final_output,
-                objective=objective,
-                workspace_enabled=runtime.settings.workspace_enabled,
-            )
+    except Exception as exc:
+        logging.getLogger(__name__).exception("Workflow execution failed")
+        execution_error = exc
 
     if monitor is not None:
         for agent_name in sorted(monitor.started_agents):
@@ -244,6 +249,23 @@ async def run_once_contract(
     if monitor is not None and session is not None and hasattr(session, "state"):
         session.state["workspace_trace_count"] = len(monitor.paths)
         session.state["workspace_violation_count"] = len(monitor.violations)
+    if execution_error is not None:
+        from types import SimpleNamespace
+
+        events.append(SimpleNamespace(
+            author="orchestrator", error_code="EXECUTION_FAILED",
+            error_message=str(execution_error), content=None,
+        ))
+        state = session.get("state", {}) if isinstance(session, dict) else session.state
+        run_state = state.get("task_run") or {}
+        partials = [
+            f"{item['task_id']}\n{item['result']}"
+            for item in run_state.get("tasks", [])
+            if item.get("status") == "completed" and item.get("result")
+        ]
+        final_response_text = "Execução interrompida. Não foi possível concluir todas as tarefas."
+        if partials:
+            final_response_text += "\n\nResultados parciais:\n\n" + "\n\n".join(partials)
     progressive_responses = _materialize_progressive_agent_responses(events)
     progressive_internal_outputs = _materialize_progressive_internal_outputs(events)
     if progressive_responses:

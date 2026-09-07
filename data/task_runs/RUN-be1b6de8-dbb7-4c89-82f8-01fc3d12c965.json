@@ -1,0 +1,34 @@
+{
+  "created_at": "2026-09-07T12:38:38.712863+00:00",
+  "plan_id": "PLAN-cb6c4b2f-5f80-4df6-9660-6daf91b3c4df",
+  "run_id": "RUN-be1b6de8-dbb7-4c89-82f8-01fc3d12c965",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "Context.run_node() got an unexpected keyword argument 'name'",
+      "execution_node": "executor_agent",
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:calculation",
+      "status": "failed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-09-07T12:38:38.725116+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-002",
+      "updated_at": "2026-09-07T12:38:38.725116+00:00"
+    }
+  ],
+  "updated_at": "2026-09-07T12:38:38.725116+00:00"
+}

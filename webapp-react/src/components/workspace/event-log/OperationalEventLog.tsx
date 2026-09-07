@@ -118,29 +118,43 @@ function ToolEntry({ entry }: { entry: Extract<EventLogEntry, { kind: 'tool' }> 
 export function OperationalEventLog({ events }: { events: EventDTO[] }) {
   const [filter, setFilter] = useState<EventLogFilter>('all')
   const [query, setQuery] = useState('')
-  const [autoScroll, setAutoScroll] = useState(true)
+  const [autoScroll, setAutoScroll] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const entries = useMemo(() => buildEventLogEntries(events), [events])
   const filtered = useMemo(() => entries.filter((entry) => entryMatchesFilter(entry, filter) && entryMatchesQuery(entry, query)), [entries, filter, query])
 
   useEffect(() => {
     if (autoScroll && listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
-  }, [filtered, autoScroll])
+  }, [events, autoScroll])
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0
+  }, [filter, query])
 
   return (
     <div>
       <div className="flex flex-col gap-3 border-b border-border p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-1">
-          {FILTERS.map(({ id, label }) => <button key={id} type="button" onClick={() => setFilter(id)} className={cn('focus-ring rounded-lg px-3 py-1.5 text-xs font-medium', filter === id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary')}>{label}</button>)}
+          {FILTERS.map(({ id, label }) => <button key={id} type="button" onClick={() => { setAutoScroll(false); setFilter(id) }} className={cn('focus-ring rounded-lg px-3 py-1.5 text-xs font-medium', filter === id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary')}>{label}</button>)}
           <button type="button" aria-pressed={autoScroll} onClick={() => setAutoScroll((value) => !value)} className={cn('focus-ring ml-auto rounded-lg px-3 py-1.5 text-xs font-medium', autoScroll ? 'bg-emerald-500/10 text-emerald-600' : 'text-muted-foreground hover:bg-secondary')}>Auto-scroll</button>
         </div>
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar agente, tool, mensagem ou metadado…" className="focus-ring h-9 w-full rounded-lg border border-border bg-secondary/60 pl-9 pr-3 text-xs" />
+          <input value={query} onChange={(event) => { setAutoScroll(false); setQuery(event.target.value) }} placeholder="Buscar agente, tool, mensagem ou metadado…" className="focus-ring h-9 w-full rounded-lg border border-border bg-secondary/60 pl-9 pr-3 text-xs" />
         </label>
         <div className="text-[10px] text-muted-foreground">{filtered.length} de {entries.length} entradas operacionais</div>
       </div>
-      <div ref={listRef} className="max-h-[680px] space-y-2 overflow-y-auto p-3 sm:p-4">
+      <div
+        ref={listRef}
+        tabIndex={0}
+        role="region"
+        aria-label="Lista de eventos"
+        onScroll={(event) => {
+          const list = event.currentTarget
+          if (list.scrollHeight - list.clientHeight - list.scrollTop > 32) setAutoScroll(false)
+        }}
+        className="max-h-[min(60dvh,680px)] space-y-2 overflow-y-auto p-3 sm:p-4"
+      >
         {filtered.map((entry) => entry.kind === 'tool' ? <ToolEntry key={entry.id} entry={entry} /> : <EventEntry key={entry.id} event={entry.event} />)}
         {!filtered.length && <div className="py-14 text-center text-sm text-muted-foreground">Nenhum evento corresponde aos filtros atuais.</div>}
       </div>

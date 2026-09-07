@@ -144,7 +144,7 @@ export default function App() {
             </section>
 
             <ExecutionViews contract={contract} />
-            <FinalResponsePanel response={contract.task.final_response} />
+            <FinalResponsePanel response={contract.task.final_response} failed={contract.task.status === 'failed'} />
 
             <section className="surface-panel overflow-hidden">
               <button type="button" aria-expanded={automationsOpen} aria-controls="automations-panel" className="focus-ring flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setAutomationsOpen((open) => !open)}>

@@ -1,0 +1,127 @@
+{
+  "assumptions": [
+    "A familia providencia deslocamento proprio ate o aeroporto de partida quando aplicavel (Florianopolis para Cenario A, Sao Paulo para Cenario B).",
+    "Os precos e disponibilidade de voos e hoteis em janeiro de 2027 baseiam-se em projecoes de mercado atualizadas."
+  ],
+  "created_at": "2026-09-07T13:13:00.214662+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatorio comparativo de viagem de 10 dias em janeiro de 2027 contendo analise de viabilidade, logistica e orcamento para a familia de quatro pessoas entre Europa e EUA."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Viagem programada obrigatoriamente para janeiro de 2027.",
+      "Duracao total fixa de 10 dias.",
+      "Orcamento maximo total de USD 20.000, incluindo passagens, hospedagem, ingressos e alimentacao.",
+      "Hospedagem obrigatoriamente em hoteis com classificacao minima de 4 estrelas.",
+      "No Cenario B, a retirada do carro deve ser em Miami e a devolucao em Orlando, exigindo calculo do drop-fee.",
+      "Nos dias 4, 5 e 6 do Cenario B, o grupo deve ser dividido em sub-roteiros simultaneos combinando um adulto com cada filha, com ponto de partida e jantares coincidentes rigidamente no mesmo hotel.",
+      "Priorizacao de hoteis em Orlando que oferecam transporte gratuito para os parques de diversao.",
+      "Alimentacao baseada em custos estimados para quatro adultos em restaurantes do tipo Casual Dining.",
+      "O relatorio final deve apresentar tres colunas comparativas de viabilidade, destacando conflitos de agenda e a otimizacao de custo-beneficio entre os cenarios."
+    ],
+    "objective": "Analisar a viabilidade, logistica e orcamento para propor um roteiro comparativo de viagem de 10 dias em janeiro de 2027 para uma familia de quatro pessoas, saindo de Florianopolis para dois destinos distintos (Europa e EUA), equilibrando preferencias conflitantes das filhas adolescentes.",
+    "success_criteria": [
+      "Ambos os cenarios (Europa e EUA) detalhados com voos, hospedagens 4 estrelas e custos totais dentro do teto de USD 20.000.",
+      "Atendimento as preferencias conflitantes das adolescentes mapeadas em cada itinerario.",
+      "Inclusao de calculo de drop-fee no Cenario B (retirada em Miami, devolucao em Orlando) e os sub-roteiros divididos nos dias 4, 5 e 6.",
+      "Relatorio final estruturado em tres colunas comparativas destacando viabilidade, logistica e custo-beneficio."
+    ]
+  },
+  "lineage_id": "PLAN-423896d2-6303-4e5d-beac-cb92889839d2",
+  "parent_plan_id": "PLAN-64fee843-5f59-4bcc-a3ee-379d2b41fd11",
+  "plan_id": "PLAN-76aa8f2c-b29f-4191-9fc5-520f1d348fed",
+  "replan_trigger": "acceptance_criteria_failed",
+  "revision": 3,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Voos e hospedagens 4 estrelas cotados para janeiro de 2027.",
+        "Orcamento parcial detalhado para passagens, hospedagem e alimentacao."
+      ],
+      "depends_on": [],
+      "description": "Pesquisar voos de Florianopolis para Portugal com retorno pela Italia, hospedagens 4 estrelas para 10 dias em janeiro de 2027, e estimar custos de alimentacao Casual Dining e deslocamentos para a familia de 4 pessoas.",
+      "metadata": {},
+      "required_capabilities": [
+        "data_retrieval",
+        "flight_and_hotel_search",
+        "cost_estimation"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "research",
+      "title": "Levantamento Logistico e de Custos do Cenario A (Europa)"
+    },
+    {
+      "acceptance_criteria": [
+        "Cotacao de voos, SUV com drop-fee e hoteis 4 estrelas em Miami e Orlando.",
+        "Inclusao dos custos de ingressos para parques e alimentacao Casual Dining."
+      ],
+      "depends_on": [],
+      "description": "Pesquisar voos de Sao Paulo para Miami, aluguel de SUV com retirada em Miami e devolucao em Orlando (incluindo drop-fee), hospedagens 4 estrelas em Miami e Orlando com transporte gratuito para parques, e custos de ingressos e alimentacao.",
+      "metadata": {},
+      "required_capabilities": [
+        "data_retrieval",
+        "car_rental_calculation",
+        "ticket_and_hotel_search"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "research",
+      "title": "Levantamento Logistico e de Custos do Cenario B (EUA)"
+    },
+    {
+      "acceptance_criteria": [
+        "Atendimento das demandas individuais de ambas as filhas documentado detalhadamente.",
+        "Sub-roteiros dos dias 4, 5 e 6 do Cenario B estruturados explicitamente com base e jantar no mesmo hotel para cada subgrupo."
+      ],
+      "depends_on": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "description": "Mapear como as preferencias das filhas sao atendidas e detalhar explicitamente os sub-roteiros simultaneos dos dias 4, 5 e 6 do Cenario B (combinando um adulto com cada filha), garantindo ponto de partida e jantares rigorosamente no mesmo hotel.",
+      "metadata": {},
+      "required_capabilities": [
+        "itinerary_planning",
+        "conflict_resolution"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "sequential",
+      "task_id": "TASK-003",
+      "task_type": "analysis",
+      "title": "Analise Detalhada de Preferencias, Conflitos e Sub-roteiros Simultaneos (Dias 4, 5 e 6 do Cenario B)"
+    },
+    {
+      "acceptance_criteria": [
+        "Relatorio final gerado apresentando tres colunas comparativas.",
+        "Conflitos de agenda e otimizacao de custo-beneficio explicitados claramente."
+      ],
+      "depends_on": [
+        "TASK-003"
+      ],
+      "description": "Consolidar os dados coletados de logistica, orcamento (dentro do limite de USD 20.000) e analise de preferencias em um relatorio final estruturado em tres colunas comparativas de viabilidade.",
+      "metadata": {},
+      "required_capabilities": [
+        "document_generation",
+        "comparative_analysis"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "review_critic",
+      "task_id": "TASK-004",
+      "task_type": "report_generation",
+      "title": "Elaboracao do Relatorio Comparativo Final"
+    }
+  ],
+  "updated_at": "2026-09-07T13:24:33.592208+00:00",
+  "workstream_id": "WS-a3d409fe-268e-424d-aa11-2f8712b68d77"
+}

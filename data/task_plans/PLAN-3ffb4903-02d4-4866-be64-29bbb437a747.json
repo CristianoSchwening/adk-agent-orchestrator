@@ -1,0 +1,123 @@
+{
+  "assumptions": [
+    "As tarifas de passagens aéreas e hospedagens para janeiro de 2027 podem ser estimadas com base em projeções de mercado atuais.",
+    "O câmbio utilizado para o teto de USD 20.000 é considerado estável ou já parametrizado em dólares norte-americanos."
+  ],
+  "created_at": "2026-09-07T14:09:29.570225+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatório comparativo de viabilidade em três colunas detalhando os cenários Europa e EUA para a família em janeiro de 2027 dentro do orçamento de USD 20.000."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Duração de 10 dias",
+      "Período: janeiro de 2027",
+      "Composição do grupo: Casal e duas filhas (12 e 14 anos)",
+      "Orçamento total máximo de USD 20.000",
+      "Hospedagem mínima de 4 estrelas",
+      "Apresentar resultado em três colunas comparativas de viabilidade"
+    ],
+    "objective": "Gerar um roteiro de viagem de 10 dias em janeiro de 2027 para um casal e duas filhas adolescentes (12 e 14 anos) saindo de Florianópolis, comparando dois cenários (Europa e EUA) em termos de matemática, logística, preferências das adolescentes e orçamento máximo de USD 20.000.",
+    "success_criteria": [
+      "Ambos os cenários (Europa e EUA) detalham custos de passagens, hospedagem 4 estrelas, alimentação e transporte para 10 dias em janeiro de 2027",
+      "O orçamento total de cada cenário permanece estritamente abaixo do teto de USD 20.000",
+      "As preferências das filhas (compras, estética, praias, montanhas-russas, cultura pop/geek) foram contempladas nos roteiros",
+      "O comparativo final é entregue estruturado em três colunas conforme solicitado"
+    ]
+  },
+  "lineage_id": "PLAN-c03ad832-cde0-4a9e-ab2e-88c3308231af",
+  "parent_plan_id": "PLAN-c03ad832-cde0-4a9e-ab2e-88c3308231af",
+  "plan_id": "PLAN-3ffb4903-02d4-4866-be64-29bbb437a747",
+  "replan_trigger": "blocker_detected",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Custos detalhados de passagens, hospedagem e deslocamento para o Cenário A",
+        "Atendimento aos critérios de 4 estrelas e 10 dias em janeiro de 2027"
+      ],
+      "depends_on": [],
+      "description": "Estimar voos de Florianópolis para Portugal, percurso interno, retorno pela Itália, hospedagem 4 estrelas por 10 dias em janeiro de 2027 e adequação às preferências das adolescentes.",
+      "metadata": {},
+      "required_capabilities": [
+        "Cálculo de logística internacional",
+        "Custo de passagens",
+        "Definição de preferências de lazer"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "research",
+      "title": "Levantamento de Logística e Custos para o Cenário A (Europa)"
+    },
+    {
+      "acceptance_criteria": [
+        "Custos detalhados de passagens, SUV, ingressos e hospedagem 4 estrelas para o Cenário B",
+        "Inclusão das preferências de compras e cultura pop/geek"
+      ],
+      "depends_on": [],
+      "description": "Estimar voos de Florianópolis via São Paulo para Miami, aluguel de SUV, deslocamento até Orlando, hospedagem 4 estrelas por 10 dias em janeiro de 2027, ingressos de parques e adequação às preferências das adolescentes.",
+      "metadata": {},
+      "required_capabilities": [
+        "Cálculo de logística internacional",
+        "Aluguel de veículos",
+        "Orçamento de parques",
+        "Definição de preferências de lazer"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "research",
+      "title": "Levantamento de Logística e Custos para o Cenário B (EUA)"
+    },
+    {
+      "acceptance_criteria": [
+        "Verificação matemática do teto de USD 20.000 para ambos os cenários",
+        "Identificação clara de qual cenário oferece melhor aproveitamento logístico"
+      ],
+      "depends_on": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "description": "Analisar detalhadamente os dados dos Cenários A e B frente ao limite de USD 20.000, validando se ambos cumprem as restrições de orçamento e conforto com base nos dados gerados.",
+      "metadata": {},
+      "required_capabilities": [
+        "Análise financeira e orçamentária"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-003",
+      "task_type": "analysis",
+      "title": "Consolidação e Comparativo Financeiro e Logístico"
+    },
+    {
+      "acceptance_criteria": [
+        "Apresentação final estruturada rigorosamente em três colunas comparativas",
+        "Inclusão de todos os parâmetros de restrição (datas, passageiros, orçamento e hospedagem)"
+      ],
+      "depends_on": [
+        "TASK-003"
+      ],
+      "description": "Compilar o roteiro detalhado de 10 dias em janeiro de 2027 e formatar o comparativo final em três colunas de viabilidade (Cenário A, Cenário B e Critérios de Avaliação).",
+      "metadata": {},
+      "required_capabilities": [
+        "Redação de relatórios executivos"
+      ],
+      "requires_approval": true,
+      "requires_review": true,
+      "strategy": "review_critic",
+      "task_id": "TASK-004",
+      "task_type": "generation",
+      "title": "Elaboração do Relatório Final Comparativo"
+    }
+  ],
+  "updated_at": "2026-09-07T14:12:51.692253+00:00",
+  "workstream_id": "WS-5015ac42-6f0b-414f-bec6-2504fdcbda38"
+}

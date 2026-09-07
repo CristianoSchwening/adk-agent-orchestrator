@@ -1,0 +1,70 @@
+{
+  "created_at": "2026-09-07T12:58:02.703164+00:00",
+  "plan_id": "PLAN-f59eaff5-ff6d-474a-b308-cd4b0409a0e7",
+  "run_id": "RUN-33b4f9a3-e874-47e5-977b-f27fb9c8da8a",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "running",
+  "tasks": [
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "ready",
+      "task_id": "TASK-001",
+      "updated_at": "2026-09-07T12:58:02.703164+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "pending",
+      "task_id": "TASK-002",
+      "updated_at": "2026-09-07T12:58:02.703164+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "pending",
+      "task_id": "TASK-003",
+      "updated_at": "2026-09-07T12:58:02.703164+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "pending",
+      "task_id": "TASK-004",
+      "updated_at": "2026-09-07T12:58:02.703164+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "pending",
+      "task_id": "TASK-005",
+      "updated_at": "2026-09-07T12:58:02.703164+00:00"
+    }
+  ],
+  "updated_at": "2026-09-07T12:58:02.703164+00:00"
+}

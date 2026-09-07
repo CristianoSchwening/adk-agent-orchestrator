@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 from threading import Lock
 from typing import Any
@@ -14,10 +15,40 @@ _OPEN_DAILY_QUOTA_CIRCUITS: set[str] = set()
 _CIRCUIT_LOCK = Lock()
 
 
-def _gemini_client(settings: OrchestratorSettings, model: str) -> Any:
+@lru_cache(maxsize=1)
+def _json_schema_gemini_class() -> type[Any]:
     Gemini = load_symbol("google.adk.models", "Gemini")
+
+    class JsonSchemaGemini(Gemini):
+        async def generate_content_async(self, llm_request: Any, stream: bool = False) -> Any:
+            # Raw JSON schemas must use the JSON Schema transport. The legacy
+            # response_schema converter rejects additionalProperties on MLDev.
+            config = llm_request.config
+            if config is not None and isinstance(config.response_schema, dict):
+                if config.response_json_schema is not None:
+                    raise ValueError("Both response_schema and response_json_schema are set")
+                llm_request = llm_request.model_copy(deep=True)
+                llm_request.config.response_json_schema = llm_request.config.response_schema
+                llm_request.config.response_schema = None
+            for attempt in range(3):
+                yielded = False
+                try:
+                    request = llm_request.model_copy(deep=True)
+                    async for response in super().generate_content_async(request, stream=stream):
+                        yielded = True
+                        yield response
+                    return
+                except Exception as exc:
+                    if not is_transport_error(exc) or yielded or attempt == 2:
+                        raise
+                    await asyncio.sleep(0.5 * 2**attempt)
+
+    return JsonSchemaGemini
+
+
+def _gemini_client(settings: OrchestratorSettings, model: str) -> Any:
     HttpRetryOptions = load_symbol("google.genai.types", "HttpRetryOptions")
-    return Gemini(
+    return _json_schema_gemini_class()(
         model=model,
         retry_options=HttpRetryOptions(
             attempts=settings.model_retry_attempts,
@@ -188,3 +219,22 @@ def create_gemini_model(
         _gemini_client(settings, fallback_model),
         role=role,
     )
+
+
+def is_transport_error(exc: BaseException) -> bool:
+    """Recognize interrupted responses, including ADK's wrapped node errors."""
+    from aiohttp import ClientConnectionError, ClientPayloadError
+
+    pending = [exc]
+    seen = set()
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        if isinstance(current, (ClientConnectionError, ClientPayloadError, ConnectionResetError)):
+            return True
+        for nested in (current.__cause__, current.__context__, getattr(current, "error", None)):
+            if isinstance(nested, BaseException):
+                pending.append(nested)
+    return False

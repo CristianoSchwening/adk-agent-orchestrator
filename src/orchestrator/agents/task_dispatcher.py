@@ -19,6 +19,7 @@ from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.context import ContextPackage, build_task_context
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
+from orchestrator.model import is_transport_error
 from orchestrator.planning import FileTaskPlanRepository, TaskPlan
 from orchestrator.replanning import ReplanRequest, revise_task_plan
 
@@ -167,11 +168,14 @@ def create_task_dispatcher_node(
                 result = await ctx.run_node(
                     target,
                     node_input=task_input,
-                    name=f"{selection.node_key}_{task.task_id.lower()}",
+                    run_id=f"{selection.node_key}_{task.task_id.lower()}",
                 )
             except Exception as exc:
                 dispatcher.transition(plan, run, task.task_id, "failed", error=str(exc))
                 repo.save(run)
+                ctx.state["task_run"] = run.to_dict()
+                if is_transport_error(exc):
+                    raise
                 plan, run = await _replan(
                     ctx,
                     plan=plan,
@@ -204,7 +208,7 @@ def create_task_dispatcher_node(
                         },
                         ensure_ascii=False,
                     ),
-                    name=f"replan_guard_{task.task_id.lower()}",
+                    run_id=f"replan_guard_{task.task_id.lower()}",
                 )
             )
             trigger = str(guard_decision.get("trigger") or "none")
@@ -237,6 +241,7 @@ def create_task_dispatcher_node(
                 continue
             dispatcher.transition(plan, run, task.task_id, "completed", result=result)
             repo.save(run)
+            ctx.state["task_run"] = run.to_dict()
 
         ctx.state["task_run"] = run.to_dict()
         ctx.state["task_run_status"] = run.status
@@ -318,7 +323,7 @@ async def _replan(
             },
             ensure_ascii=False,
         ),
-        name=f"controlled_replan_revision_{plan.revision + 1}",
+        run_id=f"controlled_replan_revision_{plan.revision + 1}",
     )
     revised = revise_task_plan(draft, plan, request)
     plan_repo.save(plan)
