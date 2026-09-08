@@ -1,23 +1,18 @@
 import { ArrowUp, FlaskConical, Loader2, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { WORKFLOW_OPTIONS } from '@/config/workflows'
 
 interface ExecutionComposerProps {
   objective: string
-  workflow: string
   loading: boolean
   onObjectiveChange: (value: string) => void
-  onWorkflowChange: (value: string) => void
   onRun: () => void
   onDemo: () => void
 }
 
 export function ExecutionComposer({
   objective,
-  workflow,
   loading,
   onObjectiveChange,
-  onWorkflowChange,
   onRun,
   onDemo,
 }: ExecutionComposerProps) {
@@ -42,14 +37,6 @@ export function ExecutionComposer({
           <Button variant="ghost" size="icon" aria-label="Anexar contexto" title="Anexos serão habilitados em uma próxima etapa">
             <Paperclip className="size-4" />
           </Button>
-          <select
-            value={workflow}
-            onChange={(event) => onWorkflowChange(event.target.value)}
-            className="focus-ring h-8 min-w-0 max-w-[160px] flex-1 rounded-lg border border-border bg-secondary px-2 text-xs sm:max-w-[220px] sm:flex-none"
-            aria-label="Workflow"
-          >
-            {WORKFLOW_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
           <Button variant="ghost" size="sm" onClick={onDemo} disabled={loading} className="ml-auto px-2 sm:px-3">
             <FlaskConical className="size-4" />
             Carregar demo

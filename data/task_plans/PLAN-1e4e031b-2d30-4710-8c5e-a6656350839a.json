@@ -1,0 +1,48 @@
+{
+  "assumptions": [
+    "Brasília is already the capital of Brazil, and the query refers to the political and geographical entity."
+  ],
+  "created_at": "2026-09-07T17:53:21.522823+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Clear and accurate response answering the user's question about the capital of Brasília/Brazil."
+    }
+  ],
+  "goal": {
+    "constraints": [],
+    "objective": "qual a capital de brazília?",
+    "success_criteria": [
+      "Provide the correct explanation regarding the status of Brasília as the capital city of Brazil."
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-1e4e031b-2d30-4710-8c5e-a6656350839a",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Retrieve accurate and verified information clarifying that Brasília is the capital of Brazil."
+      ],
+      "depends_on": [],
+      "description": "Query geographical and administrative information regarding Brasília and its status as the capital of Brazil.",
+      "metadata": {},
+      "required_capabilities": [
+        "geographical information lookup",
+        "administrative data query"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "information_retrieval",
+      "title": "Information Retrieval on Brasília"
+    }
+  ],
+  "updated_at": "2026-09-07T17:53:21.522823+00:00",
+  "workstream_id": "WS-4e7ebe4f-12e0-472b-b72b-de8c7ba76c5b"
+}

@@ -1,0 +1,48 @@
+{
+  "assumptions": [
+    "A pergunta refere-se ao status administrativo de Brasília como capital do Brasil."
+  ],
+  "created_at": "2026-09-07T15:54:50.900851+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Resposta clara esclarecendo a dúvida sobre a capital de Brasília."
+    }
+  ],
+  "goal": {
+    "constraints": [],
+    "objective": "qual é a capital de brasília",
+    "success_criteria": [
+      "A resposta identifica claramente a relação administrativa de Brasília."
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-94f110ba-d62e-43d2-afd1-5bab3affc875",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Informação correta sobre a entidade Brasília é recuperada."
+      ],
+      "depends_on": [],
+      "description": "Look up administrative and geographical information regarding Brasília to address the query.",
+      "metadata": {},
+      "required_capabilities": [
+        "geographical query resolution",
+        "administrative data lookup"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "lookup",
+      "title": "Information Retrieval for Brasília"
+    }
+  ],
+  "updated_at": "2026-09-07T15:54:50.900851+00:00",
+  "workstream_id": "WS-3b52270b-b357-4621-a095-2c32075ea501"
+}

@@ -6,7 +6,7 @@ interface UseContractReturn {
   loading: boolean
   error: string | null
   loadDemo: (objective: string, workflow: string) => Promise<void>
-  run: (objective: string, workflow: string) => Promise<void>
+  run: (objective: string) => Promise<void>
   retry: () => Promise<void>
   clear: () => void
 }
@@ -58,7 +58,7 @@ export function useContract(): UseContractReturn {
   )
 
   const run = useCallback(
-    (objective: string, workflow: string) => post('/api/run', objective, workflow),
+    (objective: string) => post('/api/run', objective, 'auto'),
     [post],
   )
 

@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-09-07T15:54:50.969563+00:00",
+  "plan_id": "PLAN-94f110ba-d62e-43d2-afd1-5bab3affc875",
+  "run_id": "RUN-1df58fff-4742-4290-98fc-57503d1465ca",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "completed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "execution_node": "executor_agent",
+      "execution_strategy": "single_agent",
+      "result": "Com base nas informações administrativas e geográficas sobre Brasília:\n\n* **Brasília** é a capital federal do Brasil, sede do governo federal (poderes Executivo, Legislativo e Judiciário).\n* A pergunta feita no contexto (\"qual é a capital de brasília\") possui uma imprecisão conceitual, pois **Brasília é a própria capital** (do Brasil), não possuindo uma capital própria. Ela está situada no Distrito Federal.\n\nCritérios de aceite atendidos com sucesso: informação correta sobre a entidade Brasília recuperada.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:lookup",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-09-07T15:55:03.401563+00:00"
+    }
+  ],
+  "updated_at": "2026-09-07T15:55:03.401563+00:00"
+}

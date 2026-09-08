@@ -12,25 +12,22 @@ import { DEFAULT_WORKFLOW, workflowLabel } from '@/config/workflows'
 import { formatDuration, humanizeStatus } from '@/lib/format'
 import { useContract } from '@/hooks/useContract'
 import { useTheme } from '@/hooks/useTheme'
-import { useStoredState } from '@/hooks/useStoredState'
 
 const DEMO_OBJECTIVE = 'Investigue como estruturar um orquestrador de agentes robusto e produza uma recomendação técnica.'
 
 export default function App() {
   const [objective, setObjective] = useState('')
-  const [workflow, setWorkflow] = useStoredState('adk-workflow', DEFAULT_WORKFLOW)
   const [automationsOpen, setAutomationsOpen] = useState(false)
   const { contract, loading, error, loadDemo, run, retry, clear } = useContract()
   const { theme, toggle } = useTheme()
 
-  const handleDemo = () => loadDemo(objective.trim() || DEMO_OBJECTIVE, workflow)
+  const handleDemo = () => loadDemo(objective.trim() || DEMO_OBJECTIVE, DEFAULT_WORKFLOW)
   const handleRun = () => {
-    if (objective.trim()) run(objective.trim(), workflow)
+    if (objective.trim()) run(objective.trim())
   }
   const handleNewExecution = () => {
     clear()
     setObjective('')
-    setWorkflow(DEFAULT_WORKFLOW)
   }
 
   const completedSubtasks = contract?.subtasks.filter((subtask) => subtask.status === 'completed').length ?? 0
@@ -54,10 +51,8 @@ export default function App() {
   const composer = (
     <ExecutionComposer
       objective={objective}
-      workflow={workflow}
       loading={loading}
       onObjectiveChange={setObjective}
-      onWorkflowChange={setWorkflow}
       onRun={handleRun}
       onDemo={handleDemo}
     />
