@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-09-08T00:13:47.350105+00:00",
+  "plan_id": "PLAN-a0b482e5-995a-44b9-bd9b-e1ec653612e7",
+  "run_id": "RUN-79c80070-8a17-49f5-a819-d4b48b36f166",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "completed",
+  "tasks": [
+    {
+      "assigned_agent": "researcher_agent",
+      "attempt": 1,
+      "error": null,
+      "execution_node": "researcher_agent",
+      "execution_strategy": "single_agent",
+      "result": "Com base na tarefa solicitada e nos critérios de aceite, aqui estão as informações identificadas:\n\n1. **Capital do Brasil:** Brasília.\n2. **Modelo de automóvel correspondente:** **Volkswagen Brasília** (muitas vezes chamado apenas de *Brasília*), um clássico automóvel compacto desenvolvido e produzido pela Volkswagen do Brasil entre 1973 e 1982.\n\n### Critérios de Aceite\n* **O modelo de automóvel é nomeado exatamente como a capital do Brasil?** Sim, o veículo chama-se **Brasília**, exatamente o mesmo nome da capital federal do país.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:research",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-09-08T00:14:25.144950+00:00"
+    }
+  ],
+  "updated_at": "2026-09-08T00:14:25.144950+00:00"
+}
