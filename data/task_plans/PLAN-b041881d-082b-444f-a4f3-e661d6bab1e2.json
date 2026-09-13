@@ -1,0 +1,107 @@
+{
+  "assumptions": [
+    "As tarifas de voos, hospedagens 4 estrelas e alimentação em Casual Dining baseiam-se em projeções de mercado para janeiro de 2027.",
+    "A família parte de Florianópolis (FLN) com conexão em São Paulo (GRU)."
+  ],
+  "created_at": "2026-09-09T23:11:46.066529+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatório comparativo final de 10 dias em formato de três colunas detalhando os cenários Europa e EUA para janeiro de 2027, dentro do teto de USD 20.000."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Duração exata de 10 dias em janeiro de 2027",
+      "Grupo composto por um casal e duas filhas adolescentes (12 e 14 anos)",
+      "Orçamento total máximo de USD 20.000",
+      "Hospedagem mínima de 4 estrelas",
+      "Simulação de custos em Casual Dining para alimentação",
+      "Apresentação do relatório em três colunas comparativas"
+    ],
+    "objective": "Criar um roteiro de viagem comparativo de 10 dias em janeiro de 2027 para dois cenários (Europa e EUA) para um casal e duas filhas adolescentes, respeitando o teto de USD 20.000 e otimizando a logística e preferências familiares.",
+    "success_criteria": [
+      "Ambos os cenários (Europa e EUA) estão detalhados dia a dia para os 10 dias de janeiro de 2027.",
+      "O custo total de cada cenário respeita estritamente o limite de USD 20.000.",
+      "O relatório final apresenta os dados em formato comparativo de três colunas.",
+      "As preferências das adolescentes (compras, estética, montanhas-russas, cultura pop) foram contempladas em ambos os roteiros."
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-b041881d-082b-444f-a4f3-e661d6bab1e2",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Roteiro de 10 dias detalhado para Miami e Orlando.",
+        "Custos totais calculados mantendo-se abaixo de USD 20.000.",
+        "Inclusão de opções alinhadas aos interesses das filhas (compras, montanhas-russas)."
+      ],
+      "depends_on": [],
+      "description": "Elaborar um roteiro de 10 dias em janeiro de 2027 cobrindo Miami e Orlando para o casal e as duas filhas adolescentes, considerando voos saindo de FLN/GRU, hospedagem 4 estrelas, alimentação em Casual Dining e atrações focadas em parques e praias.",
+      "metadata": {},
+      "required_capabilities": [
+        "planejamento de viagens",
+        "estimativa de custos",
+        "logística de transporte"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "planning",
+      "title": "Desenvolver Roteiro e Custos do Cenário EUA"
+    },
+    {
+      "acceptance_criteria": [
+        "Roteiro de 10 dias detalhado para Portugal e Itália.",
+        "Custos totais calculados mantendo-se abaixo de USD 20.000.",
+        "Inclusão de pontos de interesse histórico e cultural que atendam à família."
+      ],
+      "depends_on": [],
+      "description": "Elaborar um roteiro de 10 dias em janeiro de 2027 cobrindo Portugal e Itália para o casal e as duas filhas adolescentes, considerando voos saindo de FLN/GRU, hospedagem mínima de 4 estrelas, alimentação em Casual Dining e atrações culturais e urbanas.",
+      "metadata": {},
+      "required_capabilities": [
+        "planejamento de viagens",
+        "estimativa de custos",
+        "logística de transporte"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "planning",
+      "title": "Desenvolver Roteiro e Custos do Cenário Europa"
+    },
+    {
+      "acceptance_criteria": [
+        "Relatório gerado em formato de três colunas comparativas.",
+        "Todos os custos e restrições do orçamento de USD 20.000 explicitados claramente.",
+        "Conclusão com recomendação logística e de experiência familiar."
+      ],
+      "depends_on": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "description": "Unificar os dados dos cenários Europa e EUA em um relatório final estruturado em três colunas comparativas (ex: Critério, Cenário A Europa, Cenário B EUA), evidenciando custos, logística e atendimento às preferências familiares.",
+      "metadata": {},
+      "required_capabilities": [
+        "síntese de dados",
+        "formatação de relatórios",
+        "análise comparativa"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "review_critic",
+      "task_id": "TASK-003",
+      "task_type": "synthesis",
+      "title": "Consolidar Relatório Comparativo em Três Colunas"
+    }
+  ],
+  "updated_at": "2026-09-09T23:11:46.066529+00:00",
+  "workstream_id": "WS-f2dd8b9f-73a7-4032-a1c1-b172dc4f8b49"
+}

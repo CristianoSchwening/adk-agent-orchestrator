@@ -1,0 +1,46 @@
+{
+  "created_at": "2026-09-09T23:13:03.208002+00:00",
+  "plan_id": "PLAN-b041881d-082b-444f-a4f3-e661d6bab1e2",
+  "run_id": "RUN-9df05384-8d95-440c-afff-25f64601f30b",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "running",
+  "tasks": [
+    {
+      "assigned_agent": "planner_agent",
+      "attempt": 1,
+      "error": null,
+      "execution_node": "planner_agent",
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:planning",
+      "status": "running",
+      "task_id": "TASK-001",
+      "updated_at": "2026-09-09T23:13:03.247556+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "ready",
+      "task_id": "TASK-002",
+      "updated_at": "2026-09-09T23:13:03.208002+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "execution_node": null,
+      "execution_strategy": "single_agent",
+      "result": null,
+      "selection_reason": null,
+      "status": "pending",
+      "task_id": "TASK-003",
+      "updated_at": "2026-09-09T23:13:03.208002+00:00"
+    }
+  ],
+  "updated_at": "2026-09-09T23:13:03.247556+00:00"
+}
