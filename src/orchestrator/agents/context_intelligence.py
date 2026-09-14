@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
 from orchestrator.config import OrchestratorSettings
-from orchestrator.context import ContextEntity, ContextPackage, Workstream
+from orchestrator.context import ContextEntity, ContextPackage, UserProfile, Workstream
 from orchestrator.model import create_gemini_model
 
 CONTEXT_PACKAGE_DRAFT_SCHEMA = {
@@ -70,6 +70,8 @@ do usuário em um pacote de contexto mínimo, factual e independente de domínio
 
 Regras:
 - Preserve o objetivo original e extraia apenas restrições expressas ou diretamente implicadas.
+- Use o UserProfile disponível no estado da sessão para adaptar idioma, nível de detalhe,
+  formato e restrições. Não altere nem complete o perfil com suposições.
 - Defina um workstream coeso que agrupe esta execução sem inventar uma área industrial.
 - Identifique somente entidades relevantes: pessoas, organizações, sistemas, documentos,
   datasets, produtos, lugares, conceitos ou outros objetos citados no objetivo.
@@ -93,7 +95,32 @@ def create_context_intelligence_agent(settings: OrchestratorSettings) -> Any:
     )
 
 
-def context_package_from_draft(value: Any) -> ContextPackage:
+def create_context_input_node() -> Any:
+    """Attach the stable profile to the objective before context inference."""
+
+    _, FunctionNode, _, _, _ = load_workflow_classes()
+
+    def attach(ctx: Any, node_input: Any) -> str:
+        parts = getattr(node_input, "parts", None) or []
+        text = "".join(str(getattr(part, "text", "") or "") for part in parts)
+        objective = (text or str(node_input)).strip()
+        return json.dumps(
+            {
+                "objective": objective,
+                "user_profile": ctx.state.get("user_profile"),
+                "instruction": "Use the profile only to adapt execution context.",
+            },
+            ensure_ascii=False,
+        )
+
+    return FunctionNode(func=attach, name="attach_user_profile_context")
+
+
+def context_package_from_draft(
+    value: Any,
+    *,
+    user_profile: UserProfile | None = None,
+) -> ContextPackage:
     payload = _structured_payload(value)
     workstream = payload.get("workstream") or {}
     workstream_id = f"WS-{uuid4()}"
@@ -105,6 +132,7 @@ def context_package_from_draft(value: Any) -> ContextPackage:
             name=str(workstream.get("name") or "").strip(),
             summary=str(workstream.get("summary") or "").strip(),
         ),
+        user_profile=user_profile,
         entities=[
             ContextEntity(
                 entity_id=f"ENT-{index:03d}",
@@ -131,7 +159,9 @@ def create_context_package_normalizer() -> Any:
     _, FunctionNode, _, _, _ = load_workflow_classes()
 
     def normalize(ctx: Any, node_input: Any) -> str:
-        package = context_package_from_draft(node_input)
+        raw_profile = ctx.state.get("user_profile")
+        profile = UserProfile.from_dict(raw_profile) if isinstance(raw_profile, dict) else None
+        package = context_package_from_draft(node_input, user_profile=profile)
         if not package.objective or not package.workstream.name:
             raise ValueError("context package requires objective and workstream name")
         ctx.state["context_package"] = package.to_dict()

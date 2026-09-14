@@ -58,7 +58,11 @@ def build_task_context(
         task_id=task.task_id,
         workstream_id=package.workstream.workstream_id,
         objective=package.objective,
-        constraints=list(package.constraints),
+        user_profile=package.user_profile,
+        constraints=[
+            *package.constraints,
+            *(package.user_profile.constraints if package.user_profile else []),
+        ],
         entities=entities,
         terminology=terminology,
         contextual_tools=tools,

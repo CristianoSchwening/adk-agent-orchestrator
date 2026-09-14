@@ -7,6 +7,7 @@ from typing import Any
 
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
 from orchestrator.agents.context_intelligence import (
+    create_context_input_node,
     create_context_intelligence_agent,
     create_context_package_normalizer,
 )
@@ -124,6 +125,7 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
     router = Agent(**kwargs)
     task_planner = create_task_planner_agent(resolved_settings)
     context_intelligence = create_context_intelligence_agent(resolved_settings)
+    context_input = create_context_input_node()
     context_normalizer = create_context_package_normalizer()
     task_plan_normalizer = create_task_plan_normalizer()
     task_dispatcher = create_task_dispatcher_node(resolved_settings)
@@ -142,7 +144,8 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
 
     route_node = FunctionNode(func=normalize_route, name="normalize_workflow_route")
     edges = [
-        Edge(from_node=START, to_node=context_intelligence),
+        Edge(from_node=START, to_node=context_input),
+        Edge(from_node=context_input, to_node=context_intelligence),
         Edge(from_node=context_intelligence, to_node=context_normalizer),
         Edge(from_node=context_normalizer, to_node=task_planner),
         Edge(from_node=task_planner, to_node=task_plan_normalizer),
@@ -170,6 +173,7 @@ def create_planned_workflow(
         raise ValueError(f"unsupported workflow: {workflow_name}")
     planner = create_task_planner_agent(settings)
     context_intelligence = create_context_intelligence_agent(settings)
+    context_input = create_context_input_node()
     context_normalizer = create_context_package_normalizer()
     normalizer = create_task_plan_normalizer()
     target = create_task_dispatcher_node(settings)
@@ -188,7 +192,8 @@ def create_planned_workflow(
         name=f"planned_{workflow_name}_workflow",
         description="ADK task planning followed by the explicitly selected workflow.",
         edges=[
-            Edge(from_node=START, to_node=context_intelligence),
+            Edge(from_node=START, to_node=context_input),
+            Edge(from_node=context_input, to_node=context_intelligence),
             Edge(from_node=context_intelligence, to_node=context_normalizer),
             Edge(from_node=context_normalizer, to_node=planner),
             Edge(from_node=planner, to_node=normalizer),

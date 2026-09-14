@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from orchestrator.agents.context_intelligence import (
     context_package_from_draft,
     create_context_package_normalizer,
 )
 from orchestrator.config import OrchestratorSettings
-from orchestrator.context import build_task_context
+from orchestrator.context import UserProfile, build_task_context, load_user_profile
 from orchestrator.mapping import map_adk_execution
 from orchestrator.planning import PlannedTask
 
@@ -45,7 +47,38 @@ def test_context_draft_materializes_workstream_and_entities() -> None:
     assert package.context_id.startswith("CTX-")
     assert package.workstream.workstream_id.startswith("WS-")
     assert [entity.entity_id for entity in package.entities] == ["ENT-001", "ENT-002"]
-    assert package.schema_version == "orchestrator.context_package.v1"
+    assert package.schema_version == "orchestrator.context_package.v2"
+
+
+def test_repository_profile_is_loaded_and_attached_to_context(tmp_path) -> None:
+    profile_path = tmp_path / "config" / "user-profile.json"
+    profile_path.parent.mkdir()
+    profile_path.write_text(
+        json.dumps(
+            {
+                "user_id": "user-1",
+                "display_name": "Alex",
+                "locale": "pt-BR",
+                "timezone": "America/Sao_Paulo",
+                "expertise": ["architecture"],
+                "preferences": {"response_style": "concise"},
+                "constraints": ["Do not expose personal data"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    profile = load_user_profile("config/user-profile.json", repository_root=tmp_path)
+    package = context_package_from_draft(context_draft(), user_profile=profile)
+
+    assert package.user_profile is not None
+    assert package.user_profile.display_name == "Alex"
+    assert package.to_dict()["user_profile"]["preferences"]["response_style"] == "concise"
+
+
+def test_profile_path_cannot_escape_repository(tmp_path) -> None:
+    with pytest.raises(ValueError, match="inside the repository"):
+        load_user_profile("../user-profile.json", repository_root=tmp_path)
 
 
 def test_context_normalizer_publishes_package_before_planning() -> None:
@@ -61,7 +94,12 @@ def test_context_normalizer_publishes_package_before_planning() -> None:
 
 
 def test_task_context_is_minimal_and_tools_are_real_and_contextual() -> None:
-    package = context_package_from_draft(context_draft())
+    profile = UserProfile(
+        user_id="user-1",
+        preferences={"response_style": "concise"},
+        constraints=["Avoid unexplained jargon"],
+    )
+    package = context_package_from_draft(context_draft(), user_profile=profile)
     task = PlannedTask(
         task_id="TASK-001",
         title="Analyze customer records",
@@ -81,6 +119,9 @@ def test_task_context_is_minimal_and_tools_are_real_and_contextual() -> None:
     assert [entity.name for entity in context.entities] == ["Customer dataset"]
     assert context.contextual_tools == ["inspect_json_records"]
     assert context.terminology == {"customer": "A record in the supplied dataset"}
+    assert context.user_profile == profile
+    assert context.constraints == ["Use only supplied records", "Avoid unexplained jargon"]
+    assert context.schema_version == "orchestrator.task_context.v2"
     assert "context_id" not in context.to_dict()
 
 
