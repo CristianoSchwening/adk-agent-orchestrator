@@ -1,0 +1,14 @@
+{
+  "schema_version": "orchestrator.user_profile.v1",
+  "user_id": "local-user",
+  "display_name": "",
+  "role": "",
+  "organization": "",
+  "locale": "pt-BR",
+  "timezone": "America/Sao_Paulo",
+  "expertise": [],
+  "preferences": {
+    "response_style": "concise and practical"
+  },
+  "constraints": []
+}

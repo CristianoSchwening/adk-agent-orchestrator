@@ -23,6 +23,7 @@ from orchestrator.agents import (
     create_root_agent,
 )
 from orchestrator.config import OrchestratorSettings
+from orchestrator.context import load_user_profile
 from orchestrator.contracts import AgentVisibleResponse, ExecutionContractDTO
 from orchestrator.mapping.adk import map_adk_execution, map_duration_ms
 from orchestrator.planning import FileTaskPlanRepository, TaskPlan, validate_task_plan
@@ -115,6 +116,10 @@ def initial_session_state(
         "workspace_trace_root": settings.workspace_root,
         "workspace_trace_count": 0,
     }
+    profile = load_user_profile(settings.user_profile_path, repository_root=REPOSITORY_ROOT)
+    # A repository profile is user-scoped: never attach it to another runtime identity.
+    if profile is not None and profile.user_id == settings.user_id:
+        state["user_profile"] = profile.to_dict()
     if selected_workflow is not None:
         state["workflow"] = selected_workflow
         state["selected_workflow"] = selected_workflow

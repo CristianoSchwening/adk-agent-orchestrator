@@ -3,6 +3,7 @@
 from orchestrator.agents.context_intelligence import (
     CONTEXT_PACKAGE_DRAFT_SCHEMA,
     context_package_from_draft,
+    create_context_input_node,
     create_context_intelligence_agent,
     create_context_package_normalizer,
 )
@@ -54,6 +55,7 @@ __all__ = [
     "create_approval_agent",
     "create_critic_agent",
     "create_context_intelligence_agent",
+    "create_context_input_node",
     "create_context_package_normalizer",
     "create_executor_agent",
     "create_planner_agent",

@@ -623,6 +623,7 @@ def test_root_agent_can_be_created_when_adk_is_installed():
 
     assert root_agent.name == "root_orchestrator_agent"
     assert [agent.name for agent in _workflow_nodes(root_agent)] == [
+        "attach_user_profile_context",
         "context_intelligence_agent",
         "normalize_context_package",
         "task_planner_agent",
@@ -736,6 +737,7 @@ def test_explicit_workflow_is_wrapped_by_adk_task_planner_when_installed():
     )
 
     assert [node.name for node in _workflow_nodes(workflow)] == [
+        "attach_user_profile_context",
         "context_intelligence_agent",
         "normalize_context_package",
         "task_planner_agent",

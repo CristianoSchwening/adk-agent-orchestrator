@@ -135,6 +135,13 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
                 <div className="font-medium">{contract.context_package.workstream.name}</div>
                 <div className="mt-1 text-[10px] text-muted-foreground">{contract.context_package.workstream.workstream_id} · {contract.context_package.workstream.summary}</div>
               </div>
+              {contract.context_package.user_profile && (
+                <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
+                  Perfil: {contract.context_package.user_profile.display_name || contract.context_package.user_profile.user_id}
+                  {contract.context_package.user_profile.role && ` · ${contract.context_package.user_profile.role}`}
+                  {` · ${contract.context_package.user_profile.locale}`}
+                </div>
+              )}
               {contract.context_package.entities.length > 0 && (
                 <div className="flex flex-wrap gap-1 border-t border-border pt-2">
                   {contract.context_package.entities.map((entity) => (

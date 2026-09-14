@@ -121,6 +121,7 @@ export interface ContextPackageDTO {
   context_id: string
   objective: string
   workstream: { workstream_id: string; name: string; summary: string }
+  user_profile?: UserProfileDTO | null
   entities: ContextEntityDTO[]
   constraints: string[]
   terminology: Record<string, string>
@@ -133,11 +134,25 @@ export interface TaskContextDTO {
   task_id: string
   workstream_id: string
   objective: string
+  user_profile?: UserProfileDTO | null
   constraints: string[]
   entities: ContextEntityDTO[]
   terminology: Record<string, string>
   contextual_tools: string[]
   dependency_results: Record<string, unknown>
+}
+
+export interface UserProfileDTO {
+  schema_version: string
+  user_id: string
+  display_name: string
+  role: string
+  organization: string
+  locale: string
+  timezone: string
+  expertise: string[]
+  preferences: Record<string, string>
+  constraints: string[]
 }
 
 export interface TaskRunDTO {

@@ -5,7 +5,8 @@ Orquestrador multiagente construído sobre o **Google Agent Development Kit (ADK
 ## Como funciona
 
 Você envia um objetivo em texto. Um `context_intelligence_agent` cria primeiro um pacote
-mínimo com workstream, entidades e necessidades de tools. Depois, um `task_planner_agent`
+mínimo combinando o perfil editável em `config/user-profile.json` com workstream, entidades
+e necessidades de tools. Depois, um `task_planner_agent`
 baseado em `LlmAgent` ADK cria um plano estruturado e um `FunctionNode` valida seu DAG. O `RootOrchestratorAgent` define o
 fluxo global e um dispatcher sequencial libera dependências, seleciona especialistas
 generalistas e aplica a estratégia de cada tarefa com `ctx.run_node()`. Um guardião só
