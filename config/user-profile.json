@@ -1,14 +1,14 @@
 {
   "schema_version": "orchestrator.user_profile.v1",
   "user_id": "local-user",
-  "display_name": "",
-  "role": "",
-  "organization": "",
+  "display_name": "Cristiano Schwening",
+  "role": "Gestor de Produtos",
+  "organization": "Engsoft",
   "locale": "pt-BR",
   "timezone": "America/Sao_Paulo",
-  "expertise": [],
+  "expertise": ["Gestão de Produtos", "Gestão de Projetos", "Gestão de Equipes", "Gestão de Projetos", "Gestão de Equipes"],
   "preferences": {
     "response_style": "concise and practical"
   },
-  "constraints": []
+  "constraints": ["Não use emojis", "Não use hashtags"]
 }
