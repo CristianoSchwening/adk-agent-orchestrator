@@ -15,6 +15,7 @@ import {
   ServerCog,
   Wrench,
 } from 'lucide-react'
+import { RunDiagnostics } from '@/components/layout/RunDiagnostics'
 import { Badge } from '@/components/ui/badge'
 import { formatDuration, humanizeStatus } from '@/lib/format'
 import { collectToolNames, deriveAgents, formatBytes } from '@/lib/execution-model'
@@ -201,6 +202,10 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
             </div>
           ) : <p className="text-xs text-muted-foreground">Nenhum plano de tarefas associado a esta execução.</p>}
         </InspectorSection>
+
+        {contract && <InspectorSection title="Avaliações e tentativas" icon={ListChecks}>
+          <RunDiagnostics contract={contract} />
+        </InspectorSection>}
 
         <InspectorSection title="Decisão de roteamento" icon={Route}>
           {contract ? (

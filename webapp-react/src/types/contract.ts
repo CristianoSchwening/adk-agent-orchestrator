@@ -155,6 +155,18 @@ export interface UserProfileDTO {
   constraints: string[]
 }
 
+export interface TaskEvaluationDTO {
+  trigger: string
+  rationale: string
+  criteria_catalog: Array<{ criterion_id: string; text: string }>
+  criteria: Array<{
+    criterion_id: string
+    status: 'passed' | 'failed' | 'unverifiable'
+    rationale: string
+    evidence: string
+  }>
+}
+
 export interface TaskRunDTO {
   task_id: string
   status: string
@@ -164,11 +176,20 @@ export interface TaskRunDTO {
   selection_reason: string | null
   attempt: number
   result: unknown
+  execution_output?: unknown
+  output_status?: 'not_recorded' | 'absent' | 'empty' | 'present'
+  output_recorded_at?: string | null
+  evaluation?: TaskEvaluationDTO | null
+  evaluation_error?: string | null
+  evaluated_at?: string | null
   error: string | null
   updated_at: string
 }
 
 export interface PlanRunDTO {
+  parent_run_id?: string | null
+  replan_request?: ReplanRequestDTO | null
+  terminal_error?: { code: string; limit: number; used: number; recorded_at: string } | null
   schema_version: string
   run_id: string
   plan_id: string

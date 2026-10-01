@@ -41,6 +41,9 @@ class PlanRun:
     created_at: str = field(default_factory=utc_now_iso)
     updated_at: str = field(default_factory=utc_now_iso)
     schema_version: str = TASK_RUN_SCHEMA_VERSION
+    parent_run_id: str | None = None
+    replan_request: dict[str, Any] | None = None
+    terminal_error: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -49,6 +52,9 @@ class PlanRun:
     def from_dict(cls, value: dict[str, Any]) -> PlanRun:
         return cls(
             run_id=str(value["run_id"]),
+            parent_run_id=value.get("parent_run_id"),
+            replan_request=value.get("replan_request"),
+            terminal_error=value.get("terminal_error"),
             plan_id=str(value["plan_id"]),
             status=value["status"],
             tasks=[TaskRun(**task) for task in value.get("tasks", [])],
