@@ -106,3 +106,30 @@ def test_next_revision_keeps_original_lineage() -> None:
     assert second.revision == 3
     assert second.lineage_id == "PLAN-ORIGINAL"
     assert second.parent_plan_id == first.plan_id
+
+
+@pytest.mark.parametrize("case", ["missing", "duplicate", "unknown", "contradiction", "trigger"])
+def test_invalid_criterion_evaluation_is_rejected(case):
+    from orchestrator.dispatching.evaluation import criteria_catalog, validate_evaluation
+
+    item = {"criterion_id": criteria_catalog(["Report exists"])[0]["criterion_id"],
+            "status": "passed", "rationale": "Present", "evidence": "Report"}
+    value = {"trigger": "none", "rationale": "Complete", "criteria": [item]}
+    if case == "missing":
+        value["criteria"] = []
+    elif case == "duplicate":
+        value["criteria"] = [item, item]
+    elif case == "unknown":
+        item["criterion_id"] = "unknown"
+    elif case == "contradiction":
+        item["status"] = "failed"
+    else:
+        value["trigger"] = "unsupported"
+    with pytest.raises(ValueError):
+        validate_evaluation(value, ["Report exists"])
+
+
+def test_criterion_identity_survives_reordering():
+    from orchestrator.dispatching.evaluation import criteria_catalog
+
+    assert criteria_catalog(["A", "B"])[0] == criteria_catalog(["B", "A"])[1]
