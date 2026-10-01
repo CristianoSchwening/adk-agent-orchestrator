@@ -345,6 +345,11 @@ def test_persists_output_and_evaluation_before_terminal_failure(tmp_path, output
         assert task.evaluation["rationale"] == "Explanation"
         assert task.evaluation["criteria"][0]["evidence"] == "Observed output"
     assert task.evaluated_at
+    if decision == "reject":
+        assert saved.terminal_error["code"] == "replan_limit_exhausted"
+        assert saved.terminal_error["limit"] == 0
+        assert saved.replan_request["evidence"]["evaluation"] == task.evaluation
+        assert ctx.state["last_replan_request"] == saved.replan_request
 
 
 def test_legacy_run_does_not_imply_empty_output():
@@ -356,3 +361,65 @@ def test_legacy_run_does_not_imply_empty_output():
     restored = PlanRun.from_dict(legacy)
     assert restored.tasks[0].output_status == "not_recorded"
     assert restored.tasks[0].evaluation is None
+
+
+def test_replanner_and_retry_receive_evidence_and_prior_evaluations(tmp_path):
+    import json
+
+    task_plan = plan()
+    task_plan.tasks.pop()
+    settings = OrchestratorSettings(
+        workspace_enabled=False, task_run_root="runs", task_plan_root="plans", max_replans=2,
+    )
+    node = create_task_dispatcher_node(settings, repository_root=tmp_path)
+    repository = FileTaskRunRepository("runs", repository_root=tmp_path)
+    replans = []
+    attempts = []
+
+    class FakeContext:
+        def __init__(self):
+            self.state = {
+                "task_plan": task_plan.to_dict(),
+                "context_package": ContextPackage(
+                    context_id="CTX-EVIDENCE", objective=task_plan.goal.objective,
+                    workstream=Workstream("WS-EVIDENCE", "Evidence", "Tests"),
+                ).to_dict(),
+            }
+
+        async def run_node(self, target, *, node_input, run_id):
+            payload = json.loads(node_input)
+            if target.name == "controlled_replanner_agent":
+                replans.append(payload)
+                saved = repository.get(self.state["task_run_id"])
+                assert saved.replan_request == payload["replan_request"]
+                evidence = payload["replan_request"]["evidence"]
+                assert saved.tasks[0].evaluation == evidence["evaluation"]
+                previous = payload["previous_plan"]
+                keys = ("goal", "tasks", "deliverables", "assumptions")
+                return {key: previous[key] for key in keys}
+            if target.name == "replan_guard_agent":
+                passed = len(attempts) == 3
+                return {
+                    "trigger": "none" if passed else "acceptance_criteria_failed",
+                    "rationale": "Missing source" if not passed else "Source included",
+                    "criteria": [{"criterion_id": item["criterion_id"],
+                                  "status": "passed" if passed else "failed",
+                                  "rationale": "Check source", "evidence": "No citation"}
+                                 for item in payload["acceptance_criteria"]],
+                }
+            attempts.append(payload)
+            return f"Report attempt {len(attempts)}"
+
+    ctx = FakeContext()
+    assert asyncio.run(node._func(ctx=ctx, node_input=""))["status"] == "completed"
+    assert len(replans) == 2
+    assert replans[0]["previous_evaluations"] == []
+    assert len(replans[1]["previous_evaluations"]) == 1
+    assert replans[1]["replan_request"]["evidence"]["execution_output"] == "Report attempt 2"
+    assert attempts[0]["previous_attempt"] is None
+    assert attempts[2]["previous_attempt"]["execution_output"] == "Report attempt 2"
+    assert attempts[2]["previous_attempt"]["evaluation"]["rationale"] == "Missing source"
+    history = ctx.state["task_run_history"]
+    current = repository.get(ctx.state["task_run_id"])
+    assert current.parent_run_id == history[-1]["run_id"]
+    assert repository.get(history[-1]["run_id"]).parent_run_id == history[0]["run_id"]

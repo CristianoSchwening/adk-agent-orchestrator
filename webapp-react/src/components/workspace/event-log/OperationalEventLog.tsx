@@ -42,14 +42,14 @@ function JsonDetails({ label, value }: { label: string; value: unknown }) {
     window.setTimeout(() => setCopied(false), 1200)
   }
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-background/70">
+    <section className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-background/70">
       <div className="flex items-center border-b border-border px-3 py-2">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
         <Button variant="ghost" size="icon" onClick={copy} className="ml-auto size-6" aria-label={`Copiar ${label}`}>
           {copied ? <Check className="size-3 text-emerald-500" /> : <Clipboard className="size-3" />}
         </Button>
       </div>
-      <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-[11px] leading-5 text-foreground/80">{formatted}</pre>
+      <pre className="min-w-0 max-w-full max-h-72 overflow-y-auto whitespace-pre-wrap [overflow-wrap:anywhere] p-3 font-mono text-[11px] leading-5 text-foreground/80">{formatted}</pre>
     </section>
   )
 }
@@ -64,7 +64,7 @@ function eventTone(event: EventDTO) {
 function EventEntry({ event }: { event: EventDTO }) {
   const Icon = event.severity === 'error' ? AlertTriangle : event.type.startsWith('workspace_') ? FileSearch : event.type === 'model' ? Cpu : event.type === 'final_response' ? Bot : CircleDot
   return (
-    <details className="group rounded-xl border border-border bg-card">
+    <details className="group min-w-0 max-w-full [overflow-wrap:anywhere] rounded-xl border border-border bg-card">
       <summary className="focus-ring flex cursor-pointer list-none items-start gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border', eventTone(event))}><Icon className="size-4" /></span>
         <div className="min-w-0 flex-1">
@@ -78,8 +78,8 @@ function EventEntry({ event }: { event: EventDTO }) {
         <time className="shrink-0 text-[10px] text-muted-foreground">{formatTime(event.timestamp)}</time>
         <ChevronDown className="mt-1 size-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
-      <div className="grid gap-3 border-t border-border p-4">
-        <p className="whitespace-pre-wrap text-sm leading-6">{event.message}</p>
+      <div className="grid min-w-0 grid-cols-1 gap-3 border-t border-border p-4">
+        <p className="min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] text-sm leading-6">{event.message}</p>
         <JsonDetails label="Metadados" value={event.metadata} />
         <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
           <span>event_id: {event.event_id}</span>
@@ -95,7 +95,7 @@ function ToolEntry({ entry }: { entry: Extract<EventLogEntry, { kind: 'tool' }> 
   const failed = [entry.call, entry.response].some((event) => event?.severity === 'error')
   const status = failed ? 'Erro' : entry.response ? 'Concluída' : 'Pendente'
   return (
-    <details className="group rounded-xl border border-border bg-card">
+    <details className="group min-w-0 max-w-full [overflow-wrap:anywhere] rounded-xl border border-border bg-card">
       <summary className="focus-ring flex cursor-pointer list-none items-start gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
         <span className={cn('mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border', failed ? 'border-destructive/20 bg-destructive/10 text-destructive' : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-500')}><Wrench className="size-4" /></span>
         <div className="min-w-0 flex-1">
@@ -105,7 +105,7 @@ function ToolEntry({ entry }: { entry: Extract<EventLogEntry, { kind: 'tool' }> 
         <time className="shrink-0 text-[10px] text-muted-foreground">{formatTime(entry.timestamp)}</time>
         <ChevronDown className="mt-1 size-3.5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
-      <div className="grid gap-3 border-t border-border p-4 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-3 border-t border-border p-4 lg:grid-cols-2">
         <JsonDetails label="Input" value={entry.call?.metadata?.input ?? entry.call?.metadata?.arguments ?? entry.call?.message} />
         <JsonDetails label="Output" value={entry.response?.metadata?.output ?? entry.response?.metadata?.result ?? entry.response?.message} />
         <JsonDetails label="Metadados da chamada" value={entry.call?.metadata} />
@@ -132,7 +132,7 @@ export function OperationalEventLog({ events }: { events: EventDTO[] }) {
   }, [filter, query])
 
   return (
-    <div>
+    <div className="min-w-0 max-w-full">
       <div className="flex flex-col gap-3 border-b border-border p-3 sm:p-4">
         <div className="flex flex-wrap items-center gap-1">
           {FILTERS.map(({ id, label }) => <button key={id} type="button" onClick={() => { setAutoScroll(false); setFilter(id) }} className={cn('focus-ring rounded-lg px-3 py-1.5 text-xs font-medium', filter === id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-secondary')}>{label}</button>)}

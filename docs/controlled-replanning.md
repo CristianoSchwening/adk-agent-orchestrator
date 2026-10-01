@@ -56,5 +56,23 @@ The guard must cover every catalog ID exactly once. Unknown/duplicate/missing ID
 invalid triggers and contradictory approval decisions are rejected locally.
 Diagnostics use the existing task-run repository and its size limit; they are not
 silently truncated. Output and evidence can contain task data, so apply the same access
-controls as for existing run results. UI presentation and replan behavior changes are
-outside this delivery.
+controls as for existing run results. The inspector section “Avaliações e tentativas” displays the current run and prior
+revisions, criterion rationale/evidence, evaluator errors and expandable output. Legacy
+records explicitly display “Diagnóstico não registrado”. Output is rendered as escaped
+text, never HTML.
+
+Replan requests now include the rejected output, output status and full evaluation.
+The replanner also receives previous criterion evaluations to identify recurring failures;
+its instructions require concrete corrections without weakening acceptance criteria. The
+next execution of the same task ID receives the most recent failed attempt as
+`previous_attempt`. New task IDs have no automatic prior-attempt match.
+
+Each failed run stores its `replan_request` before calling the replanner. Successor runs
+store `parent_run_id`. On exhaustion, `terminal_error` stores
+`replan_limit_exhausted`, configured `limit`, `used` revisions and a timestamp, while
+preserving the last request and evaluation. The execution contract already carries the
+run and plan histories, so no new API endpoint is needed.
+
+Validation: `pytest -q`, `ruff check src tests`, `npm --prefix webapp-react test` and
+`npm --prefix webapp-react run build`. Frontend tests render real React components with
+Vite SSR and cover legacy data, failure categories, histories and escaped output.
