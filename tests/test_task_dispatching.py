@@ -205,6 +205,13 @@ def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_p
                 self, target, node_input=node_input, run_id=run_id
             )
             called.append((target.name, run_id))
+            if target.name == "replan_guard_agent":
+                import json
+                criteria = json.loads(node_input)["acceptance_criteria"]
+                return {"trigger": "none", "rationale": "Complete", "criteria": [
+                    {"criterion_id": item["criterion_id"], "status": "passed",
+                     "rationale": "Completed", "evidence": "target"} for item in criteria
+                ]}
             return {"target": target.name}
 
     result = asyncio.run(node._func(ctx=FakeContext(), node_input="objective"))
@@ -272,3 +279,80 @@ def test_repository_preserves_previous_state_on_replace_failure(
     assert len(calls) == attempts
     assert target.read_bytes() == previous
     assert not list(target.parent.glob("*.tmp"))
+
+
+@pytest.mark.parametrize("output", ["rejected report", None, "", "   "])
+@pytest.mark.parametrize("decision", ["reject", "approve", "invalid", "exception"])
+def test_persists_output_and_evaluation_before_terminal_failure(tmp_path, output, decision):
+    import json
+
+    task_plan = plan()
+    settings = OrchestratorSettings(workspace_enabled=False, task_run_root="runs", max_replans=0)
+    node = create_task_dispatcher_node(settings, repository_root=tmp_path)
+    repository = FileTaskRunRepository("runs", repository_root=tmp_path)
+
+    class FakeContext:
+        def __init__(self):
+            self.state = {
+                "task_plan": task_plan.to_dict(),
+                "context_package": ContextPackage(
+                    context_id="CTX-EVALUATION", objective=task_plan.goal.objective,
+                    workstream=Workstream("WS-EVAL", "Evaluation", "Tests"),
+                ).to_dict(),
+            }
+
+        async def run_node(self, target, *, node_input, run_id):
+            if target.name != "replan_guard_agent":
+                return output
+            saved = repository.get(self.state["task_run_id"])
+            current = next(item for item in saved.tasks if item.status == "running")
+            assert current.execution_output == output
+            assert current.output_recorded_at is not None
+            if decision == "exception":
+                raise RuntimeError("guard unavailable")
+            if decision == "invalid":
+                return {"trigger": "none"}
+            return {
+                "trigger": "none" if decision == "approve" else "acceptance_criteria_failed",
+                "rationale": "Explanation",
+                "criteria": [
+                    {"criterion_id": item["criterion_id"],
+                     "status": "passed" if decision == "approve" else "failed",
+                     "rationale": "Criterion explanation", "evidence": "Observed output"}
+                    for item in json.loads(node_input)["acceptance_criteria"]
+                ],
+            }
+
+    ctx = FakeContext()
+    if decision == "approve":
+        assert asyncio.run(node._func(ctx=ctx, node_input=""))["status"] == "completed"
+    else:
+        with pytest.raises(RuntimeError, match="replanning limit|evaluation_failed"):
+            asyncio.run(node._func(ctx=ctx, node_input=""))
+    # Read through a new repository instance, as after a restart.
+    saved = FileTaskRunRepository("runs", repository_root=tmp_path).get(ctx.state["task_run_id"])
+    task = saved.tasks[0]
+    assert task.execution_output == output
+    assert task.output_status == (
+        "absent" if output is None else "empty" if not output.strip() else "present"
+    )
+    assert task.result == (output if decision == "approve" else None)
+    if decision in {"invalid", "exception"}:
+        assert task.error == "evaluation_failed"
+        assert task.evaluation_error
+        assert task.evaluation is None
+    else:
+        assert task.evaluation["rationale"] == "Explanation"
+        assert task.evaluation["criteria"][0]["evidence"] == "Observed output"
+    assert task.evaluated_at
+
+
+def test_legacy_run_does_not_imply_empty_output():
+    from orchestrator.dispatching.models import PlanRun
+
+    legacy = {"run_id": "OLD", "plan_id": "PLAN", "status": "failed",
+              "schema_version": "orchestrator.task_run.v2",
+              "tasks": [{"task_id": "TASK", "status": "failed", "result": None}]}
+    restored = PlanRun.from_dict(legacy)
+    assert restored.tasks[0].output_status == "not_recorded"
+    assert restored.tasks[0].evaluation is None

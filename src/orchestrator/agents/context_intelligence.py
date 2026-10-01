@@ -72,7 +72,7 @@ Regras:
 - Preserve o objetivo original e extraia apenas restrições expressas ou diretamente implicadas.
 - Use o UserProfile disponível no estado da sessão para adaptar idioma, nível de detalhe,
   formato e restrições. Não altere nem complete o perfil com suposições.
-- Defina um workstream coeso que agrupe esta execução sem inventar uma área industrial.
+- Defina um workstream coeso que agrupe esta execução sem inventar.
 - Identifique somente entidades relevantes: pessoas, organizações, sistemas, documentos,
   datasets, produtos, lugares, conceitos ou outros objetos citados no objetivo.
 - Declare capacidades relacionadas às entidades, nunca nomes de agentes.

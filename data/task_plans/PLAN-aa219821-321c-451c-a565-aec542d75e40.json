@@ -1,0 +1,117 @@
+{
+  "assumptions": [
+    "A ilha fictícia possui dados geográficos e climáticos básicos implícitos para o dimensionamento energético e de transporte.",
+    "O usuário forneceu todas as restrições de formatação e conteúdo necessárias para a redação do documento."
+  ],
+  "created_at": "2026-10-01T00:52:16.747596+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatório de Proposta Urbana unificado e estruturado conforme as diretrizes da cidade sustentável na ilha fictícia."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "O relatório final deve conter obrigatoriamente as seções: Visão geral da cidade, Estratégias de energia e transporte, Políticas sociais e educacionais, Modelo econômico, Plano de preservação ambiental, e Riscos e soluções alternativas.",
+      "Não utilizar emojis.",
+      "Não utilizar hashtags.",
+      "Adotar um tom conciso e prático, focado em clareza técnica e viabilidade de projeto."
+    ],
+    "objective": "Desenvolver uma proposta detalhada e estruturada para a criação de uma cidade sustentável em uma ilha fictícia, integrando dimensões sociais, econômicas, tecnológicas e ambientais em um relatório final unificado.",
+    "success_criteria": [
+      "Relatório final unificado gerado contendo todas as seis seções obrigatórias.",
+      "Ausência total de emojis e hashtags no documento.",
+      "Cobertura clara de diretrizes ambientais, energéticas, econômicas e sociais alinhadas ao contexto da ilha fictícia."
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-aa219821-321c-451c-a565-aec542d75e40",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "A seção de visão geral da cidade está redigida de forma concisa e prática.",
+        "As estratégias de energia e transporte limpo estão descritas detalhadamente."
+      ],
+      "depends_on": [],
+      "description": "Elaborar a primeira parte do relatório cobrindo a visão geral da cidade na ilha fictícia e as estratégias detalhadas de energia renovável e transporte limpo.",
+      "metadata": {},
+      "required_capabilities": [
+        "Planejamento territorial",
+        "Geração de relatórios técnicos"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "conteudo",
+      "title": "Definir Visão Geral e Estratégias de Energia e Transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Políticas sociais e educacionais descritas de forma clara.",
+        "Modelo econômico circular detalhado com foco na eliminação de resíduos e regeneração."
+      ],
+      "depends_on": [],
+      "description": "Criar as seções relativas às políticas sociais e educacionais e ao modelo econômico circular aplicável à cidade sustentável.",
+      "metadata": {},
+      "required_capabilities": [
+        "Estruturação de propostas de planejamento urbano"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "conteudo",
+      "title": "Elaborar Políticas Sociais, Educacionais e Modelo Econômico"
+    },
+    {
+      "acceptance_criteria": [
+        "Plano de preservação ambiental estruturado.",
+        "Riscos e soluções alternativas devidamente documentados."
+      ],
+      "depends_on": [],
+      "description": "Elaborar o plano de preservação ambiental e a análise de riscos com soluções alternativas para a implantação na ilha.",
+      "metadata": {},
+      "required_capabilities": [
+        "Modelagem de cenários hipotéticos",
+        "Geração de relatórios técnicos"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-003",
+      "task_type": "conteudo",
+      "title": "Desenvolver Plano de Preservação Ambiental e Análise de Riscos"
+    },
+    {
+      "acceptance_criteria": [
+        "O relatório contém todas as seis seções obrigatórias integradas.",
+        "Não há presença de emojis ou hashtags no documento.",
+        "O tom está conciso, prático e focado em clareza técnica."
+      ],
+      "depends_on": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003"
+      ],
+      "description": "Unificar todas as seções geradas em um único relatório de proposta urbana, verificando a conformidade com as restrições de estilo, ausência de emojis e hashtags, e coesão técnica.",
+      "metadata": {},
+      "required_capabilities": [
+        "Geração de relatórios técnicos"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "review_critic",
+      "task_id": "TASK-004",
+      "task_type": "revisao_e_consolidacao",
+      "title": "Consolidar e Revisar o Relatório Final Unificado"
+    }
+  ],
+  "updated_at": "2026-10-01T00:52:16.747596+00:00",
+  "workstream_id": "WS-6057edc8-0799-4292-80ef-08f0defb9854"
+}

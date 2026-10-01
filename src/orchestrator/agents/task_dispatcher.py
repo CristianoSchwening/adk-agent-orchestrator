@@ -19,8 +19,10 @@ from orchestrator.agents.workflows import create_phase2_workflows
 from orchestrator.config import OrchestratorSettings
 from orchestrator.context import ContextPackage, build_task_context
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
+from orchestrator.dispatching.evaluation import criteria_catalog, validate_evaluation
 from orchestrator.model import is_transport_error
 from orchestrator.planning import FileTaskPlanRepository, TaskPlan
+from orchestrator.planning.models import utc_now_iso
 from orchestrator.replanning import ReplanRequest, revise_task_plan
 
 
@@ -195,22 +197,44 @@ def create_task_dispatcher_node(
                 )
                 continue
 
-            guard_decision = _structured_payload(
-                await ctx.run_node(
-                    guard,
-                    node_input=json.dumps(
-                        {
-                            "task": task.__dict__,
-                            "result": result,
-                            "acceptance_criteria": task.acceptance_criteria,
-                            "assumptions": plan.assumptions,
-                            "objective": plan.goal.objective,
-                        },
-                        ensure_ascii=False,
-                    ),
-                    run_id=f"replan_guard_{task.task_id.lower()}",
-                )
+            task_run = next(item for item in run.tasks if item.task_id == task.task_id)
+            task_run.execution_output = result
+            task_run.output_status = (
+                "absent" if result is None else
+                "empty" if (isinstance(result, str) and not result.strip())
+                or result == [] or result == {} else "present"
             )
+            task_run.output_recorded_at = utc_now_iso()
+            repo.save(run)
+            ctx.state["task_run"] = run.to_dict()
+            try:
+                guard_decision = validate_evaluation(
+                    _structured_payload(await ctx.run_node(
+                        guard,
+                        node_input=json.dumps(
+                            {
+                                "task": task.__dict__,
+                                "result": result,
+                                "acceptance_criteria": criteria_catalog(task.acceptance_criteria),
+                                "assumptions": plan.assumptions,
+                                "objective": plan.goal.objective,
+                            },
+                            ensure_ascii=False,
+                        ),
+                        run_id=f"replan_guard_{task.task_id.lower()}",
+                    )),
+                    task.acceptance_criteria,
+                )
+            except Exception as exc:
+                task_run.evaluation_error = str(exc)
+                task_run.evaluated_at = utc_now_iso()
+                dispatcher.transition(plan, run, task.task_id, "failed", error="evaluation_failed")
+                repo.save(run)
+                ctx.state["task_run"] = run.to_dict()
+                raise RuntimeError(f"evaluation_failed for {task.task_id}: {exc}") from exc
+            task_run.evaluation = guard_decision
+            task_run.evaluated_at = utc_now_iso()
+            repo.save(run)
             trigger = str(guard_decision.get("trigger") or "none")
             if trigger != "none":
                 dispatcher.transition(

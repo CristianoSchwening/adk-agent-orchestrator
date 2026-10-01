@@ -32,3 +32,29 @@ e a execução falha explicitamente, evitando ciclos sem fim.
 O guardião e o replanejador são agentes ADK com saída estruturada. O dispatcher continua
 como `FunctionNode`, usando `run_node` para delegar as decisões sem criar uma camada de
 execução paralela ao ADK. Todos os workflows didáticos existentes permanecem disponíveis.
+
+
+## Persisted acceptance diagnostics
+
+Task-run v2 records now include additive, optional diagnostics. Existing records remain
+readable: `output_status: not_recorded` means no diagnostic was captured, not empty output.
+
+- `execution_output` is saved atomically before invoking the acceptance guard.
+- `output_status` distinguishes `absent` (None), `empty` (blank text/empty list or object)
+  and `present`; `output_recorded_at` records when the output was captured.
+- `evaluation` stores the trigger, rationale, criterion catalog and a decision for every
+  criterion (`passed`, `failed`, `unverifiable`), with rationale and evidence.
+- Criterion IDs are SHA-256 hashes of exact criterion text, stable across reordering and
+  plan revisions that keep that text. Identical criteria share one catalog entry.
+- `evaluated_at` records evaluation completion; `evaluation_error` records evaluator
+  exceptions or invalid responses. Such failures terminate with `evaluation_failed`,
+  without incorrectly requesting a content replan.
+- `result` retains its existing meaning: accepted output only. Rejected content remains
+  in `execution_output`, including when the replan limit is exhausted.
+
+The guard must cover every catalog ID exactly once. Unknown/duplicate/missing IDs,
+invalid triggers and contradictory approval decisions are rejected locally.
+Diagnostics use the existing task-run repository and its size limit; they are not
+silently truncated. Output and evidence can contain task data, so apply the same access
+controls as for existing run results. UI presentation and replan behavior changes are
+outside this delivery.

@@ -7,26 +7,10 @@ from typing import Any
 from orchestrator.adk_compat import load_agent_class
 from orchestrator.agents.task_planner import TASK_PLAN_DRAFT_SCHEMA
 from orchestrator.config import OrchestratorSettings
+from orchestrator.dispatching.evaluation import TaskEvaluation
 from orchestrator.model import create_gemini_model
 
-REPLAN_GUARD_SCHEMA = {
-    "type": "object",
-    "required": ["trigger", "rationale"],
-    "additionalProperties": False,
-    "properties": {
-        "trigger": {
-            "type": "string",
-            "enum": [
-                "none",
-                "blocker_detected",
-                "assumption_invalidated",
-                "objective_changed",
-                "acceptance_criteria_failed",
-            ],
-        },
-        "rationale": {"type": "string"},
-    },
-}
+REPLAN_GUARD_SCHEMA = TaskEvaluation.model_json_schema()
 
 
 def create_replan_guard_agent(settings: OrchestratorSettings) -> Any:
@@ -40,6 +24,10 @@ def create_replan_guard_agent(settings: OrchestratorSettings) -> Any:
         Retorne none quando a execução pode continuar. Autorize somente um destes gatilhos:
         blocker_detected, assumption_invalidated, objective_changed ou
         acceptance_criteria_failed. Não autorize por preferência estilística ou mera melhoria.
+        Avalie cada criterion_id recebido exatamente uma vez em criteria.
+        Use passed, failed ou unverifiable, com justificativa e trecho de evidência.
+        Se não houver evidência, explique sua ausência no campo evidence.
+        Use none somente quando todos os critérios forem passed.
         Retorne somente o objeto estruturado exigido.
         """,
         output_schema=REPLAN_GUARD_SCHEMA,
