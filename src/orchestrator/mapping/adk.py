@@ -129,6 +129,10 @@ def map_adk_execution(
                 "phase": state.get("phase"),
                 "tool_timeout_seconds": state.get("tool_timeout_seconds"),
                 "mcp_server_count": state.get("mcp_server_count"),
+                "kev_shadow_enabled": state.get(
+                    "kev_shadow_enabled", resolved_settings.kev_shadow_enabled
+                ),
+                "kev_shadow_observations": state.get("kev_shadow_observations", []),
                 "progressive_agent_response_count": len(progressive_responses),
                 "loop_stop_reason": state.get("loop_stop_reason"),
                 "loop_final_score": state.get("loop_final_score"),

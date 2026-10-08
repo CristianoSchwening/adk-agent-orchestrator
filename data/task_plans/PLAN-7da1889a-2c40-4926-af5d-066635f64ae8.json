@@ -1,0 +1,144 @@
+{
+  "assumptions": [
+    "A ilha fictícia possui disponibilidade de recursos naturais adequados para energia solar, eólica ou maremotriz.",
+    "O formato do relatório preza pela objetividade e praticidade técnica requeridas pelo perfil do gestor."
+  ],
+  "created_at": "2026-10-07T23:59:58.241447+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatório técnico completo em português do Brasil da proposta de cidade sustentável insular, contendo todas as seções obrigatórias sem o uso de emojis e hashtags."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "O resultado deve conter obrigatoriamente as seções: Visão geral da cidade, Estratégias de energia e transporte, Políticas sociais e educacionais, Modelo econômico, Plano de preservação ambiental, Riscos e soluções alternativas.",
+      "Não utilizar emojis no conteúdo produzido.",
+      "Não utilizar hashtags no conteúdo produzido.",
+      "Apresentar o conteúdo de forma concisa e prática.",
+      "Adotar o idioma português do Brasil (pt-BR)."
+    ],
+    "objective": "Planejar e desenvolver uma proposta detalhada para a criação de uma cidade sustentável em uma ilha fictícia, resultando em um relatório estruturado que aborde aspectos sociais, econômicos, tecnológicos e ambientais.",
+    "success_criteria": [
+      "Relatório estruturado entregue com todas as seis seções obrigatórias.",
+      "Linguagem técnica, concisa e adaptada ao público do Brasil.",
+      "Ausência completa de emojis e de hashtags em todo o material produzido."
+    ]
+  },
+  "lineage_id": "PLAN-560f74da-1cc8-4ebf-89ea-a9f84c94faba",
+  "parent_plan_id": "PLAN-560f74da-1cc8-4ebf-89ea-a9f84c94faba",
+  "plan_id": "PLAN-7da1889a-2c40-4926-af5d-066635f64ae8",
+  "replan_trigger": "task_failed",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Apresentação clara das premissas geográficas e conceituais da cidade.",
+        "Seção 'Visão geral da cidade' concluída de forma concisa em português do Brasil sem emojis ou hashtags."
+      ],
+      "depends_on": [],
+      "description": "Modelar os limites da ilha fictícia e redigir a seção de Visão Geral da Cidade, estabelecendo a identidade, população-alvo e premissas gerais do projeto de ecocidade. Esta etapa foi concluída com sucesso e serve de base histórica para as próximas etapas.",
+      "metadata": {},
+      "required_capabilities": [
+        "Análise de restrições territoriais",
+        "Projetação urbana"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "drafting",
+      "title": "Definição do Cenário e Visão Geral da Cidade"
+    },
+    {
+      "acceptance_criteria": [
+        "Seção 'Estratégias de energia e transporte' finalizada focando em soluções práticas e sustentáveis.",
+        "Ausência de jargões excessivos e atendimento estrito às restrições de formatação."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Estruturar propostas de infraestrutura voltadas para fontes de energia renováveis e sistemas de transporte público e individual de emissão zero adaptados ao contexto insular. A tarefa deve ser reexecutada com foco em isolar e resolver quaisquer falhas de timeout do agente executor, simplificando os tópicos de infraestrutura de maneira objetiva.",
+      "metadata": {},
+      "required_capabilities": [
+        "Planejamento de recursos renováveis",
+        "Projetação urbana"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "drafting",
+      "title": "Desenvolvimento de Estratégias de Energia e Transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Políticas sociais e educacionais e modelo econômico integrados de forma lógica.",
+        "Inclusão de princípios da economia circular de maneira concisa."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Definir as estratégias de inclusão social, sistemas educacionais focados em sustentabilidade e o modelo de economia circular para a gestão de recursos da ilha, mantendo a coerência com as premissas geográficas estabelecidas.",
+      "metadata": {},
+      "required_capabilities": [
+        "Estruturação de propostas corporativas",
+        "Redação técnica"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-003",
+      "task_type": "drafting",
+      "title": "Planejamento de Políticas Sociais, Educacionais e Modelo Econômico"
+    },
+    {
+      "acceptance_criteria": [
+        "Presença clara das seções 'Plano de preservação ambiental' e 'Riscos e soluções alternativas'.",
+        "Foco prático em soluções de contingência para o ecossistema insular."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Criar as estratégias de mitigação de impacto ecológico e formular uma matriz de riscos com alternativas viáveis para crises ambientais ou energéticas no ecossistema insular.",
+      "metadata": {},
+      "required_capabilities": [
+        "Análise de restrições territoriais",
+        "Planejamento de recursos renováveis"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-004",
+      "task_type": "drafting",
+      "title": "Elaboração do Plano de Preservação Ambiental e Gestão de Riscos"
+    },
+    {
+      "acceptance_criteria": [
+        "Relatório final estruturado e completo contendo todas as seis seções obrigatórias.",
+        "Validação final confirmando a total ausência de emojis e hashtags."
+      ],
+      "depends_on": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004"
+      ],
+      "description": "Reunir todas as seções desenvolvidas, revisar o fluxo do texto de forma integrada e validar estritamente contra as restrições do usuário, especialmente a ausência de emojis/hashtags e uso correto do idioma pt-BR.",
+      "metadata": {},
+      "required_capabilities": [
+        "Redação técnica",
+        "Estruturação de propostas corporativas"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "review_critic",
+      "task_id": "TASK-005",
+      "task_type": "review",
+      "title": "Consolidação e Revisão Crítica do Relatório"
+    }
+  ],
+  "updated_at": "2026-10-08T00:03:44.309213+00:00",
+  "workstream_id": "WS-d7d1bf72-dbd1-432d-992b-03bc8fdbbfc1"
+}

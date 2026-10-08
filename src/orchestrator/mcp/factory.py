@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from orchestrator.adk_compat import load_mcp_classes
@@ -29,6 +30,12 @@ def describe_mcp_servers(settings: OrchestratorSettings | None = None) -> dict[s
     }
 
 
+def connection_headers(server: MCPServerSettings) -> dict[str, str]:
+    """Resolve optional credentials at connection time, never in descriptions."""
+    token = os.getenv(server.bearer_token_env, "").strip() if server.bearer_token_env else ""
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
 def _connection_params_for(server: MCPServerSettings) -> Any:
     """Create ADK MCP connection params for one server configuration."""
 
@@ -48,12 +55,12 @@ def _connection_params_for(server: MCPServerSettings) -> Any:
         if not server.url:
             raise ValueError(f"MCP sse server {server.name!r} requires url.")
         _, _, _, SseConnectionParams, _ = load_mcp_classes()
-        return SseConnectionParams(url=server.url)
+        return SseConnectionParams(url=server.url, headers=connection_headers(server))
 
     if not server.url:
         raise ValueError(f"MCP streamable_http server {server.name!r} requires url.")
     _, _, _, _, StreamableHTTPConnectionParams = load_mcp_classes()
-    return StreamableHTTPConnectionParams(url=server.url)
+    return StreamableHTTPConnectionParams(url=server.url, headers=connection_headers(server))
 
 
 def create_configured_mcp_toolsets(settings: OrchestratorSettings | None = None) -> list[Any]:

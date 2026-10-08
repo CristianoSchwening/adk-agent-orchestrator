@@ -1,0 +1,155 @@
+{
+  "created_at": "2026-10-08T00:00:09.097014+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-560f74da-1cc8-4ebf-89ea-a9f84c94faba",
+  "replan_request": {
+    "evidence": {
+      "error": "Dynamic node dispatched_executor_agent failed"
+    },
+    "rationale": "The selected ADK node failed during task execution.",
+    "requested_at": "2026-10-08T00:03:26.724876+00:00",
+    "task_id": "TASK-002",
+    "trigger": "task_failed"
+  },
+  "run_id": "RUN-ee670b81-c7ec-49a3-ad42-e765de159e56",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T00:02:23.948285+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "ebc39e67325617a2f48a8da7128bf0fdfba33bbe93c814d79e93855ef14412e6",
+            "evidence": "O projeto da ecocidade desenvolve-se na Ilha de Vera Cruz, um território insular hipotético situado em águas temperadas, com uma área total aproximada de 150 quilômetros quadrados... Nomeada provisoriamente como Ecoilha, a cidade fundamenta-se nos princípios do urbanismo regenerativo...",
+            "rationale": "As premissas geográficas, como a área da ilha e a divisão territorial em zonas de proteção, e as conceituais, baseadas em economia circular e urbanismo regenerativo, foram expostas de forma clara e estruturada.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "486945b911a7a0079a3303c72d5d89d816371cce74c9000691e2adf54b5e618d",
+            "evidence": "Todo o texto sob o título '# Visão Geral da Cidade' segue a norma culta da língua portuguesa, sem presença de elementos visuais informais como emojis ou hashtags.",
+            "rationale": "A seção intitulada 'Visão Geral da Cidade' foi redigida de forma concisa, utilizando exclusivamente o português do Brasil e sem inclusão de emojis ou hashtags.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "ebc39e67325617a2f48a8da7128bf0fdfba33bbe93c814d79e93855ef14412e6",
+            "text": "Apresentação clara das premissas geográficas e conceituais da cidade."
+          },
+          {
+            "criterion_id": "486945b911a7a0079a3303c72d5d89d816371cce74c9000691e2adf54b5e618d",
+            "text": "Seção 'Visão geral da cidade' concluída de forma concisa em português do Brasil sem emojis ou hashtags."
+          }
+        ],
+        "rationale": "A tarefa foi concluída com sucesso. Todos os critérios de aceitação foram plenamente atendidos de forma clara, concisa, em português do Brasil e sem o uso de emojis ou hashtags. As premissas geográficas e conceituais foram detalhadas de acordo com o planejado para a ecocidade.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": "# Visão Geral da Cidade\n\n## 1. Premissas Geográficas e Delimitação da Ilha Fictícia\nO projeto da ecocidade desenvolve-se na Ilha de Vera Cruz, um território insular hipotético situado em águas temperadas, com uma área total aproximada de 150 quilômetros quadrados. A topografia da ilha é caracterizada por uma zona costeira de transição, planícies centrais propícias ao desenvolvimento urbano de baixa impacto e uma cadeia de colinas a oeste que abriga nascentes de água doce e remanescentes de vegetação nativa. \n\nA delimitação territorial obedece a restrições ambientais rigorosas: 40% da superfície total da ilha são permanentemente protegidos como reserva ecológica integral, 35% são destinados à agricultura regenerativa e áreas verdes amortecedoras, e os 25% restantes concentram o perímetro urbano planejado.\n\n## 2. Identidade e Conceito da Ecocidade\nNomeada provisoriamente como Ecoilha, a cidade fundamenta-se nos princípios do urbanismo regenerativo, da economia circular e da autosuficiência energética. A identidade do projeto pauta-se pela simbiose entre inovação tecnológica e conservação ecossistêmica, estabelecendo um modelo onde a infraestrutura urbana atua ativamente na regeneração dos recursos naturais locais.\n\n## 3. População-Alvo e Premissas Gerais do Projeto\nA cidade é projetada para acomodar uma população estável de até 50.000 habitantes em sua fase de maturação plena, evitando a pressão excessiva sobre o ciclo hidrológico e a capacidade de suporte dos ecossistemas insulares. \n\nAs premissas gerais que norteiam o projeto compreendem:\n- Autonomia energética total baseada em fontes renováveis locais, primariamente solar e eólica.\n- Gestão hídrica de circuito fechado, com captação pluvial avançada e tratamento terciário de águas residuais para reuso.\n- Mobilidade urbana centrada em modais ativos e transporte coletivo elétrico autônomo, restringindo o uso de veículos particulares a combustão fóssil.\n- Integração socioeconômica por meio de habitação de interesse social distribuída em todos os bairros, eliminando guetos e promovendo a coesão comunitária.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 3351,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "executor_agent",
+        "status": "unavailable",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T00:01:37.287361+00:00",
+      "output_status": "present",
+      "result": "# Visão Geral da Cidade\n\n## 1. Premissas Geográficas e Delimitação da Ilha Fictícia\nO projeto da ecocidade desenvolve-se na Ilha de Vera Cruz, um território insular hipotético situado em águas temperadas, com uma área total aproximada de 150 quilômetros quadrados. A topografia da ilha é caracterizada por uma zona costeira de transição, planícies centrais propícias ao desenvolvimento urbano de baixa impacto e uma cadeia de colinas a oeste que abriga nascentes de água doce e remanescentes de vegetação nativa. \n\nA delimitação territorial obedece a restrições ambientais rigorosas: 40% da superfície total da ilha são permanentemente protegidos como reserva ecológica integral, 35% são destinados à agricultura regenerativa e áreas verdes amortecedoras, e os 25% restantes concentram o perímetro urbano planejado.\n\n## 2. Identidade e Conceito da Ecocidade\nNomeada provisoriamente como Ecoilha, a cidade fundamenta-se nos princípios do urbanismo regenerativo, da economia circular e da autosuficiência energética. A identidade do projeto pauta-se pela simbiose entre inovação tecnológica e conservação ecossistêmica, estabelecendo um modelo onde a infraestrutura urbana atua ativamente na regeneração dos recursos naturais locais.\n\n## 3. População-Alvo e Premissas Gerais do Projeto\nA cidade é projetada para acomodar uma população estável de até 50.000 habitantes em sua fase de maturação plena, evitando a pressão excessiva sobre o ciclo hidrológico e a capacidade de suporte dos ecossistemas insulares. \n\nAs premissas gerais que norteiam o projeto compreendem:\n- Autonomia energética total baseada em fontes renováveis locais, primariamente solar e eólica.\n- Gestão hídrica de circuito fechado, com captação pluvial avançada e tratamento terciário de águas residuais para reuso.\n- Mobilidade urbana centrada em modais ativos e transporte coletivo elétrico autônomo, restringindo o uso de veículos particulares a combustão fóssil.\n- Integração socioeconômica por meio de habitação de interesse social distribuída em todos os bairros, eliminando guetos e promovendo a coesão comunitária.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:drafting",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T00:02:23.951368+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "Dynamic node dispatched_executor_agent failed",
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 2552,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "executor_agent",
+        "status": "unavailable",
+        "task_id": "TASK-002"
+      },
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:drafting",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T00:03:26.717259+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "ready",
+      "task_id": "TASK-003",
+      "updated_at": "2026-10-08T00:02:23.952903+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "ready",
+      "task_id": "TASK-004",
+      "updated_at": "2026-10-08T00:02:23.952903+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-005",
+      "updated_at": "2026-10-08T00:03:26.717259+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T00:03:26.717259+00:00"
+}

@@ -28,6 +28,7 @@ class TaskRun:
     evaluation: dict[str, Any] | None = None
     evaluation_error: str | None = None
     evaluated_at: str | None = None
+    kev_observation: dict[str, Any] | None = None
     error: str | None = None
     updated_at: str = field(default_factory=utc_now_iso)
 

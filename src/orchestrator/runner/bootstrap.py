@@ -107,6 +107,8 @@ def initial_session_state(
         "contract_version": "orchestrator.execution.v1",
         "tool_timeout_seconds": settings.tool_timeout_seconds,
         "mcp_server_count": len(settings.mcp_servers),
+        "kev_shadow_enabled": settings.kev_shadow_enabled,
+        "kev_shadow_observations": [],
         "evaluation_dataset": "eval/datasets/phase5_smoke.json",
         "progressive_agent_responses": [],
         "model_basket": settings.resolved_model_basket(),

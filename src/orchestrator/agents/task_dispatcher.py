@@ -20,6 +20,7 @@ from orchestrator.config import OrchestratorSettings
 from orchestrator.context import ContextPackage, build_task_context
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
 from orchestrator.dispatching.evaluation import criteria_catalog, validate_evaluation
+from orchestrator.mcp.kev import observe_task
 from orchestrator.model import is_transport_error
 from orchestrator.planning import FileTaskPlanRepository, TaskPlan
 from orchestrator.planning.models import utc_now_iso
@@ -122,6 +123,18 @@ def create_task_dispatcher_node(
                 )
                 continue
             selection = dispatcher.select_execution(task)
+            if settings.kev_shadow_enabled:
+                observation = await observe_task(settings, task)
+                observations = list(ctx.state.get("kev_shadow_observations") or [])
+                observations.append({
+                    "task_id": task.task_id,
+                    "selected_agent": selection.assigned_agent,
+                    **observation,
+                })
+                ctx.state["kev_shadow_observations"] = observations
+                current_task = next(item for item in run.tasks if item.task_id == task.task_id)
+                current_task.kev_observation = observations[-1]
+                repo.save(run)
             dispatcher.transition(
                 plan,
                 run,

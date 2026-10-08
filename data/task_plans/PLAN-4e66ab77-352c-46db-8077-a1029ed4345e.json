@@ -1,0 +1,98 @@
+{
+  "assumptions": [
+    "A ilha fictícia é geograficamente isolada, necessitando de propostas voltadas à autossuficiência de recursos.",
+    "O público-alvo do documento exige uma abordagem executiva, concisa e focada em viabilidade prática."
+  ],
+  "created_at": "2026-10-07T23:56:11.585472+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatório Estruturado de Proposta de Cidade Sustentável em formato textual limpo, contendo as seis seções obrigatórias e em conformidade com as restrições estéticas."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "O relatório final deve conter obrigatoriamente as seções: Visão geral, Estratégias de energia e transporte, Políticas sociais e educacionais, Modelo econômico, Plano de preservação ambiental, e Riscos e soluções alternativas",
+      "Não utilizar emojis no conteúdo",
+      "Não utilizar hashtags no conteúdo",
+      "Apresentar o conteúdo de forma concisa e prática"
+    ],
+    "objective": "Desenvolver uma proposta detalhada e um relatório estruturado para a criação de uma cidade sustentável em uma ilha fictícia, abrangendo aspectos sociais, econômicos, tecnológicos, ambientais, riscos e soluções alternativas.",
+    "success_criteria": [
+      "Relatório estruturado entregue com todas as 6 seções obrigatórias especificadas nas restrições",
+      "Estilo de escrita conciso, prático e totalmente livre de emojis e hashtags"
+    ]
+  },
+  "lineage_id": "PLAN-37ae7202-bc6e-413d-8ee6-773e8fab5c66",
+  "parent_plan_id": "PLAN-37ae7202-bc6e-413d-8ee6-773e8fab5c66",
+  "plan_id": "PLAN-4e66ab77-352c-46db-8077-a1029ed4345e",
+  "replan_trigger": "acceptance_criteria_failed",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Textos das seções de Visão geral, Energia/Transporte e Social/Educacional redigidos de forma concisa e sem emojis ou hashtags"
+      ],
+      "depends_on": [],
+      "description": "Elaborar o conteúdo detalhado das três primeiras seções obrigatórias: 'Visão geral' (conceito da ilha fictícia), 'Estratégias de energia e transporte' (infraestrutura e tecnologia sustentável) e 'Políticas sociais e educacionais'.",
+      "metadata": {},
+      "required_capabilities": [
+        "modelagem urbana",
+        "planejamento ambiental",
+        "redação técnica"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "drafting",
+      "title": "Desenvolvimento do Planejamento Estrutural e Social"
+    },
+    {
+      "acceptance_criteria": [
+        "Textos das seções de Modelo econômico, Preservação ambiental e Riscos/Soluções alternativas estruturados de forma prática e limpos de marcações informais como hashtags ou emojis"
+      ],
+      "depends_on": [],
+      "description": "Elaborar o conteúdo detalhado das três seções finais obrigatórias: 'Modelo econômico', 'Plano de preservação ambiental' e 'Riscos e soluções alternativas'.",
+      "metadata": {},
+      "required_capabilities": [
+        "análise econômica",
+        "gestão de riscos",
+        "redação técnica"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "drafting",
+      "title": "Desenvolvimento do Modelo Econômico, Ambiental e de Riscos"
+    },
+    {
+      "acceptance_criteria": [
+        "Relatório consolidado final contendo na íntegra as 6 seções obrigatórias especificadas nas restrições",
+        "Validação final confirmando a ausência de qualquer emoji ou hashtag no texto de saída",
+        "Apresentação contínua de todo o conteúdo no resultado final da tarefa de forma concisa, sem desvios temáticos ou listas administrativas de transição"
+      ],
+      "depends_on": [
+        "TASK-001",
+        "TASK-002"
+      ],
+      "description": "Consolidar estritamente o conteúdo textual desenvolvido em TASK-001 e TASK-002, gerando um documento final unificado e fluido. O foco é apresentar o texto integral das seis seções obrigatórias ('Visão geral', 'Estratégias de energia e transporte', 'Políticas sociais e educacionais', 'Modelo econômico', 'Plano de preservação ambiental' e 'Riscos e soluções alternativas') sem desviar para protocolos de encerramento, listas de próximos passos administrativos ou planos de transição.",
+      "metadata": {},
+      "required_capabilities": [
+        "redação técnica",
+        "estruturação de documentos"
+      ],
+      "requires_approval": true,
+      "requires_review": true,
+      "strategy": "review_critic",
+      "task_id": "TASK-003",
+      "task_type": "consolidation",
+      "title": "Consolidação, Revisão Geral e Formatação do Relatório"
+    }
+  ],
+  "updated_at": "2026-10-07T23:58:19.267693+00:00",
+  "workstream_id": "WS-a5f612d7-ecd3-49b8-ac2b-26f3635001f6"
+}

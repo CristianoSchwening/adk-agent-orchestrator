@@ -29,6 +29,7 @@ class MCPServerSettings:
     args: tuple[str, ...] = ()
     url: str | None = None
     env: dict[str, str] = field(default_factory=dict)
+    bearer_token_env: str | None = None
 
     @classmethod
     def from_mapping(cls, value: dict[str, Any]) -> MCPServerSettings:
@@ -59,6 +60,7 @@ class MCPServerSettings:
             args=args,
             url=_optional_str(value.get("url")),
             env={str(key): str(env_value) for key, env_value in raw_env.items()},
+            bearer_token_env=_optional_str(value.get("bearer_token_env")),
         )
 
 
@@ -219,6 +221,7 @@ class OrchestratorSettings:
     model_retry_jitter_seconds: float = 1.0
     tool_timeout_seconds: float = 10.0
     mcp_servers: tuple[MCPServerSettings, ...] = ()
+    kev_shadow_enabled: bool = False
     workspace_enabled: bool = True
     workspace_mode: WorkspaceEnforcementMode = "strict"
     workspace_root: str = "observability/verbalized_workspace/traces"
@@ -298,6 +301,9 @@ class OrchestratorSettings:
                 "ADK_TOOL_TIMEOUT_SECONDS",
             ),
             mcp_servers=_parse_mcp_servers(os.getenv("ADK_MCP_SERVERS")),
+            kev_shadow_enabled=_parse_bool(
+                os.getenv("ADK_KEV_SHADOW_ENABLED"), False, "ADK_KEV_SHADOW_ENABLED"
+            ),
             workspace_enabled=_parse_bool(
                 os.getenv("ADK_WORKSPACE_ENABLED"),
                 cls.workspace_enabled,
