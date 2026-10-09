@@ -138,7 +138,9 @@ def _loop_gate(name: str, stop_callback: Any, final_state_key: str) -> Any:
         state[f"{name}_iteration"] = snapshot["loop_iteration"]
         if should_stop:
             state[f"{name}_final_output"] = state.get(final_state_key, "")
+            ctx.route = "done"
             return "done"
+        ctx.route = "continue"
         return "continue"
 
     return FunctionNode(func=decide, name=name)
