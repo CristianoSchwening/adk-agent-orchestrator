@@ -148,6 +148,9 @@ def create_task_dispatcher_node(
             repo.save(run)
             dispatcher.transition(plan, run, task.task_id, "running")
             repo.save(run)
+            task_run = next(item for item in run.tasks if item.task_id == task.task_id)
+            # Stable on resume, but distinct for each revised run and attempt.
+            invocation_key = f"{run.run_id}_{task.task_id.lower()}_{task_run.attempt}"
             target = (
                 agents[selection.node_key]
                 if selection.node_kind == "agent"
@@ -186,7 +189,7 @@ def create_task_dispatcher_node(
                 result = await ctx.run_node(
                     target,
                     node_input=task_input,
-                    run_id=f"{selection.node_key}_{task.task_id.lower()}",
+                    run_id=f"{selection.node_key}_{invocation_key}",
                 )
             except Exception as exc:
                 dispatcher.transition(plan, run, task.task_id, "failed", error=str(exc))
@@ -237,7 +240,7 @@ def create_task_dispatcher_node(
                             },
                             ensure_ascii=False,
                         ),
-                        run_id=f"replan_guard_{task.task_id.lower()}",
+                        run_id=f"replan_guard_{invocation_key}",
                     )),
                     task.acceptance_criteria,
                 )
