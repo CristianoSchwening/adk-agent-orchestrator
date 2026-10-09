@@ -120,7 +120,7 @@ def _loop_gate(name: str, stop_callback: Any, final_state_key: str) -> Any:
 
     _, FunctionNode, _, _, _ = load_workflow_classes()
 
-    def decide(ctx: Any) -> str:
+    def decide(ctx: Any, node_input: Any) -> Any:
         state = ctx.state
         snapshot = state.to_dict() if hasattr(state, "to_dict") else dict(state)
         snapshot["loop_iteration"] = state.get(f"{name}_iteration", 0)
@@ -141,7 +141,14 @@ def _loop_gate(name: str, stop_callback: Any, final_state_key: str) -> Any:
             ctx.route = "done"
             return "done"
         ctx.route = "continue"
-        return "continue"
+        return {
+            "task_input": state.get(f"{name}_input"),
+            "previous_result": state.get(final_state_key),
+            "review_feedback": node_input,
+            "instruction": (
+                "Revise a entrega anterior mantendo o objetivo e os critérios da tarefa original."
+            ),
+        }
 
     return FunctionNode(func=decide, name=name)
 
@@ -153,6 +160,12 @@ def _loop_initializer(name: str) -> Any:
 
     def initialize(ctx: Any, node_input: Any) -> Any:
         ctx.state[f"{name}_iteration"] = 0
+        # Keep the original task available on every back edge, rather than
+        # replacing the author's input with the routing label.
+        original = node_input
+        if hasattr(original, "parts"):
+            original = "".join(getattr(part, "text", "") or "" for part in original.parts)
+        ctx.state[f"{name}_input"] = original
         return node_input
 
     return FunctionNode(func=initialize, name=f"{name}_initializer")

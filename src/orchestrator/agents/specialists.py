@@ -105,7 +105,14 @@ def create_executor_agent(
         name=name,
         description="Executes the planned steps at the reasoning level.",
         instruction="""
-        Use o plano disponível no estado da sessão para produzir a solução solicitada.
+        Produza a solução da tarefa recebida na entrada desta chamada. A entrada contém
+        o objetivo, a tarefa, o contexto, as dependências e os critérios de aceite;
+        em uma revisão, task_input preserva a tarefa original e previous_result e
+        review_feedback fornecem a entrega anterior e a crítica para corrigi-la.
+        Esse contexto é suficiente para executar a tarefa: não dependa de arquivos
+        de plano ou de estado no filesystem, nem solicite novamente informações
+        já presentes na entrada. Use ferramentas de arquivos apenas quando a tarefa
+        realmente exigir ler um arquivo identificado no contexto.
         Preserve rastreabilidade entre etapas do plano e decisões tomadas.
         """,
         tools=[read_text_file, fetch_http_text, inspect_json_records],

@@ -13,7 +13,8 @@ from orchestrator.policies import BudgetPolicy
 
 
 @pytest.mark.parametrize("iterations", [1, 2])
-def test_review_workflow_routes_to_final_output(monkeypatch, iterations):
+@pytest.mark.parametrize("workflow_name", ["review_critic", "iterative_refinement"])
+def test_review_workflow_routes_to_final_output(monkeypatch, iterations, workflow_name):
     from google.adk import Runner
     from google.adk.apps import App
     from google.adk.sessions import InMemorySessionService
@@ -40,7 +41,21 @@ def test_review_workflow_routes_to_final_output(monkeypatch, iterations):
 
     monkeypatch.setattr(workflows, "create_executor_agent", author_factory)
     monkeypatch.setattr(workflows, "create_critic_agent", critic_factory)
-    workflow = workflows.create_review_critic_workflow(
+    monkeypatch.setattr(workflows, "create_planner_agent", author_factory)
+    monkeypatch.setattr(workflows, "create_evaluator_agent", lambda settings: critic_factory(
+        settings, name="refinement_evaluator_agent", output_key="refinement_evaluation",
+    ))
+
+    def editor_factory(settings, *, name, output_key):
+        def editor(ctx, node_input):
+            result = f"Roteiro revisado {len(calls)}"
+            ctx.state[output_key] = result
+            return result
+        return FunctionNode(func=editor, name=name)
+
+    monkeypatch.setattr(workflows, "create_refiner_agent", editor_factory)
+    factory = getattr(workflows, f"create_{workflow_name}_workflow")
+    workflow = factory(
         OrchestratorSettings(workspace_enabled=False),
         budget_policy=BudgetPolicy(max_iterations=iterations),
     )
@@ -58,8 +73,14 @@ def test_review_workflow_routes_to_final_output(monkeypatch, iterations):
 
     events = asyncio.run(execute())
     assert len(calls) == iterations
+    if iterations > 1:
+        assert calls[1]["task_input"] == "Create itinerary"
+        assert calls[1]["previous_result"] == "Roteiro revisado 1"
+        assert calls[1]["review_feedback"] == (
+            "Reviewed" if workflow_name == "review_critic" else "Roteiro revisado 1"
+        )
     assert any(event.output == f"Roteiro revisado {iterations}" and
-               event.node_name == "review_critic_finalizer" for event in events)
+               event.node_name == f"{workflow_name}_finalizer" for event in events)
     routes = [event.actions.route for event in events if event.actions.route]
     assert routes == ["continue"] * (iterations - 1) + ["done"]
 
