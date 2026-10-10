@@ -5,6 +5,8 @@ import { ProgressivePanel } from '@/components/progressive/ProgressivePanel'
 import { cn } from '@/lib/utils'
 import type { ExecutionContractDTO } from '@/types/contract'
 import { useStoredState } from '@/hooks/useStoredState'
+import { useEffect } from 'react'
+import type { HumanInteractionProps } from '@/components/progressive/HumanRequestMessage'
 
 type ExecutionView = 'timeline' | 'chat' | 'dag' | 'event-log'
 
@@ -15,9 +17,11 @@ const VIEWS = [
   { id: 'event-log' as const, label: 'Event Log', icon: ListTree },
 ]
 
-export function ExecutionViews({ contract }: { contract: ExecutionContractDTO }) {
+export function ExecutionViews({ contract, ...humanProps }: { contract: ExecutionContractDTO } & HumanInteractionProps) {
   const [view, setView] = useStoredState<ExecutionView>('adk-execution-view', 'timeline')
-  const hasResponses = contract.progressive_agent_responses.length > 0
+  const hasResponses = contract.progressive_agent_responses.length > 0 || !!contract.human_requests?.length
+  const pendingId = contract.human_requests?.find(item => item.status === 'pending')?.request_id
+  useEffect(() => { if (pendingId) setView('chat') }, [pendingId, setView])
 
   return (
     <section className="surface-panel overflow-hidden">
@@ -47,7 +51,8 @@ export function ExecutionViews({ contract }: { contract: ExecutionContractDTO })
 
       <div id={`execution-view-${view}`} role="tabpanel">
         {view === 'timeline' && <ActivityTimeline events={contract.events} responses={contract.progressive_agent_responses} />}
-        {view === 'chat' && <ProgressivePanel responses={contract.progressive_agent_responses} forcedView="chat" showViewToggle={false} />}
+        {view === 'chat' && <ProgressivePanel responses={contract.progressive_agent_responses} forcedView="chat" showViewToggle={false}
+          humanRequests={contract.human_requests} {...humanProps} />}
         {view === 'dag' && <ProgressivePanel responses={contract.progressive_agent_responses} forcedView="dag" showViewToggle={false} />}
         {view === 'event-log' && <OperationalEventLog events={contract.events} />}
       </div>

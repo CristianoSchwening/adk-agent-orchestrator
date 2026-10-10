@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 from orchestrator.adk_compat import load_agent_class, load_workflow_classes
@@ -21,11 +22,21 @@ from orchestrator.config import OrchestratorSettings
 from orchestrator.model import create_gemini_model
 from orchestrator.tools import PHASE_3_LOCAL_TOOLS, capture_objective, get_orchestrator_status
 
+ROUTING_POLICY_VERSION = "orchestrator.workflow-routing.v1"
+
 WORKFLOW_ROUTE_SCHEMA = {
     "type": "object",
-    "required": ["selected_workflow", "rationale"],
+    "required": ["selected_workflow", "rationale", "confidence"],
     "additionalProperties": False,
     "properties": {
+        "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": (
+                "Self-reported confidence in workflow suitability, not a calibrated probability."
+            ),
+        },
         "selected_workflow": {
             "type": "string",
             "enum": list(PHASE_2_WORKFLOW_NAMES),
@@ -70,6 +81,9 @@ Regras:
   sequential, parallel, review_critic, iterative_refinement, human_in_the_loop,
   agent_help_request ou progressive_multi_agent_response.
 - Em rationale, registre uma justificativa curta para a escolha. Não liste alternativas.
+- Em confidence, informe um número entre 0 e 1 que expresse sua confiança na adequação
+  do workflow ao TaskPlan, considerando dependências, revisão e ambiguidades. Esta nota
+  é um autorrelato, não uma probabilidade calibrada de acerto.
 """.strip()
 
 
@@ -101,9 +115,14 @@ def _route_payload(node_input: Any) -> dict[str, Any]:
     rationale = payload.get("rationale")
     if not isinstance(rationale, str) or not rationale.strip():
         raise ValueError("workflow router rationale must be a non-empty string")
+    confidence = payload.get("confidence")
+    if (type(confidence) not in (int, float) or not math.isfinite(confidence)
+            or not 0 <= confidence <= 1):
+        raise ValueError("workflow router confidence must be a finite number between 0 and 1")
     return {
         "selected_workflow": selected_workflow,
         "rationale": rationale.strip(),
+        "confidence": float(confidence),
     }
 
 
@@ -137,6 +156,8 @@ def create_root_agent(settings: OrchestratorSettings | None = None) -> Any:
         ctx.state["workflow"] = selected_route
         ctx.state["workflow_selection_source"] = "model"
         ctx.state["decision_rationale"] = payload["rationale"]
+        ctx.state["decision_confidence"] = payload["confidence"]
+        ctx.state["policy_version"] = ROUTING_POLICY_VERSION
         ctx.state["workflow_alternatives"] = [
             route for route in phase2_workflows if route != selected_route
         ]
@@ -179,6 +200,8 @@ def create_planned_workflow(
     target = create_task_dispatcher_node(settings)
 
     def select_explicit_workflow(ctx: Any, node_input: Any) -> Any:
+        ctx.state["policy_version"] = ROUTING_POLICY_VERSION
+        ctx.state["decision_confidence"] = None
         ctx.state["selected_workflow"] = workflow_name
         ctx.state["workflow"] = workflow_name
         ctx.state["workflow_selection_source"] = "explicit"

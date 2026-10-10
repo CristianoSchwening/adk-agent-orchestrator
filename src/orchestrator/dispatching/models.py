@@ -8,8 +8,11 @@ from typing import Any, Literal
 from orchestrator.planning.models import utc_now_iso
 
 TASK_RUN_SCHEMA_VERSION = "orchestrator.task_run.v2"
-TaskRunStatus = Literal["pending", "ready", "assigned", "running", "completed", "failed", "blocked"]
-PlanRunStatus = Literal["running", "completed", "failed"]
+TaskRunStatus = Literal[
+    "pending", "ready", "assigned", "running", "awaiting_human", "completed",
+    "failed", "blocked", "cancelled",
+]
+PlanRunStatus = Literal["running", "awaiting_human", "completed", "failed", "cancelled"]
 
 
 @dataclass

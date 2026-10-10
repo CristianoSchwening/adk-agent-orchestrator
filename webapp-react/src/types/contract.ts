@@ -67,7 +67,7 @@ export interface MetricsDTO {
 export interface DecisionMetadataDTO {
   selected_workflow: string
   rationale: string
-  confidence: number
+  confidence: number | null
   alternatives: string[]
   policy_version: string
 }
@@ -82,6 +82,8 @@ export interface ArtifactDTO {
 }
 
 export interface ExecutionContractDTO {
+  run_id?: string | null
+  human_requests?: HumanRequest[]
   contract_version: string
   task: TaskDTO
   subtasks: SubtaskDTO[]
@@ -182,8 +184,39 @@ export interface TaskRunDTO {
   evaluation?: TaskEvaluationDTO | null
   evaluation_error?: string | null
   evaluated_at?: string | null
+  kev_observation?: KevDecisionDTO | null
   error: string | null
   updated_at: string
+}
+
+export type HumanDecision = 'approved' | 'rejected' | 'needs_changes' | 'clarification'
+
+export interface HumanRequest {
+  request_id: string
+  status: 'pending' | 'answered'
+  kind: 'approval' | 'clarification'
+  message: string
+  candidate: string
+  criteria: string[]
+  created_at: string
+  answered_at?: string
+  response?: { decision: HumanDecision; comment: string; source: 'human' }
+}
+
+export interface KevDecisionDTO {
+  task_id: string
+  mode: 'shadow' | 'decision'
+  status: 'observed' | 'applied' | 'unavailable'
+  local_agent: string | null
+  selected_agent: string | null
+  elapsed_ms: number
+  fallback_reason?: 'low_confidence' | 'unavailable'
+  response?: {
+    choice: string
+    confidence: number
+    model?: string | null
+    model_latency_ms?: number | null
+  }
 }
 
 export interface PlanRunDTO {

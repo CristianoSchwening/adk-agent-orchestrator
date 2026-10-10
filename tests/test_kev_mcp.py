@@ -31,6 +31,15 @@ def test_shadow_requires_explicit_opt_in(monkeypatch):
     assert OrchestratorSettings.from_env().kev_shadow_enabled
 
 
+def test_confidence_threshold_is_configurable(monkeypatch):
+    monkeypatch.setenv("ADK_KEV_MIN_CONFIDENCE", "0.82")
+    assert OrchestratorSettings.from_env().kev_min_confidence == 0.82
+
+    monkeypatch.setenv("ADK_KEV_MIN_CONFIDENCE", "1.2")
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        OrchestratorSettings.from_env()
+
+
 def test_observation_minimizes_payload_and_survives_errors(monkeypatch):
     captured = []
 
@@ -96,3 +105,12 @@ def test_observations_survive_run_serialization_and_api_mapping():
     legacy = PlanRun.from_dict({"run_id": "r", "plan_id": "p", "status": "running",
                                "tasks": [{"task_id": "t", "status": "ready"}]})
     assert legacy.tasks[0].kev_observation is None
+
+
+def test_initial_state_records_explicit_kev_mode():
+    from orchestrator.runner.bootstrap import initial_session_state
+
+    state = initial_session_state(OrchestratorSettings(), kev_mode="decision")
+    assert state["kev_mode"] == "decision"
+    assert state["kev_shadow_enabled"] is False
+    assert state["kev_decisions"] == []

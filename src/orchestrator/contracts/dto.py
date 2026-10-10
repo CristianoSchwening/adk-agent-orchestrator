@@ -8,8 +8,12 @@ from typing import Any, Literal
 
 CONTRACT_VERSION = "orchestrator.execution.v1"
 
-TaskStatus = Literal["pending", "running", "completed", "failed", "cancelled", "blocked"]
-SubtaskStatus = Literal["pending", "running", "completed", "failed", "skipped", "blocked"]
+TaskStatus = Literal[
+    "pending", "running", "awaiting_human", "completed", "failed", "cancelled", "blocked",
+]
+SubtaskStatus = Literal[
+    "pending", "running", "awaiting_human", "completed", "failed", "skipped", "blocked",
+]
 EventSeverity = Literal["debug", "info", "warning", "error"]
 
 AgentHelpStatus = Literal[
@@ -198,6 +202,8 @@ class ExecutionContractDTO:
     last_replan_request: dict[str, Any] | None = None
     context_package: dict[str, Any] | None = None
     task_contexts: dict[str, dict[str, Any]] = field(default_factory=dict)
+    run_id: str | None = None
+    human_requests: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the contract into a JSON-compatible dictionary."""

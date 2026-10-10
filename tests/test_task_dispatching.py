@@ -159,6 +159,29 @@ def test_approval_and_review_flags_override_unsafe_simple_strategies() -> None:
     assert TaskDispatcher().select_execution(review).strategy == "review_critic"
 
 
+def test_kev_can_replace_only_a_single_agent_selection() -> None:
+    dispatcher = TaskDispatcher()
+    simple_task = PlannedTask(
+        task_id="TASK-KEV",
+        title="Research",
+        description="Gather evidence",
+        task_type="research",
+        required_capabilities=["research"],
+        acceptance_criteria=["Evidence exists"],
+    )
+    workflow_task = PlannedTask(**{**simple_task.__dict__, "strategy": "sequential"})
+
+    selection = dispatcher.select_execution(simple_task)
+    changed = dispatcher.with_selected_agent(selection, "critic_agent", reason="kev_decision")
+
+    assert changed.node_key == "critic_agent"
+    assert changed.assigned_agent == "critic_agent"
+    assert "kev_decision" in changed.reason
+    assert dispatcher.with_selected_agent(
+        dispatcher.select_execution(workflow_task), "critic_agent", reason="kev_decision"
+    ).node_key == "sequential"
+
+
 def test_strategy_dispatcher_runs_existing_workflows_without_removing_them(tmp_path) -> None:
     task_plan = TaskPlan(
         plan_id="PLAN-STRATEGIES",

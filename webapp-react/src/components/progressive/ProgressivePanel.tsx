@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { AgentVisibleResponse } from '@/types/contract'
+import { HumanRequestMessage, type HumanInteractionProps } from './HumanRequestMessage'
 
 type View = 'chat' | 'dag'
 
-interface ProgressivePanelProps {
+interface ProgressivePanelProps extends HumanInteractionProps {
   responses: AgentVisibleResponse[]
   forcedView?: View
   showViewToggle?: boolean
@@ -55,7 +56,8 @@ function IterationHeader({ iteration, graderMeta }: {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function ProgressivePanel({ responses, forcedView, showViewToggle = true }: ProgressivePanelProps) {
+export function ProgressivePanel({ responses, forcedView, showViewToggle = true,
+  humanRequests = [], sending, responseError, onHumanResponse }: ProgressivePanelProps) {
   const [view, setView]             = useState<View>('chat')
   const activeView = forcedView ?? view
   const [showInternal, setInternal] = useState(true)
@@ -97,6 +99,12 @@ export function ProgressivePanel({ responses, forcedView, showViewToggle = true 
 
   // Build render list: for verification mode, add iteration headers
   const renderItems = useMemo(() => {
+    if (humanRequests.length) {
+      return [
+        ...visible.map((r, i) => ({ type: 'message' as const, r, chatIndex: i, timestamp: r.created_at })),
+        ...humanRequests.map(request => ({ type: 'human' as const, request, timestamp: request.created_at })),
+      ].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    }
     if (!isVerificationLoop || !byIteration) {
       return visible.map((r, i) => ({ type: 'message' as const, r, chatIndex: i }))
     }
@@ -116,7 +124,7 @@ export function ProgressivePanel({ responses, forcedView, showViewToggle = true 
       }
     }
     return items
-  }, [visible, isVerificationLoop, byIteration])
+  }, [visible, isVerificationLoop, byIteration, humanRequests])
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -127,7 +135,7 @@ export function ProgressivePanel({ responses, forcedView, showViewToggle = true 
           {isVerificationLoop ? '🔁' : '💬'}
         </div>
         <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
-          {isVerificationLoop ? 'Loop 2 — Verification' : 'Progressive Agent Responses'}
+          {humanRequests.length ? 'Conversa da execução' : isVerificationLoop ? 'Loop 2 — Verification' : 'Progressive Agent Responses'}
         </span>
 
         {isVerificationLoop && byIteration && (
@@ -152,7 +160,7 @@ export function ProgressivePanel({ responses, forcedView, showViewToggle = true 
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">{responses.length} responses</span>
+          <span className="text-[11px] text-muted-foreground">{responses.length + humanRequests.length} mensagens</span>
 
           {/* Chat / DAG toggle */}
           {showViewToggle && <div className="flex border border-border rounded-md overflow-hidden">
@@ -184,7 +192,7 @@ export function ProgressivePanel({ responses, forcedView, showViewToggle = true 
       </div>
 
       {/* ── Legend ────────────────────────────────────────────────── */}
-      {activeView === 'chat' && (
+      {activeView === 'chat' && humanRequests.length === 0 && (
         <div className="px-4 py-2 border-b border-border flex flex-wrap gap-1.5 items-center">
           <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mr-1">Status:</span>
           {(['published', 'superseded', 'draft', 'failed'] as const).map(v => (
@@ -203,13 +211,17 @@ export function ProgressivePanel({ responses, forcedView, showViewToggle = true 
       {/* ── Content ───────────────────────────────────────────────── */}
       {activeView === 'chat' ? (
         <div className="p-4 flex flex-col gap-3 max-h-[620px] overflow-y-auto">
-          {visible.length === 0 ? (
+          {visible.length === 0 && humanRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
               <span className="text-3xl opacity-40">💬</span>
               <span className="text-sm">No responses yet</span>
             </div>
           ) : (
             renderItems.map((item) => {
+              if (item.type === 'human') {
+                return <HumanRequestMessage key={item.request.request_id} request={item.request}
+                  sending={sending} responseError={responseError} onHumanResponse={onHumanResponse} />
+              }
               if (item.type === 'iteration-header') {
                 return (
                   <IterationHeader

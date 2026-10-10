@@ -6,6 +6,7 @@ import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -22,9 +23,11 @@ from orchestrator.agents import (
     create_planned_workflow,
     create_root_agent,
 )
+from orchestrator.agents.root import ROUTING_POLICY_VERSION
 from orchestrator.config import OrchestratorSettings
 from orchestrator.context import load_user_profile
 from orchestrator.contracts import AgentVisibleResponse, ExecutionContractDTO
+from orchestrator.errors import execution_error_message
 from orchestrator.mapping.adk import map_adk_execution, map_duration_ms
 from orchestrator.planning import FileTaskPlanRepository, TaskPlan, validate_task_plan
 from orchestrator.workspace import (
@@ -54,11 +57,13 @@ def build_runtime(
     settings: OrchestratorSettings | None = None,
     *,
     workflow: str | None = None,
+    session_db: str | None = None,
 ) -> AdkRuntime:
-    """Build a Runner with in-memory Session and Artifact services.
+    """Build a resumable Runner with optional durable session storage.
 
     This uses the official ADK Runner with one ADK root agent, in-memory
-    SessionService and in-memory ArtifactService.
+    SessionService by default (SQLite when session_db is supplied) and an
+    in-memory ArtifactService.
     """
 
     resolved_settings = settings or OrchestratorSettings.from_env()
@@ -75,8 +80,12 @@ def build_runtime(
         if workflow is not None
         else create_root_agent(resolved_settings)
     )
-    app = App(name=resolved_settings.app_name, root_agent=root_agent)
-    session_service = InMemorySessionService()
+    from google.adk.apps import ResumabilityConfig
+
+    app = App(name=resolved_settings.app_name, root_agent=root_agent,
+              resumability_config=ResumabilityConfig(is_resumable=True))
+    session_service = (_persistent_sessions(session_db) if session_db
+                       else InMemorySessionService())
     artifact_service = InMemoryArtifactService()
     runner = Runner(
         app=app,
@@ -94,21 +103,55 @@ def build_runtime(
     )
 
 
+@lru_cache(maxsize=8)
+def _persistent_sessions(path: str):
+    from google.adk.sessions import DatabaseSessionService
+    from sqlalchemy.pool import NullPool
+
+    class DurableSessions(DatabaseSessionService):
+        async def append_event(self, session, event):
+            from google.adk.errors._stale_session_error import StaleSessionError
+
+            try:
+                return await super().append_event(session=session, event=event)
+            except StaleSessionError:
+                fresh = await self.get_session(app_name=session.app_name, user_id=session.user_id,
+                                               session_id=session.id)
+                # SQLite datetime round trips can change the exact revision
+                # marker. Retry only if event history proves no writer advanced
+                # this session; a genuine concurrent update remains an error.
+                if fresh is None or sorted(e.id for e in fresh.events) != sorted(
+                        e.id for e in session.events):
+                    raise
+                session._storage_update_marker = fresh._storage_update_marker
+                session.last_update_time = fresh.last_update_time
+                return await super().append_event(session=session, event=event)
+
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    return DurableSessions(db_url=f"sqlite+aiosqlite:///{Path(path).as_posix()}",
+                           poolclass=NullPool)
+
+
 def initial_session_state(
     settings: OrchestratorSettings,
     *,
     selected_workflow: str | None = None,
     task_plan: dict[str, Any] | None = None,
+    kev_mode: str | None = None,
 ) -> dict[str, object]:
     """Return the initial ADK session state tracked by the public contract."""
 
+    resolved_kev_mode = kev_mode or ("shadow" if settings.kev_shadow_enabled else "off")
     state: dict[str, object] = {
         "phase": "phase_5_evaluation_production",
         "contract_version": "orchestrator.execution.v1",
+        "policy_version": ROUTING_POLICY_VERSION,
         "tool_timeout_seconds": settings.tool_timeout_seconds,
         "mcp_server_count": len(settings.mcp_servers),
-        "kev_shadow_enabled": settings.kev_shadow_enabled,
+        "kev_mode": resolved_kev_mode,
+        "kev_shadow_enabled": resolved_kev_mode == "shadow",
         "kev_shadow_observations": [],
+        "kev_decisions": [],
         "evaluation_dataset": "eval/datasets/phase5_smoke.json",
         "progressive_agent_responses": [],
         "model_basket": settings.resolved_model_basket(),
@@ -135,7 +178,9 @@ def initial_session_state(
     return state
 
 
-async def _create_session(runtime: AdkRuntime, session_id: str) -> Any:
+async def _create_session(
+    runtime: AdkRuntime, session_id: str, *, kev_mode: str | None = None
+) -> Any:
     """Create an ADK session and return the created object when available."""
 
     return await runtime.session_service.create_session(
@@ -145,7 +190,8 @@ async def _create_session(runtime: AdkRuntime, session_id: str) -> Any:
         state=initial_session_state(
             runtime.settings,
             selected_workflow=runtime.selected_workflow,
-        ),
+            kev_mode=kev_mode,
+        ) | {"task_id": session_id, "execution_created_at": datetime.now(timezone.utc).isoformat()},
     )
 
 
@@ -155,6 +201,7 @@ async def run_once(
     settings: OrchestratorSettings | None = None,
     session_id: str | None = None,
     workflow: str | None = None,
+    kev_mode: str | None = None,
 ) -> str:
     """Execute one user objective through the ADK Runner and return final text."""
 
@@ -163,6 +210,7 @@ async def run_once(
         settings=settings,
         session_id=session_id,
         workflow=workflow,
+        kev_mode=kev_mode,
     )
     return contract.task.final_response or ""
 
@@ -173,18 +221,44 @@ async def run_once_contract(
     settings: OrchestratorSettings | None = None,
     session_id: str | None = None,
     workflow: str | None = None,
+    kev_mode: str | None = None,
+    human_response: dict[str, Any] | None = None,
+    interrupt_id: str | None = None,
+    invocation_id: str | None = None,
 ) -> ExecutionContractDTO:
     """Execute one objective and return the versioned UI/API execution contract."""
 
     started = perf_counter()
-    runtime = build_runtime(settings, workflow=workflow)
+    from orchestrator.runner.human_runs import HumanRunStore, run_store_root
+
+    resolved_settings = settings or OrchestratorSettings.from_env()
+    store = HumanRunStore(run_store_root(resolved_settings, REPOSITORY_ROOT))
+    runtime = build_runtime(resolved_settings, workflow=workflow,
+                            session_db=str(store.root / "sessions.sqlite"))
     resolved_session_id = session_id or f"session-{uuid4()}"
-    session = await _create_session(runtime, resolved_session_id)
+    if interrupt_id:
+        session = await _get_session(runtime, resolved_session_id)
+        if session is None:
+            raise ValueError("A sessão da execução não foi encontrada.")
+    else:
+        session = await _create_session(runtime, resolved_session_id, kev_mode=kev_mode)
 
     Content, Part = load_content_classes()
     user_message = Content(parts=[Part(text=objective)], role="user")
+    if interrupt_id:
+        from google.genai.types import FunctionResponse
 
-    events: list[Any] = []
+        already_recorded = any(
+            getattr(part, "function_response", None)
+            and part.function_response.id == interrupt_id
+            for event in session.events for part in (getattr(event.content, "parts", None) or [])
+        )
+        user_message = (None if already_recorded else Content(role="user", parts=[
+            Part(function_response=FunctionResponse(id=interrupt_id, name="request_input",
+                                                     response=human_response)),
+        ]))
+
+    events: list[Any] = list(getattr(session, "events", []))
     final_response_text = ""
     monitor = _build_workspace_monitor(
         runtime,
@@ -193,12 +267,14 @@ async def run_once_contract(
     )
     execution_error = None
     try:
-        async for event in runtime.runner.run_async(
-            user_id=runtime.settings.user_id,
-            session_id=resolved_session_id,
-            new_message=user_message,
-        ):
+        runner_args = {"user_id": runtime.settings.user_id,
+                       "session_id": resolved_session_id, "new_message": user_message}
+        if invocation_id:
+            runner_args["invocation_id"] = invocation_id
+        async for event in runtime.runner.run_async(**runner_args):
             events.append(event)
+            if getattr(event, "long_running_tool_ids", None):
+                continue
             if monitor is not None:
                 event_type = _runtime_event_type(event)
                 is_partial = bool(getattr(event, "partial", False))
@@ -245,13 +321,14 @@ async def run_once_contract(
         logging.getLogger(__name__).exception("Workflow execution failed")
         execution_error = exc
 
-    if monitor is not None:
-        for agent_name in sorted(monitor.started_agents):
-            monitor.complete(agent_name=agent_name)
-        events.extend(_workspace_contract_events(monitor))
-
     refreshed_session = await _get_session(runtime, resolved_session_id)
     session = refreshed_session or session
+    if monitor is not None:
+        state = session.get("state", {}) if isinstance(session, dict) else session.state
+        if not any(item.get("status") == "pending" for item in state.get("human_requests", [])):
+            for agent_name in sorted(monitor.started_agents):
+                monitor.complete(agent_name=agent_name)
+        events.extend(_workspace_contract_events(monitor))
     _persist_generated_task_plan(runtime, session)
     if monitor is not None and session is not None and hasattr(session, "state"):
         session.state["workspace_trace_count"] = len(monitor.paths)
@@ -261,7 +338,7 @@ async def run_once_contract(
 
         events.append(SimpleNamespace(
             author="orchestrator", error_code="EXECUTION_FAILED",
-            error_message=str(execution_error), content=None,
+            error_message=execution_error_message(execution_error), content=None,
         ))
         state = session.get("state", {}) if isinstance(session, dict) else session.state
         run_state = state.get("task_run") or {}
@@ -288,7 +365,7 @@ async def run_once_contract(
         elif session is not None and hasattr(session, "state"):
             session.state.update(progressive_internal_outputs)
 
-    return map_adk_execution(
+    contract = map_adk_execution(
         session=session
         or {
             "session_id": resolved_session_id,
@@ -297,14 +374,29 @@ async def run_once_contract(
             "state": initial_session_state(
                 runtime.settings,
                 selected_workflow=runtime.selected_workflow,
+                kev_mode=kev_mode,
             ),
         },
         events=events,
         objective=objective,
         final_response=final_response_text,
+        task_id=resolved_session_id,
         settings=runtime.settings,
         duration_ms=map_duration_ms(started),
     )
+    if contract.task.status == "cancelled":
+        from dataclasses import replace
+        contract = replace(contract, task=replace(
+            contract.task, final_response="Execução encerrada conforme sua rejeição."))
+    try:
+        saved = store.load(resolved_session_id)
+    except KeyError:
+        saved = {"responses": {}, "objective": objective, "workflow": workflow,
+                 "kev_mode": kev_mode, "user_id": runtime.settings.user_id,
+                 "app_name": runtime.settings.app_name}
+    saved["contract"] = contract.to_dict()
+    store.save(resolved_session_id, saved)
+    return contract
 
 
 def _extract_final_response(
