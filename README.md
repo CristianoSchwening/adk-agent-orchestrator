@@ -70,7 +70,7 @@ adk web --port 8000   # interface de desenvolvimento do ADK
 | `parallel` | fan-out + `JoinNode` | Especialistas em paralelo consolidados pelo Summarizer |
 | `review_critic` | arestas condicionais | Ciclo Author ↔ Critic dentro do orçamento de iteração |
 | `iterative_refinement` | arestas condicionais | Drafter → Evaluator → Editor com critério de parada por qualidade |
-| `human_in_the_loop` | `Workflow` + function tool | Aprovação humana estruturada antes do follow-up |
+| `human_in_the_loop` | `Workflow` + `RequestInput` | Pausa persistida, resposta humana na conversa e retomada antes do follow-up |
 | `progressive_multi_agent_response` | `Workflow` + DTOs | Respostas incrementais com grafo de dependência entre agentes |
 | `loop2_verification` | `VerificationLoop` + rubrica | Reexecução automática até aprovação ou esgotamento do orçamento |
 
@@ -88,6 +88,8 @@ especialista generalista; `verification` reutiliza o ciclo limitado de `review_c
 |---|---|---|
 | `GET` | `/api/status` | Status do servidor e versão do ADK |
 | `POST` | `/api/run` | Executar objetivo com modelo real |
+| `GET` | `/api/runs/{run_id}` | Recuperar execução e solicitações humanas persistidas |
+| `POST` | `/api/runs/{run_id}/human-requests/{request_id}/response` | Registrar resposta humana e retomar a mesma execução |
 | `POST` | `/api/run/demo` | Executar objetivo em modo demo (sem modelo) |
 | `POST` | `/api/task-plans` | Validar e persistir um plano de tarefas sem executá-lo |
 | `GET` | `/api/task-plans/{plan_id}` | Consultar um plano de tarefas persistido |
@@ -150,7 +152,7 @@ RootOrchestratorAgent (ADK Workflow)
 FastAPI server  ←→  React SPA
           │
           ├── ADK App + Runner
-          ├── InMemorySessionService
+          ├── DatabaseSessionService (SQLite nas execuções HTTP)
           └── InMemoryArtifactService
 ```
 
@@ -210,12 +212,12 @@ Servida pelo FastAPI em `/`. Inclui Chat view, DAG view, Execution Inspector, Ev
 ### Cesta de modelos
 
 ```bash
-ADK_MODEL="gemini-flash-latest"           # modelo base
-ADK_MODEL_ROUTER="gemini-2.0-flash"
-ADK_MODEL_REASONING="gemini-2.0-flash"    # críticos e avaliadores
-ADK_MODEL_WORKER="gemini-flash-latest"    # planejadores e executores
-ADK_MODEL_FINALIZER="gemini-2.0-flash"    # sumarizadores
-ADK_MODEL_FALLBACK="gemini-flash-latest"  # fallback após circuit break
+ADK_MODEL="gemini-3.5-flash-lite"           # modelo base
+ADK_MODEL_ROUTER="gemini-3.6-flash"
+ADK_MODEL_REASONING="gemini-3.6-flash"      # críticos e avaliadores
+ADK_MODEL_WORKER="gemini-3.5-flash-lite"    # planejadores e executores
+ADK_MODEL_FINALIZER="gemini-3.6-flash"      # sumarizadores
+ADK_MODEL_FALLBACK="gemini-3.5-flash-lite"  # fallback após circuit break
 ```
 
 Erros `429` e `503` após retries ativam um circuit breaker em memória; chamadas seguintes usam `ADK_MODEL_FALLBACK` até o processo reiniciar.
@@ -264,4 +266,5 @@ ADK_PROGRESSIVE_FINAL_RESPONSE_STRATEGY="all_visible_responses"
 - [`docs/evaluation.md`](docs/evaluation.md) — critérios e datasets de avaliação
 - [`docs/observability.md`](docs/observability.md) — logs e métricas para Google Cloud
 - [`docs/contracts/README.md`](docs/contracts/README.md) — contrato de execução versionado
+- [`docs/plans/hitl-end-to-end.md`](docs/plans/hitl-end-to-end.md) — interação humana na conversa, persistência e retomada
 - [`docs/runbooks/`](docs/runbooks/) — runbooks de incidente, rollback e atualização de agentes

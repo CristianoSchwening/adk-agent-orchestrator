@@ -134,7 +134,7 @@ def test_runner_returns_failed_contract_with_completed_work(monkeypatch):
     session = SimpleNamespace(id="test", state={"task_run": {"tasks": [
         {"task_id": "TASK-001", "status": "completed", "result": "Saved research"}
     ]}})
-    async def get_session(*args):
+    async def get_session(*args, **kwargs):
         return session
     async def run_async(**kwargs):
         raise RuntimeError("transport exhausted")

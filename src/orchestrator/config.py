@@ -83,6 +83,20 @@ def _parse_positive_float(raw_value: str | None, default: float, env_name: str) 
     return value
 
 
+def _parse_confidence(raw_value: str | None, default: float, env_name: str) -> float:
+    """Parse a probability-like confidence threshold."""
+
+    if raw_value is None or not raw_value.strip():
+        return default
+    try:
+        value = float(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"{env_name} must be a number.") from exc
+    if not 0 <= value <= 1:
+        raise ValueError(f"{env_name} must be between 0 and 1.")
+    return value
+
+
 def _parse_positive_int(raw_value: str | None, default: int, env_name: str) -> int:
     if raw_value is None or not raw_value.strip():
         return default
@@ -222,6 +236,7 @@ class OrchestratorSettings:
     tool_timeout_seconds: float = 10.0
     mcp_servers: tuple[MCPServerSettings, ...] = ()
     kev_shadow_enabled: bool = False
+    kev_min_confidence: float = 0.75
     workspace_enabled: bool = True
     workspace_mode: WorkspaceEnforcementMode = "strict"
     workspace_root: str = "observability/verbalized_workspace/traces"
@@ -303,6 +318,11 @@ class OrchestratorSettings:
             mcp_servers=_parse_mcp_servers(os.getenv("ADK_MCP_SERVERS")),
             kev_shadow_enabled=_parse_bool(
                 os.getenv("ADK_KEV_SHADOW_ENABLED"), False, "ADK_KEV_SHADOW_ENABLED"
+            ),
+            kev_min_confidence=_parse_confidence(
+                os.getenv("ADK_KEV_MIN_CONFIDENCE"),
+                cls.kev_min_confidence,
+                "ADK_KEV_MIN_CONFIDENCE",
             ),
             workspace_enabled=_parse_bool(
                 os.getenv("ADK_WORKSPACE_ENABLED"),

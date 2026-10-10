@@ -35,6 +35,7 @@ def test_initial_session_state_tracks_phase4_contract_version():
 
     assert state["phase"] == "phase_5_evaluation_production"
     assert state["contract_version"] == CONTRACT_VERSION
+    assert state["policy_version"] == "orchestrator.workflow-routing.v1"
     assert state["tool_timeout_seconds"] == 2.0
     assert state["progressive_agent_responses"] == []
     assert state["model_basket"] == {

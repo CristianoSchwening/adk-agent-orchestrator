@@ -17,20 +17,23 @@ const DEMO_OBJECTIVE = 'Investigue como estruturar um orquestrador de agentes ro
 
 export default function App() {
   const [objective, setObjective] = useState('')
+  const [useKev, setUseKev] = useState(false)
   const [automationsOpen, setAutomationsOpen] = useState(false)
-  const { contract, loading, error, loadDemo, run, retry, clear } = useContract()
+  const { contract, loading, error, loadDemo, run, retry, clear,
+    sending, responseError, respondToHumanRequest } = useContract()
   const { theme, toggle } = useTheme()
 
   const handleDemo = () => loadDemo(objective.trim() || DEMO_OBJECTIVE, DEFAULT_WORKFLOW)
   const handleRun = () => {
-    if (objective.trim()) run(objective.trim())
+    if (objective.trim()) run(objective.trim(), useKev ? 'decision' : 'off')
   }
   const handleNewExecution = () => {
     clear()
     setObjective('')
   }
 
-  const completedSubtasks = contract?.subtasks.filter((subtask) => subtask.status === 'completed').length ?? 0
+  const executionTasks = contract?.task_run?.tasks ?? contract?.subtasks ?? []
+  const completedSubtasks = executionTasks.filter(task => task.status === 'completed').length
 
   const topbar = (
     <div className="flex min-w-0 items-center gap-3">
@@ -49,10 +52,14 @@ export default function App() {
   )
 
   const composer = (
+    contract?.task.status === 'awaiting_human' ?
+    <p role="status" className="p-4 text-center text-sm text-muted-foreground">Aguardando sua resposta na conversa acima.</p> :
     <ExecutionComposer
       objective={objective}
       loading={loading}
+      useKev={useKev}
       onObjectiveChange={setObjective}
+      onUseKevChange={setUseKev}
       onRun={handleRun}
       onDemo={handleDemo}
     />
@@ -127,18 +134,19 @@ export default function App() {
                   <h1 className="truncate text-base font-semibold">Execução do orquestrador</h1>
                   <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><Clock3 className="size-3.5" />{formatDuration(contract.metrics.duration_ms)}</span>
-                    <span>{completedSubtasks} de {contract.subtasks.length} subtarefas concluídas</span>
+                    <span>{completedSubtasks} de {executionTasks.length} tarefas concluídas</span>
                     <span>{contract.progressive_agent_responses.length} respostas de agentes</span>
                   </div>
                 </div>
-                <Badge variant="published">{humanizeStatus(contract.task.status)}</Badge>
+                <Badge variant={contract.task.status === 'completed' ? 'published' : 'draft'}>{humanizeStatus(contract.task.status)}</Badge>
               </div>
               <div className="h-1 bg-secondary">
-                <div className="h-full bg-emerald-500" style={{ width: `${contract.subtasks.length ? (completedSubtasks / contract.subtasks.length) * 100 : 0}%` }} />
+                <div className="h-full bg-emerald-500" style={{ width: `${executionTasks.length ? (completedSubtasks / executionTasks.length) * 100 : 0}%` }} />
               </div>
             </section>
 
-            <ExecutionViews contract={contract} />
+            <ExecutionViews contract={contract} sending={sending} responseError={responseError}
+              onHumanResponse={respondToHumanRequest} />
             <FinalResponsePanel response={contract.task.final_response} failed={contract.task.status === 'failed'} />
 
             <section className="surface-panel overflow-hidden">

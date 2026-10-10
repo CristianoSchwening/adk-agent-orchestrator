@@ -13,6 +13,7 @@ import {
   ListChecks,
   Route,
   ServerCog,
+  Sparkles,
   Wrench,
 } from 'lucide-react'
 import { RunDiagnostics } from '@/components/layout/RunDiagnostics'
@@ -20,7 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDuration, humanizeStatus } from '@/lib/format'
 import { collectToolNames, deriveAgents, formatBytes } from '@/lib/execution-model'
 import { workflowLabel } from '@/config/workflows'
-import type { ArtifactDTO, ExecutionContractDTO } from '@/types/contract'
+import type { ArtifactDTO, ExecutionContractDTO, KevDecisionDTO } from '@/types/contract'
 
 interface ExecutionInspectorProps {
   contract: ExecutionContractDTO | null
@@ -65,11 +66,35 @@ function artifactIcon(artifact: ArtifactDTO) {
 }
 
 export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
+  const confidence = contract?.decision_metadata.confidence
+  const routingConfidence = typeof confidence === 'number' && Number.isFinite(confidence)
+    && confidence >= 0 && confidence <= 1 ? confidence : null
   const agents = deriveAgents(contract)
   const tools = collectToolNames(contract)
   const completed = contract?.subtasks.filter((subtask) => subtask.status === 'completed').length ?? 0
   const mcpCount = Number(contract?.metrics.custom.mcp_server_count ?? 0)
   const taskRuns = new Map(contract?.task_run?.tasks.map((task) => [task.task_id, task]) ?? [])
+  const kevMode = contract?.metrics.custom.kev_mode === 'decision' ? 'decision' : contract?.metrics.custom.kev_mode === 'shadow' ? 'shadow' : 'off'
+  const kevThreshold = Number(contract?.metrics.custom.kev_min_confidence ?? 0.75)
+  const kevDecisions = Array.isArray(contract?.metrics.custom.kev_decisions)
+    ? contract.metrics.custom.kev_decisions as KevDecisionDTO[]
+    : []
+  const kevApplied = kevDecisions.filter((decision) => decision.status === 'applied')
+  const kevFallbacks = kevDecisions.filter((decision) => decision.fallback_reason)
+  const kevConfidences = kevDecisions.flatMap((decision) =>
+    typeof decision.response?.confidence === 'number' ? [decision.response.confidence] : [],
+  )
+  const kevAverageConfidence = kevConfidences.length
+    ? kevConfidences.reduce((sum, confidence) => sum + confidence, 0) / kevConfidences.length
+    : null
+  const kevAverageLatency = kevDecisions.length
+    ? kevDecisions.reduce((sum, decision) => sum + (decision.elapsed_ms || 0), 0) / kevDecisions.length
+    : null
+  const kevAgents = kevDecisions.reduce<Record<string, number>>((counts, decision) => {
+    const agent = decision.selected_agent
+    if (agent) counts[agent] = (counts[agent] ?? 0) + 1
+    return counts
+  }, {})
 
   return (
     <aside className="h-full min-h-0 overflow-y-auto border-l border-border bg-background p-3">
@@ -105,6 +130,64 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
             </div>
           ) : (
             <p className="text-xs leading-5 text-muted-foreground">Os agentes participantes aparecerão após iniciar uma execução.</p>
+          )}
+        </InspectorSection>
+
+        <InspectorSection
+          title="Decisões do Kev"
+          icon={Sparkles}
+          detail={kevMode === 'off' ? 'desligado' : `${kevDecisions.length} consulta${kevDecisions.length === 1 ? '' : 's'}`}
+          defaultOpen={kevMode !== 'off'}
+        >
+          {kevMode === 'off' ? (
+            <p className="text-xs leading-5 text-muted-foreground">O Kev não foi usado nesta execução. Ative “Usar Kev” antes de iniciar uma nova execução para consultar o especialista remoto.</p>
+          ) : (
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">Modo</span>
+                <Badge variant={kevMode === 'decision' ? 'default' : 'secondary'}>{kevMode === 'decision' ? 'Decisão efetiva' : 'Observação'}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ['Aplicadas', kevApplied.length],
+                  ['Fallbacks', kevFallbacks.length],
+                  ['Confiança média', kevAverageConfidence === null ? '—' : `${Math.round(kevAverageConfidence * 100)}%`],
+                  ['Resposta média', formatDuration(kevAverageLatency)],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="rounded-lg bg-secondary/70 p-2">
+                    <div className="text-[10px] text-muted-foreground">{label}</div>
+                    <div className="mt-1 font-semibold">{value}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[10px] text-muted-foreground">Limiar para aplicar a decisão: {Math.round(kevThreshold * 100)}%</div>
+              {kevDecisions.length > 0 ? (
+                <div className="space-y-2 border-t border-border pt-2">
+                  {kevDecisions.map((decision) => (
+                    <div key={decision.task_id} className="rounded-lg bg-secondary/70 px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-medium">{decision.task_id}</span>
+                        <Badge variant={decision.status === 'applied' ? 'published' : decision.fallback_reason ? 'outline' : 'secondary'} className="ml-auto shrink-0">
+                          {decision.status === 'applied' ? 'Kev aplicado' : decision.fallback_reason ? 'Regras locais' : 'Observado'}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        {decision.response?.choice ? `Kev: ${decision.response.choice}` : 'Kev indisponível'} · final: {decision.selected_agent ?? decision.local_agent ?? '—'}
+                      </div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        {typeof decision.response?.confidence === 'number' ? `confiança ${Math.round(decision.response.confidence * 100)}% · ` : ''}{formatDuration(decision.elapsed_ms)}
+                        {decision.fallback_reason === 'low_confidence' ? ' · confiança abaixo do limiar' : decision.fallback_reason === 'unavailable' ? ' · serviço indisponível' : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-xs text-muted-foreground">Nenhuma tarefa de agente único precisou consultar o Kev.</p>}
+              {Object.keys(kevAgents).length > 0 && (
+                <div className="flex flex-wrap gap-1 border-t border-border pt-2">
+                  {Object.entries(kevAgents).map(([agent, count]) => <Badge key={agent} variant="outline">{agent} · {count}</Badge>)}
+                </div>
+              )}
+            </div>
           )}
         </InspectorSection>
 
@@ -210,18 +293,24 @@ export function ExecutionInspector({ contract }: ExecutionInspectorProps) {
         <InspectorSection title="Decisão de roteamento" icon={Route}>
           {contract ? (
             <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Workflow</span><span className="text-right font-medium">{workflowLabel(contract.decision_metadata.selected_workflow)}</span></div>
+              <div className="flex items-center justify-between gap-3"><span className="text-muted-foreground">Workflow escolhido</span><span className="text-right font-medium">{workflowLabel(contract.decision_metadata.selected_workflow)}</span></div>
               <div>
-                <div className="mb-1.5 flex items-center justify-between"><span className="text-muted-foreground">Confiança</span><span className="font-medium">{Math.round(contract.decision_metadata.confidence * 100)}%</span></div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${contract.decision_metadata.confidence * 100}%` }} /></div>
+                <div className="mb-1.5 flex items-center justify-between gap-3"><span className="text-muted-foreground">Confiança declarada pelo modelo</span><span className="font-medium">{routingConfidence === null ? 'Não informada' : `${Math.round(routingConfidence * 100)}%`}</span></div>
+                {routingConfidence !== null && <>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${routingConfidence * 100}%` }} /></div>
+                  <p className="mt-1.5 text-muted-foreground">Não representa uma probabilidade de acerto calibrada.</p>
+                </>}
               </div>
               <p className="border-t border-border pt-2 leading-5 text-muted-foreground">{contract.decision_metadata.rationale}</p>
               {contract.decision_metadata.alternatives.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="space-y-1.5">
+                  <p className="text-muted-foreground">Workflows não utilizados</p>
+                  <div className="flex flex-wrap gap-1">
                   {contract.decision_metadata.alternatives.map((alternative) => <Badge key={alternative} variant="outline">{workflowLabel(alternative)}</Badge>)}
+                  </div>
                 </div>
               )}
-              <div className="text-[10px] text-muted-foreground">Política: {contract.decision_metadata.policy_version}</div>
+              <div className="text-[10px] text-muted-foreground">Política: {contract.decision_metadata.policy_version || 'Não informada'}</div>
             </div>
           ) : <p className="text-xs text-muted-foreground">A decisão de roteamento será exibida aqui.</p>}
         </InspectorSection>

@@ -310,7 +310,9 @@ def test_phase2_workflows_can_be_created_when_adk_is_installed():
     assert "iterative_refinement_gate" in {
         node.name for node in _workflow_nodes(workflows["iterative_refinement"])
     }
-    assert _workflow_nodes(workflows["human_in_the_loop"])[1].name == "human_approval_agent"
+    assert "human_approval_agent" in {
+        node.name for node in _workflow_nodes(workflows["human_in_the_loop"])
+    }
     assert workflows["agent_help_request"].name == "agent_help_request_workflow"
     assert workflows["progressive_multi_agent_response"].name == (
         "progressive_multi_agent_response_workflow"
@@ -649,6 +651,7 @@ def test_root_route_node_persists_workflow_decision_when_adk_is_installed():
         node_input={
             "selected_workflow": "parallel",
             "rationale": "The research tasks are independent.",
+            "confidence": 0.87,
         },
     )
 
@@ -657,7 +660,21 @@ def test_root_route_node_persists_workflow_decision_when_adk_is_installed():
     assert ctx.state["workflow"] == "parallel"
     assert ctx.state["workflow_selection_source"] == "model"
     assert ctx.state["decision_rationale"] == "The research tasks are independent."
+    assert ctx.state["decision_confidence"] == 0.87
+    assert ctx.state["policy_version"] == "orchestrator.workflow-routing.v1"
     assert "parallel" not in ctx.state["workflow_alternatives"]
+
+
+@pytest.mark.parametrize("confidence", [None, True, "0.9", -0.1, 1.1, float("nan"), float("inf")])
+def test_router_rejects_invalid_confidence(confidence):
+    from orchestrator.agents.root import _route_payload
+
+    with pytest.raises(ValueError, match="confidence"):
+        _route_payload({
+            "selected_workflow": "parallel",
+            "rationale": "Independent tasks",
+            "confidence": confidence,
+        })
 
 
 def test_root_route_node_rejects_fuzzy_or_unknown_routes_when_adk_is_installed():

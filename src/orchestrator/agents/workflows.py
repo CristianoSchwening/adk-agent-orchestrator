@@ -13,7 +13,6 @@ from typing import Any
 
 from orchestrator.adk_compat import load_workflow_classes
 from orchestrator.agents.specialists import (
-    create_approval_agent,
     create_context_agent,
     create_critic_agent,
     create_evaluator_agent,
@@ -210,6 +209,17 @@ def create_review_critic_workflow(
     critic = create_critic_agent(
         resolved_settings, name="review_critic_agent", output_key="review_critique"
     )
+    def review_input(ctx: Any, node_input: Any) -> dict[str, Any]:
+        from orchestrator.human_input import candidate_text
+
+        candidate = candidate_text(node_input)
+        if not candidate.strip() or candidate == "null":
+            raise ValueError("review_candidate_missing: author produced no candidate")
+        return {"task_input": ctx.state.get("review_critic_gate_input"),
+                "candidate": candidate,
+                "instruction": "Revise esta candidata pelos critérios da tarefa original."}
+
+    review_context = load_workflow_classes()[1](func=review_input, name="review_candidate_input")
     gate = _loop_gate("review_critic_gate", stop_callback, "review_candidate")
     initializer = _loop_initializer("review_critic_gate")
     finalizer = _final_output_node("review_critic_finalizer", "review_candidate")
@@ -219,7 +229,8 @@ def create_review_critic_workflow(
         edges=[
             Edge(from_node=START, to_node=initializer),
             Edge(from_node=initializer, to_node=author),
-            Edge(from_node=author, to_node=critic),
+            Edge(from_node=author, to_node=review_context),
+            Edge(from_node=review_context, to_node=critic),
             Edge(from_node=critic, to_node=gate),
             Edge(from_node=gate, to_node=author, route="continue"),
             Edge(from_node=gate, to_node=finalizer, route="done"),
@@ -276,16 +287,30 @@ def create_human_in_the_loop_workflow(settings: OrchestratorSettings | None = No
     """Create an ADK graph that pauses for explicit human approval."""
 
     resolved_settings = settings or OrchestratorSettings.from_env()
-    return _workflow(
-        "human_in_the_loop_workflow",
-        "ADK graph that requests human approval before final execution guidance.",
-        create_context_agent(resolved_settings),
-        create_approval_agent(
-            resolved_settings,
-            name="human_approval_agent",
-            output_key="human_approval_decision",
-        ),
-        create_followup_agent(resolved_settings),
+    from orchestrator.human_input import create_human_gate, input_text
+
+    Workflow, FunctionNode, _, Edge, START = load_workflow_classes()
+    def initialize(ctx: Any, node_input: Any) -> Any:
+        ctx.state["human_original_input"] = input_text(node_input)
+        return node_input
+
+    def reject(ctx: Any, node_input: Any) -> dict[str, Any]:
+        return {"human_rejected": True, "decision": node_input}
+
+    initializer = FunctionNode(func=initialize, name="human_input_initializer")
+    context = create_context_agent(resolved_settings)
+    gate = create_human_gate()
+    followup = create_followup_agent(resolved_settings)
+    rejected = FunctionNode(func=reject, name="human_rejection")
+    return Workflow(
+        name="human_in_the_loop_workflow",
+        description="Pauses for a human decision before continuing the same invocation.",
+        edges=[Edge(from_node=START, to_node=initializer),
+               Edge(from_node=initializer, to_node=context),
+               Edge(from_node=context, to_node=gate),
+               Edge(from_node=gate, to_node=followup, route=["approved", "clarified"]),
+               Edge(from_node=gate, to_node=context, route="revise"),
+               Edge(from_node=gate, to_node=rejected, route="rejected")],
     )
 
 

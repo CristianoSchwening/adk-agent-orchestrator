@@ -31,19 +31,23 @@ cole o token em chats. Não há repetição automática de chamadas.
 ## Observação no ADK
 
 `ADK_KEV_SHADOW_ENABLED=false` é o padrão: nenhuma tarefa real sai automaticamente.
+No front, o controle **Usar Kev** envia `kev_mode=decision` somente para a execução
+iniciada pelo usuário; ele não altera o arquivo `.env` nem as execuções seguintes.
 Para experimentar com tarefas públicas/sintéticas, mude para `true` e reinicie o
 servidor. O FunctionNode do dispatcher chama o MCP antes de executar cada tarefa,
 enviando somente título, descrição e capacidades. Esses campos ainda podem conter
 dados confidenciais: use apenas conteúdo adequado ao Space público.
 
-O agente escolhido pelo dispatcher não é alterado. A sessão registra as respostas
-em `kev_shadow_observations`, junto com a escolha local para comparação. Esses
-registros também aparecem em `metrics.custom.kev_shadow_observations` na resposta
-de `/api/run` e em `tasks[].kev_observation` nos arquivos `data/task_runs/RUN-*.json`.
-`status=observed` confirma resposta validada; `unavailable` indica falha, com
-`error_type`; lista vazia significa que nenhuma observação foi registrada.
-Ainda não existe visualização dedicada na SPA. O modo demo não chama o Kev.
-Falhas e timeout registram `unavailable` e a execução continua normalmente.
+Com **Usar Kev** ativo, o dispatcher consulta o Kev apenas para tarefas de agente
+único. A recomendação só substitui a escolha local quando a resposta é válida e
+atinge `ADK_KEV_MIN_CONFIDENCE` (padrão `0.75`). Políticas de aprovação, revisão e
+workflows compostos permanecem sob controle das regras locais. A sessão registra
+as respostas em `kev_decisions`, junto com a escolha local e final. Esses registros
+aparecem em `metrics.custom.kev_decisions`, em `tasks[].kev_observation` nos arquivos
+`data/task_runs/RUN-*.json` e na seção expansível **Decisões do Kev** da SPA.
+`status=applied` confirma que o Kev escolheu o especialista; `observed` indica o modo
+de observação; `unavailable` ou `fallback_reason=low_confidence` mantêm a escolha local.
+O modo demo não chama o Kev. Falhas e timeout registram fallback e a execução continua normalmente.
 Cada consulta tem limite de 60 segundos, sem retries; filas e limites do serviço
 podem impedir a inferência. Desative a opção para não acrescentar essa espera.
 

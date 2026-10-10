@@ -6,7 +6,7 @@ import json
 import sys
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +23,7 @@ from orchestrator.contracts.dto import (
     AgentVisibleResponse,
     utc_now_iso,
 )
+from orchestrator.human_input import HumanResponse
 from orchestrator.loops import STANDARD_QUALITY_RUBRIC, EventLoop, VerificationLoop
 from orchestrator.planning import (
     FileTaskPlanRepository,
@@ -31,6 +32,7 @@ from orchestrator.planning import (
     validate_task_plan,
 )
 from orchestrator.runner.bootstrap import run_once_contract
+from orchestrator.runner.human_runs import HumanRunStore, RunBusyError, run_store_root
 
 WEBAPP_DIR = Path(__file__).parent.parent.parent / "webapp"
 REACT_DIR = Path(__file__).parent.parent.parent / "webapp-react" / "dist"
@@ -49,6 +51,7 @@ app.add_middleware(
 class RunRequest(BaseModel):
     objective: str
     workflow: str | None = None
+    kev_mode: Literal["off", "shadow", "decision"] = "off"
 
 
 class ScheduleRequest(BaseModel):
@@ -134,11 +137,85 @@ async def run_objective(body: RunRequest) -> JSONResponse:
             objective,
             settings=settings,
             workflow=workflow,
+            kev_mode=body.kev_mode,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return JSONResponse(content=contract.to_dict())
+
+
+def _human_store(settings: OrchestratorSettings) -> HumanRunStore:
+    return HumanRunStore(run_store_root(settings, Path(__file__).resolve().parents[2]))
+
+
+def _owned_run(store: HumanRunStore, run_id: str, settings: OrchestratorSettings) -> dict:
+    try:
+        saved = store.load(run_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Execução não encontrada.") from exc
+    if saved["user_id"] != settings.user_id or saved["app_name"] != settings.app_name:
+        raise HTTPException(status_code=404, detail="Execução não encontrada.")
+    return saved
+
+
+@app.get("/api/runs/{run_id}")
+async def get_run(run_id: str) -> dict:
+    settings = OrchestratorSettings.from_env()
+    return _owned_run(_human_store(settings), run_id, settings)["contract"]
+
+
+@app.post("/api/runs/{run_id}/human-requests/{request_id}/response")
+async def respond_to_human_request(run_id: str, request_id: str, body: HumanResponse) -> dict:
+    settings = OrchestratorSettings.from_env()
+    store = _human_store(settings)
+    try:
+        with store.lock(run_id):
+            saved = _owned_run(store, run_id, settings)
+            answer = body.model_dump()
+            previous = saved["responses"].get(request_id)
+            if previous:
+                if previous["answer"] != answer:
+                    raise HTTPException(status_code=409,
+                                        detail="Esta solicitação já foi respondida.")
+                if previous.get("completed"):
+                    return saved["contract"]
+            request = next((item for item in saved["contract"].get("human_requests", [])
+                            if item["request_id"] == request_id), None)
+            if request is None:
+                raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+            active = saved["contract"].get("task_run") or {}
+            plan = saved["contract"].get("task_plan") or {}
+            task = next((item for item in active.get("tasks", [])
+                         if item["task_id"] == request.get("task_id")), None)
+            if (request["status"] != "pending"
+                    or request["session_id"] != run_id
+                    or request.get("run_id") != active.get("run_id")
+                    or request.get("plan_id") != plan.get("plan_id")
+                    or request.get("revision") != plan.get("revision")
+                    or (task is not None and (task["status"] != "awaiting_human"
+                                               or task["attempt"] != request.get("attempt")))
+                    or saved["contract"]["task"]["status"] != "awaiting_human"):
+                raise HTTPException(status_code=409, detail="A solicitação não está mais pendente.")
+            if (request["kind"] == "clarification") != (body.decision == "clarification"):
+                raise HTTPException(status_code=422,
+                                    detail="Resposta incompatível com a solicitação.")
+            # Persist the human decision before running any authorized continuation.
+            saved["responses"][request_id] = {"answer": answer, "completed": False,
+                                              "source": "human", "user_id": settings.user_id}
+            store.save(run_id, saved)
+            contract = await run_once_contract(
+                saved["objective"], settings=settings, workflow=saved["workflow"],
+                kev_mode=saved["kev_mode"], session_id=run_id, human_response=answer,
+                interrupt_id=request_id, invocation_id=request["invocation_id"],
+            )
+            updated = store.load(run_id)
+            updated["responses"][request_id]["completed"] = True
+            updated["contract"] = contract.to_dict()
+            store.save(run_id, updated)
+            return updated["contract"]
+    except RunBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.post("/api/task-plans", status_code=201)

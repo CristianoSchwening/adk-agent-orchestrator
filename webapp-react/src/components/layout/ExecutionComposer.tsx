@@ -1,10 +1,12 @@
-import { ArrowUp, FlaskConical, Loader2, Paperclip } from 'lucide-react'
+import { ArrowUp, FlaskConical, Loader2, Paperclip, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface ExecutionComposerProps {
   objective: string
   loading: boolean
+  useKev: boolean
   onObjectiveChange: (value: string) => void
+  onUseKevChange: (value: boolean) => void
   onRun: () => void
   onDemo: () => void
 }
@@ -12,7 +14,9 @@ interface ExecutionComposerProps {
 export function ExecutionComposer({
   objective,
   loading,
+  useKev,
   onObjectiveChange,
+  onUseKevChange,
   onRun,
   onDemo,
 }: ExecutionComposerProps) {
@@ -37,6 +41,18 @@ export function ExecutionComposer({
           <Button variant="ghost" size="icon" aria-label="Anexar contexto" title="Anexos serão habilitados em uma próxima etapa">
             <Paperclip className="size-4" />
           </Button>
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary" title="Envia o título, a descrição e as capacidades da tarefa ao Kev para escolher o especialista.">
+            <Sparkles className={`size-3.5 ${useKev ? 'text-primary' : ''}`} />
+            <span>Usar Kev</span>
+            <input
+              type="checkbox"
+              checked={useKev}
+              onChange={(event) => onUseKevChange(event.target.checked)}
+              disabled={loading}
+              aria-label="Usar Kev para escolher especialistas"
+              className="size-3.5 accent-primary"
+            />
+          </label>
           <Button variant="ghost" size="sm" onClick={onDemo} disabled={loading} className="ml-auto px-2 sm:px-3">
             <FlaskConical className="size-4" />
             Carregar demo

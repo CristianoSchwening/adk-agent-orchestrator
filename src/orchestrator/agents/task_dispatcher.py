@@ -20,6 +20,7 @@ from orchestrator.config import OrchestratorSettings
 from orchestrator.context import ContextPackage, build_task_context
 from orchestrator.dispatching import FileTaskRunRepository, TaskDispatcher
 from orchestrator.dispatching.evaluation import criteria_catalog, validate_evaluation
+from orchestrator.errors import execution_error_message
 from orchestrator.mcp.kev import observe_task
 from orchestrator.model import is_transport_error
 from orchestrator.planning import FileTaskPlanRepository, TaskPlan
@@ -84,6 +85,12 @@ def create_task_dispatcher_node(
             run = dispatcher.initialize(plan)
             repo.save(run)
             ctx.state["task_run_id"] = run.run_id
+        if run.status == "awaiting_human":
+            run.status = "running"
+            for item in run.tasks:
+                if item.status == "awaiting_human":
+                    item.status = "running"
+            repo.save(run)
 
         while run.status == "running":
             pending_request = ctx.state.get("replan_request")
@@ -102,7 +109,9 @@ def create_task_dispatcher_node(
                     context_package=context_package.to_dict(),
                 )
                 continue
-            task = dispatcher.next_ready(plan, run)
+            active_run = next((item for item in run.tasks if item.status == "running"), None)
+            task = (next(item for item in plan.tasks if item.task_id == active_run.task_id)
+                    if active_run else dispatcher.next_ready(plan, run))
             if task is None:
                 run.status = "failed"
                 repo.save(run)
@@ -123,30 +132,59 @@ def create_task_dispatcher_node(
                 )
                 continue
             selection = dispatcher.select_execution(task)
-            if settings.kev_shadow_enabled:
+            kev_mode = str(ctx.state.get("kev_mode") or "off")
+            if (active_run is None and kev_mode in {"shadow", "decision"}
+                    and selection.node_kind == "agent"):
                 observation = await observe_task(settings, task)
                 observations = list(ctx.state.get("kev_shadow_observations") or [])
-                observations.append({
+                record = {
                     "task_id": task.task_id,
-                    "selected_agent": selection.assigned_agent,
+                    "local_agent": selection.assigned_agent,
+                    "mode": kev_mode,
                     **observation,
-                })
+                }
+                if kev_mode == "decision":
+                    response = observation.get("response")
+                    confidence = response.get("confidence") if isinstance(response, dict) else None
+                    choice = response.get("choice") if isinstance(response, dict) else None
+                    if (
+                        observation.get("status") == "observed"
+                        and isinstance(confidence, (int, float))
+                        and confidence >= settings.kev_min_confidence
+                        and isinstance(choice, str)
+                    ):
+                        selection = dispatcher.with_selected_agent(
+                            selection, choice, reason="kev_decision"
+                        )
+                        record["status"] = "applied"
+                        record["selected_agent"] = selection.assigned_agent
+                    else:
+                        record["fallback_reason"] = (
+                            "low_confidence"
+                            if observation.get("status") == "observed"
+                            else "unavailable"
+                        )
+                        record["selected_agent"] = selection.assigned_agent
+                else:
+                    record["selected_agent"] = selection.assigned_agent
+                observations.append(record)
                 ctx.state["kev_shadow_observations"] = observations
+                decisions = list(ctx.state.get("kev_decisions") or [])
+                decisions.append(record)
+                ctx.state["kev_decisions"] = decisions
                 current_task = next(item for item in run.tasks if item.task_id == task.task_id)
-                current_task.kev_observation = observations[-1]
+                current_task.kev_observation = record
                 repo.save(run)
-            dispatcher.transition(
-                plan,
-                run,
-                task.task_id,
-                "assigned",
-                assigned_agent=selection.assigned_agent,
-                execution_strategy=selection.strategy,
-                execution_node=selection.node_key,
-                selection_reason=selection.reason,
-            )
-            repo.save(run)
-            dispatcher.transition(plan, run, task.task_id, "running")
+            if active_run is None:
+                dispatcher.transition(
+                    plan, run, task.task_id, "assigned",
+                    assigned_agent=selection.assigned_agent,
+                    execution_strategy=selection.strategy,
+                    execution_node=selection.node_key,
+                    selection_reason=selection.reason,
+                )
+                repo.save(run)
+                dispatcher.transition(plan, run, task.task_id, "running")
             repo.save(run)
             task_run = next(item for item in run.tasks if item.task_id == task.task_id)
             # Stable on resume, but distinct for each revised run and attempt.
@@ -185,14 +223,26 @@ def create_task_dispatcher_node(
                 },
                 ensure_ascii=False,
             )
+            ctx.state["active_task"] = task.__dict__
+            ctx.state["active_attempt"] = task_run.attempt
+            from google.adk.workflow._errors import NodeInterruptedError
+
             try:
                 result = await ctx.run_node(
                     target,
                     node_input=task_input,
                     run_id=f"{selection.node_key}_{invocation_key}",
                 )
+            except NodeInterruptedError:
+                task_run.status = "awaiting_human"
+                run.status = "awaiting_human"
+                repo.save(run)
+                ctx.state["task_run"] = run.to_dict()
+                ctx.state["task_run_status"] = run.status
+                raise
             except Exception as exc:
-                dispatcher.transition(plan, run, task.task_id, "failed", error=str(exc))
+                detail = execution_error_message(exc)
+                dispatcher.transition(plan, run, task.task_id, "failed", error=detail)
                 repo.save(run)
                 ctx.state["task_run"] = run.to_dict()
                 if is_transport_error(exc):
@@ -205,7 +255,7 @@ def create_task_dispatcher_node(
                         trigger="task_failed",
                         rationale="The selected ADK node failed during task execution.",
                         task_id=task.task_id,
-                        evidence={"error": str(exc)},
+                        evidence={"error": detail},
                     ),
                     replanner=replanner,
                     dispatcher=dispatcher,
@@ -215,6 +265,17 @@ def create_task_dispatcher_node(
                     context_package=context_package.to_dict(),
                 )
                 continue
+
+            if isinstance(result, dict) and result.get("human_rejected"):
+                task_run.status = "cancelled"
+                task_run.error = "human_rejected"
+                task_run.execution_output = result
+                run.status = "cancelled"
+                for item in run.tasks:
+                    if item.status in {"pending", "ready"}:
+                        item.status = "blocked"
+                repo.save(run)
+                break
 
             task_run = next(item for item in run.tasks if item.task_id == task.task_id)
             task_run.execution_output = result
@@ -245,12 +306,14 @@ def create_task_dispatcher_node(
                     task.acceptance_criteria,
                 )
             except Exception as exc:
-                task_run.evaluation_error = str(exc)
+                task_run.evaluation_error = execution_error_message(exc)
                 task_run.evaluated_at = utc_now_iso()
                 dispatcher.transition(plan, run, task.task_id, "failed", error="evaluation_failed")
                 repo.save(run)
                 ctx.state["task_run"] = run.to_dict()
-                raise RuntimeError(f"evaluation_failed for {task.task_id}: {exc}") from exc
+                raise RuntimeError(
+                    f"evaluation_failed for {task.task_id}: {task_run.evaluation_error}"
+                ) from exc
             task_run.evaluation = guard_decision
             task_run.evaluated_at = utc_now_iso()
             repo.save(run)

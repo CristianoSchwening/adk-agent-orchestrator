@@ -20,6 +20,7 @@ export function formatTime(iso?: string | null) {
 export function humanizeStatus(status?: string | null) {
   const labels: Record<string, string> = {
     completed: 'Concluída', running: 'Em execução', failed: 'Falhou', pending: 'Pendente',
+    awaiting_human: 'Aguardando sua resposta', cancelled: 'Cancelada', blocked: 'Bloqueada',
     published: 'Publicada', superseded: 'Substituída', draft: 'Rascunho',
   }
   return labels[status ?? ''] ?? status ?? 'Desconhecido'

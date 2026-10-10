@@ -89,9 +89,10 @@ def test_run_routes_requested_workflow_to_runtime(monkeypatch) -> None:
 
     captured: dict[str, str | None] = {}
 
-    async def fake_run_once_contract(objective, *, settings, workflow):
+    async def fake_run_once_contract(objective, *, settings, workflow, kev_mode):
         captured["objective"] = objective
         captured["workflow"] = workflow
+        captured["kev_mode"] = kev_mode
         return SimpleNamespace(
             decision_metadata=SimpleNamespace(selected_workflow=workflow),
             to_dict=lambda: {
@@ -110,7 +111,28 @@ def test_run_routes_requested_workflow_to_runtime(monkeypatch) -> None:
     assert captured == {
         "objective": "Qual a capital de Brasilia?",
         "workflow": "parallel",
+        "kev_mode": "off",
     }
+
+
+def test_run_forwards_kev_decision_mode(monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from orchestrator import server
+
+    captured: dict[str, str | None] = {}
+
+    async def fake_run_once_contract(objective, *, settings, workflow, kev_mode):
+        captured["kev_mode"] = kev_mode
+        return SimpleNamespace(to_dict=lambda: {"progressive_agent_responses": []})
+
+    monkeypatch.setattr(server, "run_once_contract", fake_run_once_contract)
+    response = client.post(
+        "/api/run", json={"objective": "Pesquise evidências", "kev_mode": "decision"}
+    )
+
+    assert response.status_code == 200
+    assert captured["kev_mode"] == "decision"
 
 
 def test_run_preserves_canonical_progressive_response_payload(monkeypatch) -> None:
@@ -131,7 +153,7 @@ def test_run_preserves_canonical_progressive_response_payload(monkeypatch) -> No
         "metadata": {"source": "runtime", "nested": {"preserved": True}},
     }
 
-    async def fake_run_once_contract(objective, *, settings, workflow):
+    async def fake_run_once_contract(objective, *, settings, workflow, kev_mode):
         return SimpleNamespace(
             to_dict=lambda: {
                 "decision_metadata": {"selected_workflow": workflow},
@@ -155,7 +177,7 @@ def test_run_maps_legacy_verification_name_to_iterative_workflow(monkeypatch) ->
 
     captured: dict[str, str | None] = {}
 
-    async def fake_run_once_contract(objective, *, settings, workflow):
+    async def fake_run_once_contract(objective, *, settings, workflow, kev_mode):
         captured["workflow"] = workflow
         raise RuntimeError("stop after routing")
 

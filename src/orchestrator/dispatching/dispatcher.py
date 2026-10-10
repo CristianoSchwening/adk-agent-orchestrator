@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from uuid import uuid4
 
 from orchestrator.dispatching.models import PlanRun, TaskRun
@@ -116,6 +116,20 @@ class TaskDispatcher:
             node_kind="workflow",
             assigned_agent=agent,
             reason=":".join([*reason_parts, f"workflow:{workflow}", agent_reason]),
+        )
+
+    def with_selected_agent(
+        self, selection: ExecutionSelection, agent: str, *, reason: str
+    ) -> ExecutionSelection:
+        """Apply an externally selected specialist without changing policy/strategy."""
+
+        if selection.node_kind != "agent" or agent not in AGENT_CAPABILITIES:
+            return selection
+        return replace(
+            selection,
+            node_key=agent,
+            assigned_agent=agent,
+            reason=f"{selection.reason}:{reason}",
         )
 
     def transition(

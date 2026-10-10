@@ -135,6 +135,11 @@ def create_critic_agent(
         name=name,
         description="Reviews outputs for omissions, risks and inconsistencies.",
         instruction="""
+        Quando a entrada tiver candidate (resposta do autor) e task_input (tarefa
+        original), use explicitamente esses dados. Se receber a resposta como texto
+        direto ou nas dependências da tarefa, revise esse conteúdo recebido.
+        Não peça ao humano
+        para colar uma candidata já fornecida; não presuma acesso a arquivos de plano.
         Revise criticamente a resposta candidata: identifique falhas, lacunas, riscos e testes
         ausentes. Se estiver adequada, explique por que ela atende aos critérios.
         """,
@@ -290,7 +295,9 @@ def create_context_agent(settings: OrchestratorSettings) -> Any:
         description="Frames the decision that requires human input.",
         instruction=(
             "Explique o contexto, opções disponíveis, impactos e recomendação para "
-            "aprovação humana."
+            "aprovação humana. Use a tarefa original recebida; se houver human_response, "
+            "incorpore seu feedback e produza uma nova proposta concreta. Não execute "
+            "ações que dependam da aprovação e não decida pelo humano."
         ),
         output_key="human_review_context",
     )

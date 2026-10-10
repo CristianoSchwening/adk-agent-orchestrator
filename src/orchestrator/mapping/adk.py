@@ -79,8 +79,18 @@ def map_adk_execution(
     app_name = _extract_value(session, "app_name") or resolved_settings.app_name
     user_id = _extract_value(session, "user_id") or resolved_settings.user_id
     now = finished_at or utc_now_iso()
-    created_at = started_at or _extract_value(session, "created_at") or now
+    created_at = (started_at or _extract_value(session, "created_at")
+                  or state.get("execution_created_at") or now)
     status = "completed" if final_response else "running"
+    run_status = (state.get("task_run") or {}).get("status")
+    if run_status in {"completed", "failed", "cancelled", "awaiting_human"}:
+        status = run_status
+    human_requests = [dict(item) for item in state.get("human_requests", [])]
+    if any(item.get("status") == "pending" for item in human_requests):
+        status = "awaiting_human"
+        final_response = ""
+    if (state.get("task_run") or {}).get("status") == "cancelled":
+        status = "cancelled"
 
     event_dtos = [_map_event(event, index) for index, event in enumerate(events, start=1)]
     artifact_dtos = _map_artifacts(artifacts)
@@ -133,6 +143,9 @@ def map_adk_execution(
                     "kev_shadow_enabled", resolved_settings.kev_shadow_enabled
                 ),
                 "kev_shadow_observations": state.get("kev_shadow_observations", []),
+                "kev_mode": state.get("kev_mode", "off"),
+                "kev_min_confidence": resolved_settings.kev_min_confidence,
+                "kev_decisions": state.get("kev_decisions", []),
                 "progressive_agent_response_count": len(progressive_responses),
                 "loop_stop_reason": state.get("loop_stop_reason"),
                 "loop_final_score": state.get("loop_final_score"),
@@ -176,6 +189,8 @@ def map_adk_execution(
         last_replan_request=_map_optional_dict(state.get("last_replan_request")),
         context_package=_map_context_package(state.get("context_package")),
         task_contexts=_map_task_contexts(state.get("task_contexts")),
+        run_id=str(session_id),
+        human_requests=human_requests,
     )
 
 
@@ -327,6 +342,17 @@ def _map_subtasks(
                 finished_at=event.timestamp if event.type == "final_response" else None,
             )
         )
+    for request in state.get("human_requests", []):
+        pending = request.get("status") == "pending"
+        subtasks.append(SubtaskDTO(
+            subtask_id=f"human:{request['request_id']}", name="Sua resposta",
+            status="awaiting_human" if pending else "completed",
+            agent_name="human_approval_agent", workflow="human_in_the_loop",
+            input_summary=request.get("message"),
+            output_summary=_summarize(request.get("response")),
+            started_at=request.get("created_at"),
+            finished_at=None if pending else request.get("answered_at"),
+        ))
     return subtasks
 
 
