@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from orchestrator.adk_compat import load_workflow_classes
+from orchestrator.adk_compat import load_node_interrupted_error, load_workflow_classes
 from orchestrator.agents.replanner import create_replan_guard_agent, create_replanner_agent
 from orchestrator.agents.specialists import (
     create_critic_agent,
@@ -225,7 +225,7 @@ def create_task_dispatcher_node(
             )
             ctx.state["active_task"] = task.__dict__
             ctx.state["active_attempt"] = task_run.attempt
-            from google.adk.workflow._errors import NodeInterruptedError
+            NodeInterruptedError = load_node_interrupted_error()
 
             try:
                 result = await ctx.run_node(

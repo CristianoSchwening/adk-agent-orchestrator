@@ -50,7 +50,7 @@ def test_human_snapshot_survives_windows_reader_lock(tmp_path, monkeypatch):
 
 
 def test_durable_sessions_reject_genuine_stale_writer(tmp_path):
-    from google.adk.errors._stale_session_error import StaleSessionError
+    from google.adk.errors import StaleSessionError
     from google.adk.events import Event
 
     from orchestrator.runner.bootstrap import _persistent_sessions
@@ -64,6 +64,43 @@ def test_durable_sessions_reject_genuine_stale_writer(tmp_path):
         with pytest.raises(StaleSessionError):
             await service.append_event(session=stale, event=Event(author="test", output="second"))
         await service.close()
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("changed_instant", [False, True])
+def test_durable_sessions_repair_only_equivalent_revision(tmp_path, changed_instant):
+    from datetime import datetime, timedelta, timezone
+
+    from google.adk.errors import StaleSessionError
+    from google.adk.events import Event
+
+    from orchestrator.runner.bootstrap import _persistent_sessions
+
+    async def exercise():
+        service = _persistent_sessions(str(tmp_path / "revision.sqlite"))
+        try:
+            original = await service.create_session(app_name="revision_test", user_id="test")
+            session = await service.get_session(app_name=original.app_name, user_id="test",
+                                                session_id=original.id)
+            revision = datetime.fromisoformat(session._storage_update_marker)
+            if changed_instant:
+                revision -= timedelta(microseconds=1)
+            # SQLite reads are naive; force an aware representation of UTC.
+            session._storage_update_marker = revision.replace(tzinfo=timezone.utc).isoformat(
+                timespec="microseconds")
+            event = Event(author="test", output="persist once")
+            if changed_instant:
+                with pytest.raises(StaleSessionError):
+                    await service.append_event(session=session, event=event)
+            else:
+                await service.append_event(session=session, event=event)
+            persisted = await service.get_session(app_name=original.app_name, user_id="test",
+                                                  session_id=original.id)
+            assert [item.id for item in persisted.events] == (
+                [] if changed_instant else [event.id])
+        finally:
+            await service.close()
 
     asyncio.run(exercise())
 

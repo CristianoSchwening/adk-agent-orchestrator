@@ -1,4 +1,4 @@
-# Migração ADK 2.8.0 → 2.11.0 — etapas 1 e 2
+# Migração ADK 2.8.0 → 2.11.0 — etapas 1–3
 
 Validação realizada em 14 de outubro de 2026, Windows, Python 3.12.14.
 
@@ -44,12 +44,44 @@ usando os respectivos constraints e `--dry-run --ignore-installed
 --only-binary=:all: --python-version`. Essas verificações usam wheels Windows;
 a matriz Linux completa continua sendo responsabilidade da CI.
 
-## Próximas etapas
+## Etapa 3: compatibilidade
 
-A aprovação da suíte existente não conclui a auditoria dos imports internos,
-do marcador privado de sessão, da retomada após falha com efeitos externos ou
-da prevenção de ações duplicadas. Essas verificações permanecem nas etapas
-3–6 do plano. Fallback nativo, novas métricas, cancelamento e memória SQLite
+Revisados os arquivos do wheel instalado de ADK 2.11.0:
+
+- `StaleSessionError` e `RequestInput` possuem exports públicos. O projeto
+  passou a usá-los.
+- `NodeInterruptedError` continua interno e deriva de `BaseException`, para
+  não ser capturado pelo tratamento comum de falhas. Seu carregamento foi
+  concentrado em `adk_compat.py`; o dispatcher captura apenas esse sinal e
+  propaga a interrupção, preservando o estado `awaiting_human`.
+- `DynamicNodeFailError` conserva `error` e `error_node_path`. O diagnóstico
+  continua extraindo a causa sem depender de um import interno em produção.
+- `_storage_update_marker` continua sendo um datetime ISO privado. O acesso
+  foi concentrado na camada de compatibilidade. A recuperação agora exige
+  o mesmo instante UTC e a mesma sequência de IDs de eventos; não basta
+  possuir o mesmo conjunto de IDs. Marcadores ausentes ou inválidos não
+  autorizam uma nova tentativa. O segundo append mantém a verificação de
+  concorrência do ADK.
+- Contratos de serialização de `RequestInput`, `Event` e `EventActions`
+  foram validados, incluindo aliases, saída, rota, delta e invocation ID.
+
+Novas regressões SQLite demonstram recuperação de uma diferença de timezone
+do mesmo instante e rejeição de uma revisão diferente com histórico idêntico.
+O teste existente de escritor concorrente obsoleto continua passando.
+
+```powershell
+.venv-adk211/Scripts/python.exe -m pytest -q tests/test_human_interaction.py tests/test_adk_runtime_integration.py --basetemp=.pytest-adk211-stage3
+.venv-adk211/Scripts/python.exe -m pytest -q --basetemp=.pytest-adk211-stage3-full
+```
+
+Os testes específicos passaram: **20 passed, 3 warnings**. A suíte completa
+passou: **210 passed, 3 warnings in 37.01s**. Ruff aprovado.
+
+## Etapas 4–6
+
+A auditoria não conclui a retomada após falha com efeitos externos ou
+a prevenção de ações duplicadas. Essas verificações permanecem nas etapas
+4–6 do plano. Fallback nativo, novas métricas, cancelamento e memória SQLite
 não foram adotados nesta alteração.
 
 O alvo continua sendo 2.11.0, embora o índice já ofereça 2.12.0 nesta data.

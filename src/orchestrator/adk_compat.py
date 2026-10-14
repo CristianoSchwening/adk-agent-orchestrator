@@ -7,11 +7,49 @@ lazy imports to instantiate official ADK classes.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from importlib import import_module, metadata, util
 from typing import Any
 
 ADK_DISTRIBUTION = "google-adk"
 CERTIFIED_ADK_VERSION = "2.11.0"
+
+
+def load_node_interrupted_error() -> type[BaseException]:
+    """ADK 2.11 has no public export for the dynamic-node HITL signal.
+
+    Keep this version-sensitive dependency here; never catch all BaseExceptions
+    in the dispatcher, since cancellation must propagate independently.
+    """
+    return load_symbol("google.adk.workflow._errors", "NodeInterruptedError")
+
+
+def sync_equivalent_session_revision(session: Any, fresh: Any) -> bool:
+    """Repair only SQLite timezone representation changes of one revision.
+
+    ADK 2.11 stores an exact ISO datetime in this private attribute. Naive
+    SQLite values represent UTC. A different instant or event history remains
+    stale, even if the other check matches. The next append still performs ADK's
+    concurrency check, so a writer racing after the read is rejected.
+    """
+    if fresh is None:
+        return False
+    markers = [getattr(item, "_storage_update_marker", None) for item in (session, fresh)]
+    if not all(isinstance(marker, str) for marker in markers):
+        return False
+    try:
+        revisions = [datetime.fromisoformat(marker) for marker in markers]
+    except ValueError:
+        return False
+    revisions = [revision.replace(tzinfo=timezone.utc) if revision.tzinfo is None
+                 else revision.astimezone(timezone.utc) for revision in revisions]
+    if revisions[0] != revisions[1]:
+        return False
+    if [event.id for event in session.events] != [event.id for event in fresh.events]:
+        return False
+    session._storage_update_marker = fresh._storage_update_marker
+    session.last_update_time = fresh.last_update_time
+    return True
 
 
 def is_adk_installed() -> bool:

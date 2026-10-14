@@ -10,6 +10,32 @@ from orchestrator.config import MCPServerSettings, OrchestratorSettings
 pytestmark = pytest.mark.skipif(not is_adk_installed(), reason="google-adk is not installed")
 
 
+def test_adk_211_interrupt_and_event_contracts():
+    from google.adk.events import Event, EventActions, RequestInput
+    from google.adk.workflow._errors import DynamicNodeFailError
+
+    from orchestrator.adk_compat import load_node_interrupted_error
+    from orchestrator.errors import execution_error_message
+
+    signal = load_node_interrupted_error()
+    assert issubclass(signal, BaseException)
+    assert not issubclass(signal, Exception)
+    request = RequestInput(interrupt_id="approval", payload={"kind": "approval"},
+                           message="Approve?")
+    assert RequestInput.model_validate(request.model_dump(by_alias=True)) == request
+    event = Event(author="gate", invocation_id="invocation", output={"decision": "approved"},
+                  actions=EventActions(route="approved", state_delta={"decision": "approved"}))
+    restored = Event.model_validate_json(event.model_dump_json(by_alias=True))
+    assert restored.invocation_id == "invocation"
+    assert restored.output == {"decision": "approved"}
+    assert restored.actions.route == "approved"
+    assert restored.actions.state_delta == {"decision": "approved"}
+    failure = DynamicNodeFailError(message="node failed", error=ValueError("candidate missing"),
+                                   error_node_path="review/input")
+    assert failure.error_node_path == "review/input"
+    assert "candidate missing" in execution_error_message(failure)
+
+
 def test_build_runtime_uses_certified_app_api():
     from orchestrator.runner import build_runtime
 
