@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -116,8 +119,8 @@ def test_dynamic_failure_preserves_actionable_candidate_diagnostic():
     assert "review_candidate_missing" in execution_error_message(error)
 
 
-@pytest.mark.parametrize("decision", ["approved", "rejected", "needs_changes", "clarification"])
-def test_api_pauses_and_resumes_same_adk_session(tmp_path, monkeypatch, decision):
+def configure_human_scenario(tmp_path, monkeypatch, decision, calls):
+    """Use deterministic ADK nodes for both local and fresh-process API tests."""
     from google.adk.workflow import FunctionNode, Workflow
 
     from orchestrator import server
@@ -130,7 +133,6 @@ def test_api_pauses_and_resumes_same_adk_session(tmp_path, monkeypatch, decision
     monkeypatch.setattr(server.OrchestratorSettings, "from_env", lambda: settings)
     monkeypatch.setattr(server, "_human_store", lambda settings: HumanRunStore(
         tmp_path / "executions"))
-    calls = {"prepare": 0, "followup": 0, "first": 0}
     plan = TaskPlan(
         plan_id="PLAN-HUMAN", status="validated", goal=Goal(objective="Approve a proposal"),
         tasks=[PlannedTask(task_id="TASK-001", title="First", description="Prepare data",
@@ -188,6 +190,16 @@ def test_api_pauses_and_resumes_same_adk_session(tmp_path, monkeypatch, decision
             task_dispatcher.create_task_dispatcher_node(settings, repository_root=tmp_path))])
 
     monkeypatch.setattr(bootstrap, "create_root_agent", root)
+    return plan
+
+
+@pytest.mark.parametrize("decision", ["approved", "rejected", "needs_changes", "clarification"])
+def test_api_pauses_and_resumes_same_adk_session(tmp_path, monkeypatch, decision):
+    from orchestrator import server
+    from orchestrator.runner import bootstrap
+
+    calls = {"prepare": 0, "followup": 0, "first": 0}
+    plan = configure_human_scenario(tmp_path, monkeypatch, decision, calls)
     with TestClient(server.app) as client:
         started = client.post("/api/run", json={"objective": plan.goal.objective})
         assert started.status_code == 200, started.text
@@ -245,6 +257,137 @@ def test_api_pauses_and_resumes_same_adk_session(tmp_path, monkeypatch, decision
     # Close persistent engines before the temporary test directory is removed.
     asyncio.run(bootstrap._persistent_sessions(str(tmp_path / "executions" / "sessions.sqlite"))
                 .db_engine.dispose())
+
+
+@pytest.mark.parametrize("decision", ["approved", "rejected", "needs_changes", "clarification"])
+def test_human_response_survives_real_process_restart(tmp_path, decision):
+    worker = Path(__file__).with_name("human_restart_worker.py")
+
+    def request(action, **arguments):
+        operation = tmp_path / "operation.json"
+        output = tmp_path / "output.json"
+        operation.write_text(json.dumps({"action": action, "scenario": decision, **arguments}),
+                             encoding="utf-8")
+        process = subprocess.run([sys.executable, str(worker), str(tmp_path), str(operation),
+                                  str(output)], capture_output=True, text=True, timeout=60)
+        assert process.returncode == 0, process.stdout + process.stderr
+        return json.loads(output.read_text(encoding="utf-8"))
+
+    started = request("start")
+    assert started["status"] == 200
+    paused = started["body"]
+    assert paused["task"]["status"] == "awaiting_human"
+    run_id = paused["run_id"]
+    pending = paused["human_requests"][-1]
+    assert started["calls"] == {"first": 1, "prepare": 1, "followup": 0}
+    # Each operation runs in a new interpreter, with no inherited caches or runners.
+    assert request("get", run_id=run_id)["body"] == paused
+    answer = {"decision": decision, "comment": "Persisted human decision",
+              "idempotency_key": "durable-answer"}
+    arguments = {"run_id": run_id, "request_id": pending["request_id"], "answer": answer}
+    interrupted = request("interrupt_before_resume", **arguments)
+    assert interrupted["status"] == 500
+    assert interrupted["calls"] == started["calls"]
+    conflicting = request("respond", **{**arguments, "answer": {**answer, "comment": "Changed"}})
+    assert conflicting["status"] == 409
+    assert conflicting["calls"] == started["calls"]
+    resumed = request("respond", **arguments)
+    assert resumed["status"] == 200, resumed
+    updated = resumed["body"]
+    for field in ("session_id", "task_id", "created_at"):
+        assert updated["task"][field] == paused["task"][field]
+    assert updated["task_run"]["run_id"] == paused["task_run"]["run_id"]
+    assert updated["task_run"]["tasks"][1]["attempt"] == 1
+    answered = next(item for item in updated["human_requests"]
+                    if item["request_id"] == pending["request_id"])
+    assert answered["invocation_id"] == pending["invocation_id"]
+    assert answered["response"]["source"] == "human"
+    repeated = request("respond", **arguments)
+    assert repeated == resumed
+    conflict = request("respond", **{**arguments, "answer": {**answer, "comment": "Changed"}})
+    assert conflict["status"] == 409
+    assert conflict["calls"] == resumed["calls"]
+    assert resumed["calls"]["first"] == 1
+    if decision in {"needs_changes", "clarification"}:
+        assert updated["task"]["status"] == "awaiting_human"
+        next_pending = updated["human_requests"][-1]
+        assert next_pending["request_id"] != pending["request_id"]
+        assert next_pending["candidate"] == "Concrete proposal 2"
+        assert resumed["calls"] == {"first": 1, "prepare": 2, "followup": 0}
+        final_arguments = {"run_id": run_id, "request_id": next_pending["request_id"],
+                           "answer": {**answer, "decision": "approved",
+                                      "idempotency_key": "second-durable-answer"}}
+        final = request("respond", **final_arguments)
+        assert final["status"] == 200, final
+        assert final["body"]["task"]["status"] == "completed"
+        assert final["calls"] == {"first": 1, "prepare": 2, "followup": 1}
+        assert request("respond", **final_arguments) == final
+    else:
+        assert updated["task"]["status"] == (
+            "completed" if decision == "approved" else "cancelled")
+        assert resumed["calls"] == {"first": 1, "prepare": 1,
+                                    "followup": int(decision == "approved")}
+
+    async def recorded_responses():
+        from google.adk.sessions import DatabaseSessionService
+
+        settings = OrchestratorSettings()
+        database = (tmp_path / "executions" / "sessions.sqlite").as_posix()
+        service = DatabaseSessionService(db_url=f"sqlite+aiosqlite:///{database}")
+        try:
+            session = await service.get_session(app_name=settings.app_name,
+                                                user_id=settings.user_id, session_id=run_id)
+            return [part.function_response.id for event in session.events
+                    for part in (getattr(event.content, "parts", None) or [])
+                    if part.function_response is not None]
+        finally:
+            await service.close()
+
+    response_ids = asyncio.run(recorded_responses())
+    assert response_ids.count(pending["request_id"]) == 1
+    if decision in {"needs_changes", "clarification"}:
+        assert response_ids.count(next_pending["request_id"]) == 1
+
+
+@pytest.mark.parametrize("decision", ["approved", "rejected", "needs_changes", "clarification"])
+def test_completed_human_response_recovers_unfinished_receipt(tmp_path, decision):
+    worker = Path(__file__).with_name("human_restart_worker.py")
+
+    def request(action, **arguments):
+        operation = tmp_path / "operation.json"
+        output = tmp_path / "output.json"
+        operation.write_text(json.dumps({"action": action, "scenario": decision, **arguments}),
+                             encoding="utf-8")
+        process = subprocess.run([sys.executable, str(worker), str(tmp_path), str(operation),
+                                  str(output)], capture_output=True, text=True, timeout=60)
+        assert process.returncode == 0, process.stdout + process.stderr
+        return json.loads(output.read_text(encoding="utf-8"))
+
+    started = request("start")
+    paused = started["body"]
+    arguments = {"run_id": paused["run_id"],
+                 "request_id": paused["human_requests"][-1]["request_id"],
+                 "answer": {"decision": decision, "comment": "Persist decision",
+                            "idempotency_key": "recover-receipt"}}
+    interrupted = request("interrupt_after_resume", **arguments)
+    assert interrupted["status"] == 500
+    assert interrupted["calls"] == {"first": 1,
+                                    "prepare": 2 if decision in {
+                                        "needs_changes", "clarification"} else 1,
+                                    "followup": int(decision == "approved")}
+    completed = request("get", run_id=paused["run_id"])
+    assert completed["body"]["task"]["status"] == (
+        "completed" if decision == "approved" else "cancelled" if decision == "rejected"
+        else "awaiting_human")
+    recovered = request("respond", **arguments)
+    assert recovered["status"] == 200, recovered
+    assert recovered["body"] == completed["body"]
+    assert recovered["calls"] == interrupted["calls"]
+    assert request("respond", **arguments) == recovered
+    conflicting = request("respond", **{**arguments, "answer": {
+        **arguments["answer"], "idempotency_key": "different"}})
+    assert conflicting["status"] == 409
+    assert conflicting["calls"] == recovered["calls"]
 
 
 @pytest.mark.parametrize("candidate", ["Primeira candidata concreta", "Outra candidata concreta"])

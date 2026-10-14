@@ -1,4 +1,4 @@
-# Migração ADK 2.8.0 → 2.11.0 — etapas 1–3
+# Migração ADK 2.8.0 → 2.11.0 — etapas 1–4
 
 Validação realizada em 14 de outubro de 2026, Windows, Python 3.12.14.
 
@@ -77,11 +77,52 @@ O teste existente de escritor concorrente obsoleto continua passando.
 Os testes específicos passaram: **20 passed, 3 warnings**. A suíte completa
 passou: **210 passed, 3 warnings in 37.01s**. Ruff aprovado.
 
-## Etapas 4–6
+## Etapa 4: aprovação humana e reinício
+
+Os cenários de aprovação, rejeição, revisão e esclarecimento agora rodam
+também em processos Python distintos. Cada chamada inicia um novo processo,
+reconstrói App/Runner e lê o mesmo snapshot e banco SQLite. Os nós são
+determinísticos; nenhum modelo ou serviço externo é chamado.
+
+Verificações:
+
+- Mesma sessão, execução, tarefa, data de criação, invocation ID e tentativa.
+- Resposta idêntica repetida retorna o resultado salvo; resposta com comentário
+  ou chave diferente recebe 409, sem nova execução.
+- Rejeição encerra sem executar a continuação; revisão e esclarecimento criam
+  uma nova solicitação, que exige aprovação da nova proposta.
+- Preparação já concluída não se repete; a continuação aprovada roda uma vez.
+- Cada resposta humana aparece uma única vez nos eventos persistidos do ADK.
+- Falha simulada após salvar a decisão, antes da continuação, permite retomar
+  a mesma resposta em outro processo e rejeita respostas conflitantes.
+- Falha simulada após salvar o contrato da continuação, antes de confirmar o
+  recibo, permite recuperar o resultado em outro processo sem rodar novamente.
+
+O último cenário revelou um 409 indevido: a solicitação já estava respondida,
+mas o recibo ainda não estava concluído. O endpoint agora reconhece a decisão
+humana idêntica no contrato persistido, valida usuário e sessão, conclui o
+recibo sob o lock da execução e devolve o resultado salvo. O ajuste cobre
+também rejeição e fluxos que pausam novamente para revisão/esclarecimento.
+
+```powershell
+.venv-adk211/Scripts/python.exe -m pytest -q --basetemp=.pytest-adk211-stage4-full
+.venv-adk211/Scripts/python.exe -m pytest -q tests/test_human_interaction.py::test_human_response_survives_real_process_restart --basetemp=.pytest-adk211-stage4-event-count
+```
+
+As interrupções nos pontos de persistência são injetadas deterministicamente;
+os reinícios usam processos reais. Isso não certifica ainda uma falha arbitrária
+durante uma ação externa do dispatcher, que pertence à etapa 5.
+
+Resultados: **218 passed, 3 warnings in 212.61s** na suíte completa;
+**4 passed, 1 warning in 108.32s** na conferência adicional dos eventos SQLite.
+Ruff e verificação de whitespace aprovados. A execução foi em Windows / Python
+3.12.14 com ADK 2.11.0; a matriz Linux continua a cargo da CI.
+
+## Etapas 5–6
 
 A auditoria não conclui a retomada após falha com efeitos externos ou
 a prevenção de ações duplicadas. Essas verificações permanecem nas etapas
-4–6 do plano. Fallback nativo, novas métricas, cancelamento e memória SQLite
+5–6 do plano. Fallback nativo, novas métricas, cancelamento e memória SQLite
 não foram adotados nesta alteração.
 
 O alvo continua sendo 2.11.0, embora o índice já ofereça 2.12.0 nesta data.

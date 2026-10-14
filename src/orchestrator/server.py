@@ -184,6 +184,18 @@ async def respond_to_human_request(run_id: str, request_id: str, body: HumanResp
                             if item["request_id"] == request_id), None)
             if request is None:
                 raise HTTPException(status_code=404, detail="Solicitação não encontrada.")
+            # The continuation can save its contract before this endpoint saves
+            # the completed receipt. Recover that receipt after a process restart
+            # without invoking the workflow a second time.
+            recorded_response = request.get("response") or {}
+            if (previous and request["status"] == "answered"
+                    and request["session_id"] == run_id
+                    and recorded_response.get("source") == "human"
+                    and recorded_response.get("user_id") == settings.user_id
+                    and all(recorded_response.get(key) == value for key, value in answer.items())):
+                previous["completed"] = True
+                store.save(run_id, saved)
+                return saved["contract"]
             active = saved["contract"].get("task_run") or {}
             plan = saved["contract"].get("task_plan") or {}
             task = next((item for item in active.get("tasks", [])
