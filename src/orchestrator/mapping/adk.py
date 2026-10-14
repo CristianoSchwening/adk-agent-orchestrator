@@ -307,12 +307,10 @@ def _map_subtasks(
     default_finished_at: str,
 ) -> list[SubtaskDTO]:
     subtasks: list[SubtaskDTO] = []
-    seen: set[str] = set()
     for key, (workflow, name) in WORKFLOW_STATE_KEYS.items():
         if key not in state:
             continue
         subtask_id = f"{workflow}:{name}"
-        seen.add(subtask_id)
         subtasks.append(
             SubtaskDTO(
                 subtask_id=subtask_id,
@@ -324,22 +322,31 @@ def _map_subtasks(
             )
         )
 
+    agent_events: dict[str, list[EventDTO]] = {}
     for event in events:
         if event.source in {"adk", "user"}:
             continue
-        subtask_id = f"agent:{event.source}"
-        if subtask_id in seen:
-            continue
-        seen.add(subtask_id)
+        agent_events.setdefault(event.source, []).append(event)
+
+    for source, history in agent_events.items():
+        final_events = [event for event in history if event.type == "final_response"]
+        latest = final_events[-1] if final_events else history[-1]
+        # ADK graph nodes may emit a content-free completion marker after the answer.
+        output = next(
+            (event.message for event in reversed(final_events or history)
+             if event.message and event.message != "final_response"),
+            latest.message,
+        )
         subtasks.append(
             SubtaskDTO(
-                subtask_id=subtask_id,
-                name=event.source,
-                status="completed" if event.type == "final_response" else "running",
-                agent_name=event.source,
+                subtask_id=f"agent:{source}",
+                name=source,
+                status="completed" if final_events else "running",
+                agent_name=source,
                 workflow=selected_workflow,
-                output_summary=event.message,
-                finished_at=event.timestamp if event.type == "final_response" else None,
+                output_summary=output,
+                started_at=history[0].timestamp,
+                finished_at=latest.timestamp if final_events else None,
             )
         )
     for request in state.get("human_requests", []):
