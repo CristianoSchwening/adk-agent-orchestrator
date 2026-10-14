@@ -42,6 +42,8 @@ class FileTaskRunRepository:
             ) as handle:
                 temporary = Path(handle.name)
                 handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
             try:
                 for attempt in range(6):
                     try:

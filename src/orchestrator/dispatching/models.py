@@ -28,6 +28,7 @@ class TaskRun:
     execution_output: Any = None
     output_status: Literal["not_recorded", "absent", "empty", "present"] = "not_recorded"
     output_recorded_at: str | None = None
+    execution_pending: bool | None = None
     evaluation: dict[str, Any] | None = None
     evaluation_error: str | None = None
     evaluated_at: str | None = None

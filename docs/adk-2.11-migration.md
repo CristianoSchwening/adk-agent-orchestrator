@@ -1,4 +1,4 @@
-# Migração ADK 2.8.0 → 2.11.0 — etapas 1–4
+# Migração ADK 2.8.0 → 2.11.0 — etapas 1–6
 
 Validação realizada em 14 de outubro de 2026, Windows, Python 3.12.14.
 
@@ -118,15 +118,67 @@ Resultados: **218 passed, 3 warnings in 212.61s** na suíte completa;
 Ruff e verificação de whitespace aprovados. A execução foi em Windows / Python
 3.12.14 com ADK 2.11.0; a matriz Linux continua a cargo da CI.
 
-## Etapas 5–6
+## Etapa 5: retomada e prevenção de ações duplicadas
 
-A auditoria não conclui a retomada após falha com efeitos externos ou
-a prevenção de ações duplicadas. Essas verificações permanecem nas etapas
-5–6 do plano. Fallback nativo, novas métricas, cancelamento e memória SQLite
-não foram adotados nesta alteração.
+O dispatcher grava `execution_pending` antes de invocar uma tarefa e salva
+seu resultado antes da avaliação. Os registros usam flush/fsync antes da
+substituição atômica. Um lock do sistema operacional impede dois runners de
+executarem o mesmo dispatcher de uma sessão/invocação ao mesmo tempo.
+
+O ID inicial da execução agora deriva de sessão, invocação e plano. Assim,
+uma retomada encontra o registro original mesmo se o processo morreu antes
+de o ADK persistir `task_run_id` no estado da sessão.
+
+Política de recuperação:
+
+- Resultado já salvo: reutilizar o resultado, sem invocar novamente a tarefa.
+- Pausa humana explícita: manter a retomada normal na mesma tentativa.
+- Falha de execução ou processo encerrado antes de salvar o resultado:
+  encerrar com `execution_outcome_unknown`, bloquear dependentes e não
+  replanejar automaticamente. A ação pode ter ocorrido; conferir o sistema
+  externo é necessário antes de decidir realizar outra execução.
+- Registro antigo de tarefa `running`, sem checkpoint e sem saída salva:
+  tratar como incerto. Registros antigos completos ou aguardando resposta
+  humana continuam carregáveis.
+- Replanejamento por critérios de aceite permanece como uma nova execução
+  deliberada; o mecanismo não promete idempotência global entre novos pedidos,
+  revisões ou invocações distintas.
+
+Regressões exercitam falha antes/depois do efeito, interrupção após retorno,
+perda do delta ADK, registro legado, concorrência e tentativa de replanejar
+uma ação incerta. Dois testes usam Runner/Workflow reais e encerram o processo
+com `os._exit` antes/depois de uma ação simulada gravada em disco. Duas retomadas
+em processos novos não produzem outro efeito nem outro registro de execução.
+Esses testes não usam serviços externos reais; a prevenção vem de recusar
+repetir ações incertas, não de garantir transações entre ADK e APIs externas.
+
+## Etapa 6: regressão final
+
+Comandos de validação:
+
+```powershell
+.venv-adk211/Scripts/python.exe -m pytest -q --basetemp=.pytest-adk211-certified-final
+.venv-adk211/Scripts/python.exe -m ruff check src tests
+.venv-adk211/Scripts/python.exe -m pip check
+.venv-adk211/Scripts/python.exe -m compileall -q src tests
+.venv-adk211/Scripts/python.exe -m orchestrator.evaluation eval/datasets/phase5_smoke.json
+npm --prefix webapp-react test
+npm --prefix webapp-react run build
+```
+
+Passaram os 3 casos da avaliação determinística, os 7 testes da interface,
+a build de produção, Ruff, compileall e pip check. A interface emitiu um aviso
+de porta WebSocket ocupada durante os testes, sem falhas nos testes ou na build.
+Os testes focados do dispatcher passaram: **50 passed**.
+Na versão final, a suíte completa passou: **226 passed, 3 warnings in 181.62s**
+em Windows / Python 3.12.14. A CI executa a matriz Linux Python 3.10–3.13
+e a avaliação determinística; seus resultados ficam registrados na PR #47.
+
+Fallback nativo, novas métricas, cancelamento e memória SQLite permanecem
+fora do escopo desta migração.
 
 O alvo continua sendo 2.11.0, embora o índice já ofereça 2.12.0 nesta data.
 Antes de ativar a atualização em um ambiente persistente, preservar a base
-de sessões e concluir os critérios de retomada/idempotência. A reversão do
+de sessões. A reversão do
 código e dos constraints deve acompanhar a restauração do ambiente 2.8.0;
 compatibilidade de dados gravados por 2.11.0 ainda não foi certificada.

@@ -2,6 +2,10 @@
 
 import asyncio
 import json
+import subprocess
+import sys
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -10,6 +14,116 @@ from orchestrator.config import OrchestratorSettings
 from orchestrator.context import ContextPackage, Workstream
 from orchestrator.planning import Deliverable, Goal, PlannedTask, TaskPlan
 from orchestrator.policies import BudgetPolicy
+
+
+@pytest.mark.parametrize("failure", ["before", "after"])
+def test_adk_dispatcher_resume_after_process_exit_does_not_repeat_effect(tmp_path, failure):
+    worker = Path(__file__).with_name("dispatcher_restart_worker.py")
+    first = subprocess.run([sys.executable, str(worker), str(tmp_path), "start", failure],
+                           capture_output=True, text=True, timeout=60)
+    assert first.returncode == 23, first.stdout + first.stderr
+    for _ in range(2):
+        resumed = subprocess.run([sys.executable, str(worker), str(tmp_path), "resume", failure],
+                                 capture_output=True, text=True, timeout=60)
+        assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    effects = tmp_path / "effects.txt"
+    assert (effects.read_text(encoding="utf-8").splitlines() if effects.exists() else []) == (
+        ["external action"] if failure == "after" else [])
+    runs = list((tmp_path / "runs").glob("RUN-*.json"))
+    assert len(runs) == 1
+    saved = json.loads(runs[0].read_text(encoding="utf-8"))
+    assert saved["status"] == "failed"
+    assert saved["terminal_error"]["code"] == "execution_outcome_unknown"
+
+
+@pytest.mark.parametrize("failure", [
+    "before", "after", "crash", "legacy", "after_return", "concurrent",
+])
+def test_dispatcher_never_replays_uncertain_action_after_restart(tmp_path, failure):
+    from orchestrator.dispatching import FileTaskRunRepository
+
+    plan = TaskPlan(
+        plan_id="PLAN-EFFECT", status="validated", goal=Goal(objective="Apply an action"),
+        tasks=[PlannedTask(task_id="TASK-001", title="Apply", description="Apply action",
+                           task_type="creation", acceptance_criteria=["Action applied"])],
+        deliverables=[Deliverable("DEL-001", "Action")],
+    )
+    settings = OrchestratorSettings(workspace_enabled=False, task_run_root="runs",
+                                    task_plan_root="plans", max_replans=2)
+    state = {"task_plan": plan.to_dict(), "context_package": ContextPackage(
+        context_id="CTX-EFFECT", objective=plan.goal.objective,
+        workstream=Workstream("WS-EFFECT", "Action", "Tests")).to_dict()}
+    effects = []
+    invocations = []
+
+    class ProcessStopped(BaseException):
+        pass
+
+    class Context:
+        session = SimpleNamespace(id="persistent-session")
+        invocation_id = "persistent-invocation"
+
+        def __init__(self, restarted=False):
+            # No task_run_id survives: model a lost ADK state delta.
+            self.state = dict(state)
+            self.restarted = restarted
+            if restarted and failure == "crash":
+                self.state["replan_request"] = {
+                    "trigger": "task_failed", "rationale": "Retry after restart"}
+
+        async def run_node(self, target, *, node_input, run_id):
+            if target.name == "controlled_replanner_agent":
+                raise AssertionError("uncertain actions must not be replanned")
+            if target.name == "replan_guard_agent":
+                if not self.restarted and failure == "after_return":
+                    raise ProcessStopped()
+                criteria = json.loads(node_input)["acceptance_criteria"]
+                return {"trigger": "none", "rationale": "Checked", "criteria": [
+                    {"criterion_id": item["criterion_id"], "status": "passed",
+                     "rationale": "Checked", "evidence": "Action"} for item in criteria]}
+            invocations.append(run_id)
+            if failure == "concurrent":
+                from orchestrator.runner.human_runs import RunBusyError
+
+                competing = create_task_dispatcher_node(settings, repository_root=tmp_path)
+                with pytest.raises(RunBusyError):
+                    await competing._func(ctx=Context(restarted=True), node_input="")
+            if failure == "before":
+                raise ValueError("failed before external effect")
+            effects.append("external effect")
+            if failure == "after":
+                raise ValueError("failed after external effect")
+            if failure in {"crash", "legacy"}:
+                raise ProcessStopped()
+            return "Applied"
+
+    node = create_task_dispatcher_node(settings, repository_root=tmp_path)
+    first = Context()
+    if failure in {"crash", "legacy", "after_return"}:
+        with pytest.raises(ProcessStopped):
+            asyncio.run(node._func(ctx=first, node_input=""))
+    else:
+        assert asyncio.run(node._func(ctx=first, node_input=""))["status"] == (
+            "completed" if failure == "concurrent" else "failed")
+    if failure == "legacy":
+        record = next((tmp_path / "runs").glob("RUN-*.json"))
+        legacy = json.loads(record.read_text(encoding="utf-8"))
+        legacy["tasks"][0].pop("execution_pending")
+        record.write_text(json.dumps(legacy), encoding="utf-8")
+    # New node, repository and context; no ADK result cache.
+    restarted = Context(restarted=True)
+    node = create_task_dispatcher_node(settings, repository_root=tmp_path)
+    result = asyncio.run(node._func(ctx=restarted, node_input=""))
+    assert result["status"] == (
+        "completed" if failure in {"after_return", "concurrent"} else "failed")
+    assert len(invocations) == 1
+    assert len(effects) == (0 if failure == "before" else 1)
+    saved = FileTaskRunRepository("runs", repository_root=tmp_path).get(result["run_id"])
+    if failure in {"after_return", "concurrent"}:
+        assert saved.tasks[0].result == "Applied"
+    else:
+        assert saved.terminal_error["code"] == "execution_outcome_unknown"
+        assert saved.tasks[0].status == "failed"
 
 
 @pytest.mark.parametrize("iterations", [1, 2])
