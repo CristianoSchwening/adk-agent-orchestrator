@@ -137,6 +137,60 @@ def test_map_adk_execution_returns_versioned_contract():
     assert contract.artifacts[0].metadata == {"version": "1"}
 
 
+def test_agent_subtasks_follow_completion_without_losing_the_final_answer():
+    events = [
+        FakeEvent("router-call", "model", "capture_objective", "workflow_router_agent",
+                  "2026-10-14T18:43:19-03:00"),
+        FakeEvent("worker-start", "model", "Working", "worker_agent",
+                  "2026-10-14T18:43:20-03:00"),
+        FakeEvent("router-answer", "final_response", '{"selected_workflow":"review_critic"}',
+                  "workflow_router_agent", "2026-10-14T18:43:56-03:00"),
+        FakeEvent("router-marker", "final_response", "final_response", "workflow_router_agent",
+                  "2026-10-14T18:43:57-03:00"),
+        FakeEvent("worker-progress", "model", "Still working", "worker_agent",
+                  "2026-10-14T18:44:00-03:00"),
+    ]
+
+    def project(history):
+        return map_adk_execution(
+            session={"session_id": "router-regression", "state": {"workflow": "review_critic"}},
+            events=history,
+            objective="Route and execute",
+            final_response="",
+            settings=OrchestratorSettings(),
+        ).subtasks
+
+    assert project(events[:1])[0].status == "running"
+    subtasks = project(events)
+    assert [task.agent_name for task in subtasks] == ["workflow_router_agent", "worker_agent"]
+    router, worker = subtasks
+    assert router.status == "completed"
+    assert router.started_at == events[0].timestamp
+    assert router.finished_at == events[3].timestamp
+    assert router.output_summary == events[2].message
+    assert worker.status == "running"
+    assert worker.finished_at is None
+    assert worker.output_summary == "Still working"
+
+
+def test_agent_completion_is_not_reversed_by_later_nonfinal_events():
+    contract = map_adk_execution(
+        session={"session_id": "completion-regression", "state": {}},
+        events=[
+            FakeEvent("answer", "final_response", "Done", "worker_agent",
+                      "2026-10-14T18:43:56-03:00"),
+            FakeEvent("metadata", "adk_event", "Metadata", "worker_agent",
+                      "2026-10-14T18:43:57-03:00"),
+        ],
+        objective="Execute",
+        final_response="Done",
+        settings=OrchestratorSettings(),
+    )
+    assert contract.subtasks[0].status == "completed"
+    assert contract.subtasks[0].output_summary == "Done"
+    assert contract.subtasks[0].finished_at == "2026-10-14T18:43:56-03:00"
+
+
 def test_map_adk_execution_reports_model_fallback_metadata():
     event = FakeEvent(
         event_id="evt-fallback",
