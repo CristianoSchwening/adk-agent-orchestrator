@@ -46,8 +46,7 @@ def candidate_text(value: Any) -> str:
 
 
 def create_human_gate():
-    from google.adk.events import Event, EventActions
-    from google.adk.events.request_input import RequestInput
+    from google.adk.events import Event, EventActions, RequestInput
     from google.adk.workflow import FunctionNode
 
     def gate(ctx, node_input):

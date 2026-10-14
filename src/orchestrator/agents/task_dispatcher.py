@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from uuid import NAMESPACE_URL, uuid5
 
-from orchestrator.adk_compat import load_workflow_classes
+from orchestrator.adk_compat import load_node_interrupted_error, load_workflow_classes
 from orchestrator.agents.replanner import create_replan_guard_agent, create_replanner_agent
 from orchestrator.agents.specialists import (
     create_critic_agent,
@@ -70,7 +71,7 @@ def create_task_dispatcher_node(
     guard = create_replan_guard_agent(settings)
     replanner = create_replanner_agent(settings)
 
-    async def dispatch(ctx: Any, node_input: Any) -> dict[str, Any]:
+    async def dispatch_locked(ctx: Any, node_input: Any) -> dict[str, Any]:
         raw_plan = ctx.state.get("task_plan")
         if not isinstance(raw_plan, dict):
             raise ValueError("dispatcher requires a validated task_plan in session state")
@@ -80,19 +81,39 @@ def create_task_dispatcher_node(
             raise ValueError("dispatcher requires a ContextPackage in session state")
         context_package = ContextPackage.from_dict(raw_context)
         run_id = ctx.state.get("task_run_id")
+        if not run_id and getattr(ctx, "invocation_id", None) and getattr(ctx, "session", None):
+            # Recover the same repository record even when a process died before
+            # ADK persisted the dispatcher's state delta.
+            identity = f"{ctx.session.id}:{ctx.invocation_id}:{plan.plan_id}"
+            run_id = f"RUN-{uuid5(NAMESPACE_URL, identity)}"
         run = repo.get(str(run_id)) if run_id else None
         if run is None:
             run = dispatcher.initialize(plan)
+            if run_id:
+                run.run_id = str(run_id)
             repo.save(run)
-            ctx.state["task_run_id"] = run.run_id
+        ctx.state["task_run_id"] = run.run_id
         if run.status == "awaiting_human":
             run.status = "running"
             for item in run.tasks:
                 if item.status == "awaiting_human":
                     item.status = "running"
+                    item.execution_pending = False
             repo.save(run)
 
         while run.status == "running":
+            uncertain = next((item for item in run.tasks if item.status == "running" and (
+                item.execution_pending or (
+                    item.execution_pending is None and item.output_recorded_at is None
+                )
+            )), None)
+            if uncertain is not None:
+                detail = "execution_outcome_unknown: reconcile the previous action before retrying"
+                dispatcher.transition(plan, run, uncertain.task_id, "failed", error=detail)
+                run.terminal_error = {"code": "execution_outcome_unknown",
+                                      "task_id": uncertain.task_id, "message": detail}
+                repo.save(run)
+                break
             pending_request = ctx.state.get("replan_request")
             if isinstance(pending_request, dict):
                 ctx.state["replan_request"] = None
@@ -225,15 +246,24 @@ def create_task_dispatcher_node(
             )
             ctx.state["active_task"] = task.__dict__
             ctx.state["active_attempt"] = task_run.attempt
-            from google.adk.workflow._errors import NodeInterruptedError
+            NodeInterruptedError = load_node_interrupted_error()
 
             try:
-                result = await ctx.run_node(
-                    target,
-                    node_input=task_input,
-                    run_id=f"{selection.node_key}_{invocation_key}",
-                )
+                if task_run.output_recorded_at is not None:
+                    # The task returned before a later failure (e.g. evaluation).
+                    # Reuse its durable output independently of ADK's cache.
+                    result = task_run.execution_output
+                else:
+                    task_run.execution_pending = True
+                    repo.save(run)
+                    result = await ctx.run_node(
+                        target,
+                        node_input=task_input,
+                        run_id=f"{selection.node_key}_{invocation_key}",
+                    )
+                    task_run.execution_pending = False
             except NodeInterruptedError:
+                task_run.execution_pending = False
                 task_run.status = "awaiting_human"
                 run.status = "awaiting_human"
                 repo.save(run)
@@ -243,28 +273,16 @@ def create_task_dispatcher_node(
             except Exception as exc:
                 detail = execution_error_message(exc)
                 dispatcher.transition(plan, run, task.task_id, "failed", error=detail)
+                run.terminal_error = {"code": "execution_outcome_unknown",
+                                      "task_id": task.task_id, "message": detail}
                 repo.save(run)
                 ctx.state["task_run"] = run.to_dict()
                 if is_transport_error(exc):
                     raise
-                plan, run = await _replan(
-                    ctx,
-                    plan=plan,
-                    run=run,
-                    request=ReplanRequest(
-                        trigger="task_failed",
-                        rationale="The selected ADK node failed during task execution.",
-                        task_id=task.task_id,
-                        evidence={"error": detail},
-                    ),
-                    replanner=replanner,
-                    dispatcher=dispatcher,
-                    plan_repo=plan_repo,
-                    run_repo=repo,
-                    max_replans=settings.max_replans,
-                    context_package=context_package.to_dict(),
-                )
-                continue
+                # A failed node may already have changed an external system.
+                # Replanning automatically would turn an unknown result into a
+                # duplicate action. Preserve the failure for reconciliation.
+                break
 
             if isinstance(result, dict) and result.get("human_rejected"):
                 task_run.status = "cancelled"
@@ -362,6 +380,18 @@ def create_task_dispatcher_node(
             "status": run.status,
             "results": {item.task_id: item.result for item in run.tasks},
         }
+
+    async def dispatch(ctx: Any, node_input: Any) -> dict[str, Any]:
+        from orchestrator.runner.human_runs import HumanRunStore
+
+        session = getattr(ctx, "session", None)
+        invocation = getattr(ctx, "invocation_id", None)
+        if session is None or invocation is None:
+            return await dispatch_locked(ctx, node_input)
+        # Separate runners/processes must not read the same pre-action checkpoint
+        # and both execute it. OS locks are released when a process exits.
+        with HumanRunStore(repo.root).lock(f"dispatch:{session.id}:{invocation}"):
+            return await dispatch_locked(ctx, node_input)
 
     return FunctionNode(
         func=dispatch,

@@ -8,20 +8,20 @@ from orchestrator import adk_compat
 
 
 def test_certified_adk_version_matches_dependency_pin():
-    assert adk_compat.CERTIFIED_ADK_VERSION == "2.8.0"
+    assert adk_compat.CERTIFIED_ADK_VERSION == "2.11.0"
 
 
 def test_ensure_certified_adk_accepts_exact_version(monkeypatch):
-    monkeypatch.setattr(adk_compat, "get_adk_version", lambda: "2.8.0")
+    monkeypatch.setattr(adk_compat, "get_adk_version", lambda: "2.11.0")
 
-    assert adk_compat.ensure_certified_adk() == "2.8.0"
+    assert adk_compat.ensure_certified_adk() == "2.11.0"
 
 
 @pytest.mark.parametrize("installed", [None, "2.6.1", "2.7.1"])
 def test_ensure_certified_adk_rejects_missing_or_uncertified_version(monkeypatch, installed):
     monkeypatch.setattr(adk_compat, "get_adk_version", lambda: installed)
 
-    with pytest.raises(RuntimeError, match="expected 2.8.0"):
+    with pytest.raises(RuntimeError, match="expected 2.11.0"):
         adk_compat.ensure_certified_adk()
 
 

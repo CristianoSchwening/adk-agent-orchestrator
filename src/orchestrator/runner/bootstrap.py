@@ -16,6 +16,7 @@ from orchestrator.adk_compat import (
     ensure_certified_adk,
     load_content_classes,
     load_runtime_classes,
+    sync_equivalent_session_revision,
 )
 from orchestrator.agents import (
     PHASE_2_WORKFLOW_NAMES,
@@ -110,21 +111,15 @@ def _persistent_sessions(path: str):
 
     class DurableSessions(DatabaseSessionService):
         async def append_event(self, session, event):
-            from google.adk.errors._stale_session_error import StaleSessionError
+            from google.adk.errors import StaleSessionError
 
             try:
                 return await super().append_event(session=session, event=event)
             except StaleSessionError:
                 fresh = await self.get_session(app_name=session.app_name, user_id=session.user_id,
                                                session_id=session.id)
-                # SQLite datetime round trips can change the exact revision
-                # marker. Retry only if event history proves no writer advanced
-                # this session; a genuine concurrent update remains an error.
-                if fresh is None or sorted(e.id for e in fresh.events) != sorted(
-                        e.id for e in session.events):
+                if not sync_equivalent_session_revision(session, fresh):
                     raise
-                session._storage_update_marker = fresh._storage_update_marker
-                session.last_update_time = fresh.last_update_time
                 return await super().append_event(session=session, event=event)
 
     Path(path).parent.mkdir(parents=True, exist_ok=True)
