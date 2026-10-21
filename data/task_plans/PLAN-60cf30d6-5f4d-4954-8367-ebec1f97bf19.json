@@ -1,0 +1,83 @@
+{
+  "assumptions": [
+    "O usuário busca um entendimento rápido e formal, ideal para apresentações ou tomadas de decisão na gestão de produtos.",
+    "A resposta deve ser fundamentada na organização político-administrativa da República Federativa do Brasil."
+  ],
+  "created_at": "2026-10-08T09:28:59.681125+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Texto final de esclarecimento geográfico e factual sobre Brasília e o Distrito Federal, estruturado de forma concisa, em pt-BR e livre de emojis ou hashtags."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Não use emojis",
+      "Não use hashtags",
+      "Idioma: pt-BR",
+      "Estilo de resposta conciso e prático"
+    ],
+    "objective": "Esclarecer a relação geográfica e factual sobre Brasília ser a capital do Brasil e não possuir uma capital própria, dado que é uma cidade/distrito federal.",
+    "success_criteria": [
+      "Explicação factual de que Brasília é a capital do Brasil.",
+      "Esclarecimento claro sobre a natureza jurídica do Distrito Federal, que não pode ser dividido em municípios e, portanto, não possui capital própria.",
+      "Ausência total de emojis e hashtags no texto final.",
+      "Estilo de escrita direto, conciso e prático."
+    ]
+  },
+  "lineage_id": "PLAN-a8359f0d-4407-4ff6-9434-c5951204d6c5",
+  "parent_plan_id": "PLAN-a8359f0d-4407-4ff6-9434-c5951204d6c5",
+  "plan_id": "PLAN-60cf30d6-5f4d-4954-8367-ebec1f97bf19",
+  "replan_trigger": "blocker_detected",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "O texto explica explicitamente a relação entre Brasília, Distrito Federal e o Brasil.",
+        "O texto justifica a ausência de uma capital para o Distrito Federal com base em sua organização político-administrativa única.",
+        "O tom é puramente profissional, prático e informativo.",
+        "Não há uso de emojis nem de hashtags."
+      ],
+      "depends_on": [],
+      "description": "Redigir diretamente o conteúdo informativo utilizando um modelo alternativo ou método robusto para garantir a entrega sem falhas, explicando detalhadamente que Brasília é a capital federal do Brasil e que o Distrito Federal, devido à sua natureza jurídica e administrativa mista segundo a Constituição de 1988, acumula competências estaduais e municipais, não se dividindo em municípios e, consequentemente, não possuindo capital própria.",
+      "metadata": {},
+      "required_capabilities": [
+        "geopolitica_brasileira",
+        "redacao_concisa",
+        "direito_constitucional"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "iterative_refinement",
+      "task_id": "TASK-001",
+      "task_type": "generation",
+      "title": "Elaboração da explicação factual e geográfica com abordagem direta"
+    },
+    {
+      "acceptance_criteria": [
+        "O texto final possui menos de 3 parágrafos curtos ou estrutura em tópicos concisos.",
+        "Confirmação de que zero emojis e zero hashtags foram utilizados.",
+        "Garantia de que o idioma é o português do Brasil (pt-BR)."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Revisar o texto gerado na tarefa anterior para garantir que atenda perfeitamente a todos os requisitos de restrição, eliminando qualquer prolixidade, emojis ou hashtags remanescentes.",
+      "metadata": {},
+      "required_capabilities": [
+        "revisao_editorial",
+        "verificacao_de_restricoes"
+      ],
+      "requires_approval": true,
+      "requires_review": false,
+      "strategy": "verification",
+      "task_id": "TASK-002",
+      "task_type": "verification",
+      "title": "Revisão de formato, estilo e concisão"
+    }
+  ],
+  "updated_at": "2026-10-08T09:29:45.473050+00:00",
+  "workstream_id": "WS-2584dd0c-fb7b-4192-903a-bfd9b97f66e9"
+}

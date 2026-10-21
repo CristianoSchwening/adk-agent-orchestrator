@@ -1,0 +1,117 @@
+{
+  "created_at": "2026-10-14T21:43:56.400397+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-d41d5804-fef0-4772-a6aa-e2d44a10dd70",
+  "replan_request": null,
+  "run_id": "RUN-c3c6bb23-f5a4-54de-8403-86f7026ac738",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "completed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-14T21:46:16.409010+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "58db40c5f8cbb6df6b38c572d568540bcc81719d6e2d3d5815972fd8ff946730",
+            "evidence": "Sexta: voo com conexão para Uruguaiana. Sábado: tour histórico. Domingo: retorno terrestre a Florianópolis.",
+            "rationale": "O itinerário de fim de semana foi criado contemplando sexta, sábado e domingo.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "e10a1f368b088e3947c00bdf0ee285e7a1cacc3a6864c2ef867f5823776c7590",
+            "evidence": "Sexta: voo com conexão para Uruguaiana. ... Domingo: retorno terrestre a Florianópolis.",
+            "rationale": "As opções de transporte foram definidas mencionando voo e retorno terrestre.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "bc26a24a4bc1862ba7b718892b9bf16f7407ce14e098ebe4ac7106e5745aa926",
+            "evidence": "Sexta: voo com conexão para Uruguaiana. Sábado: tour histórico. Domingo: retorno terrestre a Florianópolis.",
+            "rationale": "O texto possui exatamente 14 palavras, respeitando o limite máximo de 20 palavras.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "58db40c5f8cbb6df6b38c572d568540bcc81719d6e2d3d5815972fd8ff946730",
+            "text": "Itinerario de fim de semana criado"
+          },
+          {
+            "criterion_id": "e10a1f368b088e3947c00bdf0ee285e7a1cacc3a6864c2ef867f5823776c7590",
+            "text": "Opcoes de transporte definidas"
+          },
+          {
+            "criterion_id": "bc26a24a4bc1862ba7b718892b9bf16f7407ce14e098ebe4ac7106e5745aa926",
+            "text": "Limite de 20 palavras respeitado"
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos com sucesso, o itinerário foi criado, as opções de transporte foram incluídas e o limite de 20 palavras foi respeitado.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Sexta: voo com conexão para Uruguaiana. Sábado: tour histórico. Domingo: retorno terrestre a Florianópolis.",
+      "execution_pending": false,
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-14T21:46:02.225661+00:00",
+      "output_status": "present",
+      "result": "Sexta: voo com conexão para Uruguaiana. Sábado: tour histórico. Domingo: retorno terrestre a Florianópolis.",
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:planejamento_viagem",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-14T21:46:16.424302+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-14T21:46:48.102249+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "a76551da6f45a88da22db8dad6770b861b94455d89c1e623a64c371d7a3c2b11",
+            "evidence": "Uruguaiana fica no Rio Grande do Sul, Brasil.",
+            "rationale": "O resultado confirma explicitamente que Uruguaiana fica no Rio Grande do Sul, Brasil.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "6f855c99a92e41c9fc8bd647b18a33bbe587c16478ca25ff14becfbd530d9592",
+            "evidence": "Logística validada via voo e retorno terrestre.",
+            "rationale": "O resultado confirma a validacao da logistica do trajeto.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "a76551da6f45a88da22db8dad6770b861b94455d89c1e623a64c371d7a3c2b11",
+            "text": "Uruguaiana confirmada no Brasil e nao no Uruguai"
+          },
+          {
+            "criterion_id": "6f855c99a92e41c9fc8bd647b18a33bbe587c16478ca25ff14becfbd530d9592",
+            "text": "Logistica do trajeto validada"
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram atendidos com sucesso conforme o resultado apresentado.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Uruguaiana fica no Rio Grande do Sul, Brasil. Logística validada via voo e retorno terrestre.",
+      "execution_pending": false,
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-14T21:46:43.472324+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana fica no Rio Grande do Sul, Brasil. Logística validada via voo e retorno terrestre.",
+      "selection_reason": "planned_strategy:review_critic:workflow:review_critic:task_type_fallback:validacao_geografica",
+      "status": "completed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-14T21:46:48.118213+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-14T21:46:48.118213+00:00"
+}

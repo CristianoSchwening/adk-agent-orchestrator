@@ -1,0 +1,57 @@
+{
+  "created_at": "2026-10-08T09:30:17.714267+00:00",
+  "parent_run_id": "RUN-abd49483-860b-4d05-9b7c-49e76da5c89c",
+  "plan_id": "PLAN-76ab2a0b-c7b2-44e5-8237-42628f246df1",
+  "replan_request": null,
+  "run_id": "RUN-4b347266-d7fb-43af-bce1-81d4280add13",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "evaluation_failed",
+      "evaluated_at": "2026-10-08T09:30:19.992672+00:00",
+      "evaluation": null,
+      "evaluation_error": "evaluation must cover every criterion exactly once",
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "review_critic",
+      "kev_observation": {
+        "elapsed_ms": 2238,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "executor_agent",
+        "status": "unavailable",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T09:30:19.975792+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:generation",
+      "status": "failed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T09:30:19.992672+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T09:30:19.992672+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T09:30:19.992672+00:00"
+}

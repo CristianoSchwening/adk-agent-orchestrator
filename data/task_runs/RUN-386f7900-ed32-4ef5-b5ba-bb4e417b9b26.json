@@ -1,0 +1,132 @@
+{
+  "created_at": "2026-10-08T15:54:14.634511+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-f8928bfa-86da-4b52-a7b5-2ce3cf1be470",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "3e0cf562507b4efd7313e90fe28f4ab20285abf2f9eee9af2889d872d07d2b7f",
+            "evidence": "result: null",
+            "rationale": "O resultado da tarefa não foi gerado (result é nulo).",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "b6cbbf89f0696f97b5ca6580645bad7c2006208507bdc64a40a454854b1df2cc",
+            "evidence": "result: null",
+            "rationale": "O resultado da tarefa não foi gerado (result é nulo).",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "3e0cf562507b4efd7313e90fe28f4ab20285abf2f9eee9af2889d872d07d2b7f",
+            "text": "A resposta contém apenas a informação solicitada sem emojis ou hashtags"
+          },
+          {
+            "criterion_id": "b6cbbf89f0696f97b5ca6580645bad7c2006208507bdc64a40a454854b1df2cc",
+            "text": "A resposta está em português do Brasil"
+          }
+        ],
+        "rationale": "O resultado da tarefa est¡ nulo (null), o que impossibilita a verificação do cumprimento dos critérios de aceitação.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "execution_output": null,
+      "output_status": "absent"
+    },
+    "rationale": "O resultado da tarefa est¡ nulo (null), o que impossibilita a verificação do cumprimento dos critérios de aceitação.",
+    "requested_at": "2026-10-08T15:54:22.715143+00:00",
+    "task_id": "TASK-002",
+    "trigger": "acceptance_criteria_failed"
+  },
+  "run_id": "RUN-386f7900-ed32-4ef5-b5ba-bb4e417b9b26",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T15:54:18.072429+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "1e258993d031d19ff88849977d33e9dee5bc000813dac9974d966c20cf42f197",
+            "evidence": "A capital oficial do Brasil é a cidade de Brasília.",
+            "rationale": "O resultado forneceu explicitamente que a capital oficial do Brasil é a cidade de Brasília.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "1e258993d031d19ff88849977d33e9dee5bc000813dac9974d966c20cf42f197",
+            "text": "A cidade de Brasília é identificada como a capital federal do Brasil"
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos com sucesso, identificando corretamente Brasília como a capital do Brasil.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": "A capital oficial do Brasil é a cidade de Brasília.",
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-08T15:54:16.686891+00:00",
+      "output_status": "present",
+      "result": "A capital oficial do Brasil é a cidade de Brasília.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:data_retrieval",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T15:54:18.084656+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "replan:acceptance_criteria_failed",
+      "evaluated_at": "2026-10-08T15:54:22.708238+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "3e0cf562507b4efd7313e90fe28f4ab20285abf2f9eee9af2889d872d07d2b7f",
+            "evidence": "result: null",
+            "rationale": "O resultado da tarefa não foi gerado (result é nulo).",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "b6cbbf89f0696f97b5ca6580645bad7c2006208507bdc64a40a454854b1df2cc",
+            "evidence": "result: null",
+            "rationale": "O resultado da tarefa não foi gerado (result é nulo).",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "3e0cf562507b4efd7313e90fe28f4ab20285abf2f9eee9af2889d872d07d2b7f",
+            "text": "A resposta contém apenas a informação solicitada sem emojis ou hashtags"
+          },
+          {
+            "criterion_id": "b6cbbf89f0696f97b5ca6580645bad7c2006208507bdc64a40a454854b1df2cc",
+            "text": "A resposta está em português do Brasil"
+          }
+        ],
+        "rationale": "O resultado da tarefa est¡ nulo (null), o que impossibilita a verificação do cumprimento dos critérios de aceitação.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "verification",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-08T15:54:21.368684+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:verification:workflow:review_critic:task_type_fallback:text_generation",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T15:54:22.708238+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T15:54:22.708238+00:00"
+}

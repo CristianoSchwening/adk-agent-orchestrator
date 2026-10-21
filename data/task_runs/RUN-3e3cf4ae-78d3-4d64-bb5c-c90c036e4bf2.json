@@ -1,0 +1,270 @@
+{
+  "created_at": "2026-10-09T17:34:32.491071+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-cbd6daef-a282-48b6-b7f0-6b4dc4d4b5b0",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "775134c97d15ee878ce0627d8de96e00154284fbd23f82619c226da82b34a941",
+            "evidence": "result: null",
+            "rationale": "Nao e possivel verificar a quantidade de palavras pois o resultado esta nulo.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "a569988d5ca6ba7b9a778a35a98cb66d71c2f867c255303cba554455011777f7",
+            "evidence": "result: null",
+            "rationale": "Nao ha dados para validar a presenca do destino e do transporte devido ao resultado nulo.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "57a461ae6f6c8098af52cabcf41d655387a56de3a0ce81b32080424bf174b77e",
+            "evidence": "result: null",
+            "rationale": "Nao e possivel inspecionar o uso de emojis ou hashtags em um resultado nulo.",
+            "status": "unverifiable"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "775134c97d15ee878ce0627d8de96e00154284fbd23f82619c226da82b34a941",
+            "text": "Roteiro final estruturado com no máximo 20 palavras."
+          },
+          {
+            "criterion_id": "a569988d5ca6ba7b9a778a35a98cb66d71c2f867c255303cba554455011777f7",
+            "text": "Indicação do destino correto (Uruguaiana, RS) e transporte."
+          },
+          {
+            "criterion_id": "57a461ae6f6c8098af52cabcf41d655387a56de3a0ce81b32080424bf174b77e",
+            "text": "Sem qualquer uso de emojis ou hashtags."
+          }
+        ],
+        "rationale": "O resultado da tarefa esta nulo (null), impossibilitando a analise e validacao dos criterios de aceitacao estabelecidos.",
+        "trigger": "blocker_detected"
+      },
+      "execution_output": null,
+      "output_status": "absent"
+    },
+    "rationale": "O resultado da tarefa esta nulo (null), impossibilitando a analise e validacao dos criterios de aceitacao estabelecidos.",
+    "requested_at": "2026-10-09T17:35:38.585420+00:00",
+    "task_id": "TASK-003",
+    "trigger": "blocker_detected"
+  },
+  "run_id": "RUN-3e3cf4ae-78d3-4d64-bb5c-c90c036e4bf2",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T17:35:08.836280+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "ceef7ed510402e0341ac85d9da2b925d776edca4e6a3943bb8d67b16d3e83662",
+            "evidence": "Uruguaiana é um município brasileiro localizado no estado do Rio Grande do Sul, e não no Uruguai.",
+            "rationale": "O texto afirma claramente que Uruguaiana é um município brasileiro localizado no estado do Rio Grande do Sul.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "ae1a3ef1dafc478c5e9883b6630b19d2c971cd63db0295779c0244a5683bcc46",
+            "evidence": "Uruguaiana é um município brasileiro localizado no estado do Rio Grande do Sul, e não no Uruguai.",
+            "rationale": "O texto fornecido contém exatamente 17 palavras, cumprindo o limite máximo estipulado de 20 palavras.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "e3294f016f36992d5a93ee5714b932eecf9b377b9f7bbf7cfea8413661186de2",
+            "evidence": "Uruguaiana é um município brasileiro localizado no estado do Rio Grande do Sul, e não no Uruguai.",
+            "rationale": "O texto não contém emojis ou hashtags em sua composição.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "ceef7ed510402e0341ac85d9da2b925d776edca4e6a3943bb8d67b16d3e83662",
+            "text": "Declaração explícita de que Uruguaiana localiza-se no Rio Grande do Sul, Brasil."
+          },
+          {
+            "criterion_id": "ae1a3ef1dafc478c5e9883b6630b19d2c971cd63db0295779c0244a5683bcc46",
+            "text": "Texto gerado com no máximo 20 palavras."
+          },
+          {
+            "criterion_id": "e3294f016f36992d5a93ee5714b932eecf9b377b9f7bbf7cfea8413661186de2",
+            "text": "Ausência de emojis e hashtags."
+          }
+        ],
+        "rationale": "A tarefa de validação geográfica foi concluída com sucesso. Todos os critérios de aceitação foram plenamente atendidos: a localização de Uruguaiana no Rio Grande do Sul (Brasil) foi explicitamente declarada, o texto gerado possui 17 palavras (dentro do limite máximo de 20 palavras), e não há presença de emojis ou hashtags. Não há bloqueios ou invalidações identificadas.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": "Uruguaiana é um município brasileiro localizado no estado do Rio Grande do Sul, e não no Uruguai.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 7261,
+        "fallback_reason": "low_confidence",
+        "local_agent": "executor_agent",
+        "mode": "decision",
+        "response": {
+          "choice": "critic_agent",
+          "confidence": 0.3311,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 1164.5,
+          "probabilities": {
+            "critic_agent": 0.4649,
+            "executor_agent": 0.2146,
+            "planner_agent": 0.1143,
+            "researcher_agent": 0.1933,
+            "summarizer_agent": 0.0129
+          }
+        },
+        "selected_agent": "executor_agent",
+        "status": "observed",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-09T17:35:03.299563+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana é um município brasileiro localizado no estado do Rio Grande do Sul, e não no Uruguai.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:validation",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-09T17:35:08.842631+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T17:35:23.781718+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "f87199f2e78fb35ce6eedeb556af5690562ecb596d25007d353eb9b982665519",
+            "evidence": "O transporte aéreo é a melhor opção viável",
+            "rationale": "O transporte aéreo foi definido objetivamente como a melhor opção.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "7166726dd7f0c8590c9a0e1ed5b8a2d10f6dd4cc3619a74c7d043d9fcf57ce0f",
+            "evidence": "O transporte aéreo é a melhor opção viável em termos de tempo para uma viagem de fim de semana.",
+            "rationale": "O texto fornecido contém exatamente 19 palavras, cumprindo o critério de ter menos de 20 palavras.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "e6d2d52997031c3e6a5b870ea62bb4a6393aa7dc1837096d0f26eff9cf6b1b5b",
+            "evidence": "O transporte aéreo é a melhor opção viável em termos de tempo para uma viagem de fim de semana.",
+            "rationale": "Não há presença de nenhum emoji ou hashtag na resposta entregue.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "f87199f2e78fb35ce6eedeb556af5690562ecb596d25007d353eb9b982665519",
+            "text": "Meio de transporte definido objetivamente."
+          },
+          {
+            "criterion_id": "7166726dd7f0c8590c9a0e1ed5b8a2d10f6dd4cc3619a74c7d043d9fcf57ce0f",
+            "text": "Resposta contendo menos de 20 palavras no total."
+          },
+          {
+            "criterion_id": "e6d2d52997031c3e6a5b870ea62bb4a6393aa7dc1837096d0f26eff9cf6b1b5b",
+            "text": "Nenhum emoji ou hashtag utilizado."
+          }
+        ],
+        "rationale": "A entrega atendeu perfeitamente a todos os critérios de aceitação. O meio de transporte foi definido de forma objetiva, a resposta contém exatamente 19 palavras (menos de 20) e nenhum emoji ou hashtag foi utilizado.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": "O transporte aéreo é a melhor opção viável em termos de tempo para uma viagem de fim de semana.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 5348,
+        "fallback_reason": "low_confidence",
+        "local_agent": "executor_agent",
+        "mode": "decision",
+        "response": {
+          "choice": "planner_agent",
+          "confidence": 0.3304,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 1171.5,
+          "probabilities": {
+            "critic_agent": 0.0144,
+            "executor_agent": 0.2709,
+            "planner_agent": 0.4643,
+            "researcher_agent": 0.2255,
+            "summarizer_agent": 0.0249
+          }
+        },
+        "selected_agent": "executor_agent",
+        "status": "observed",
+        "task_id": "TASK-002"
+      },
+      "output_recorded_at": "2026-10-09T17:35:15.100886+00:00",
+      "output_status": "present",
+      "result": "O transporte aéreo é a melhor opção viável em termos de tempo para uma viagem de fim de semana.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:analysis",
+      "status": "completed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-09T17:35:23.786719+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "replan:blocker_detected",
+      "evaluated_at": "2026-10-09T17:35:38.574096+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "775134c97d15ee878ce0627d8de96e00154284fbd23f82619c226da82b34a941",
+            "evidence": "result: null",
+            "rationale": "Nao e possivel verificar a quantidade de palavras pois o resultado esta nulo.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "a569988d5ca6ba7b9a778a35a98cb66d71c2f867c255303cba554455011777f7",
+            "evidence": "result: null",
+            "rationale": "Nao ha dados para validar a presenca do destino e do transporte devido ao resultado nulo.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "57a461ae6f6c8098af52cabcf41d655387a56de3a0ce81b32080424bf174b77e",
+            "evidence": "result: null",
+            "rationale": "Nao e possivel inspecionar o uso de emojis ou hashtags em um resultado nulo.",
+            "status": "unverifiable"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "775134c97d15ee878ce0627d8de96e00154284fbd23f82619c226da82b34a941",
+            "text": "Roteiro final estruturado com no máximo 20 palavras."
+          },
+          {
+            "criterion_id": "a569988d5ca6ba7b9a778a35a98cb66d71c2f867c255303cba554455011777f7",
+            "text": "Indicação do destino correto (Uruguaiana, RS) e transporte."
+          },
+          {
+            "criterion_id": "57a461ae6f6c8098af52cabcf41d655387a56de3a0ce81b32080424bf174b77e",
+            "text": "Sem qualquer uso de emojis ou hashtags."
+          }
+        ],
+        "rationale": "O resultado da tarefa esta nulo (null), impossibilitando a analise e validacao dos criterios de aceitacao estabelecidos.",
+        "trigger": "blocker_detected"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-09T17:35:33.607122+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:review_critic:workflow:review_critic:task_type_fallback:creation",
+      "status": "failed",
+      "task_id": "TASK-003",
+      "updated_at": "2026-10-09T17:35:38.579608+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-09T17:35:38.579608+00:00"
+}

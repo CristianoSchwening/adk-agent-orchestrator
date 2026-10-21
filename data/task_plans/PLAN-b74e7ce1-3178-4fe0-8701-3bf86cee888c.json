@@ -1,0 +1,77 @@
+{
+  "assumptions": [
+    "Uruguaiana está localizada no Estado do Rio Grande do Sul, na fronteira com a Argentina."
+  ],
+  "created_at": "2026-10-10T02:03:59.206795+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Itinerário de fim de semana de Florianópolis para Uruguaiana revisado com meios de transporte."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Não usar emojis",
+      "Não usar hashtags",
+      "Indicar meio de transporte",
+      "Corrigir imprecisões geográficas imediatamente"
+    ],
+    "objective": "Planejar itinerário de fim de semana de Florianópolis para Uruguaiana com transporte e validação geográfica.",
+    "success_criteria": [
+      "Itinerário detalhado de fim de semana fornecido",
+      "Meio de transporte especificado",
+      "Precisão geográfica de Uruguaiana validada"
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-b74e7ce1-3178-4fe0-8701-3bf86cee888c",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Roteiro cobrindo fim de semana completo",
+        "Transporte indicado expressamente"
+      ],
+      "depends_on": [],
+      "description": "Criar roteiro de fim de semana de Florianópolis a Uruguaiana especificando modal de transporte.",
+      "metadata": {},
+      "required_capabilities": [
+        "planejamento_de_rotas",
+        "analise_de_destino"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "planning",
+      "title": "Elaborar itinerário e logística de transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Localização geográfica verificada e ajustada se houver erro",
+        "Logística do itinerário confirmada"
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Validar a exequibilidade do trajeto e garantir correção sobre a localização de Uruguaiana no RS.",
+      "metadata": {},
+      "required_capabilities": [
+        "validacao_geografica",
+        "revisao_logistica"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "review_critic",
+      "task_id": "TASK-002",
+      "task_type": "review",
+      "title": "Revisar precisão geográfica e logística"
+    }
+  ],
+  "updated_at": "2026-10-10T02:03:59.206795+00:00",
+  "workstream_id": "WS-e37e0769-e1f8-4667-98a0-95d208717791"
+}

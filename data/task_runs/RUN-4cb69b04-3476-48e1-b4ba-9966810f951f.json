@@ -1,0 +1,99 @@
+{
+  "created_at": "2026-10-08T23:55:22.090301+00:00",
+  "parent_run_id": "RUN-978d0672-351a-4e84-a6f9-30908216aaf8",
+  "plan_id": "PLAN-cff86f07-e9b4-4bef-a9f0-89877d042f97",
+  "replan_request": null,
+  "run_id": "RUN-4cb69b04-3476-48e1-b4ba-9966810f951f",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "planner_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T23:55:28.044312+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "1ee4ae07e02ba78a8e67fbfed036518a3fbfe92de8cddadf5396c7ef48e70c84",
+            "evidence": "Etapas: 1. Avião até Porto Alegre e ônibus até Uruguaiana. 2. Ônibus direto de Florianópolis.",
+            "rationale": "O resultado apresenta o itinerario cobrindo o trajeto Florianopolis-Uruguaiana para o fim de semana.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "39666d52a96e9eea678050bea4bc75047d7a4c3910909c9043cedf9abf7b5402",
+            "evidence": "Avião até Porto Alegre e ônibus até Uruguaiana. 2. Ônibus direto de Florianópolis.",
+            "rationale": "Os meios de transporte foram descritos de forma clara nas etapas do itinerario.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "1ee4ae07e02ba78a8e67fbfed036518a3fbfe92de8cddadf5396c7ef48e70c84",
+            "text": "Itinerario de fim de semana cobrindo o trajeto Florianopolis-Uruguaiana entregue"
+          },
+          {
+            "criterion_id": "39666d52a96e9eea678050bea4bc75047d7a4c3910909c9043cedf9abf7b5402",
+            "text": "Meios de transporte descritos claramente"
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram atendidos com sucesso, apresentando o itinerario de Florianopolis para Uruguaiana e descrevendo claramente os meios de transporte.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "planner_agent",
+      "execution_output": "Premissas: Viagem de fim de semana de Florianópolis para Uruguaiana de ônibus ou avião.\nDependências: Nenhuma.\nCritérios de sucesso: Itinerário e transportes descritos.\n\nEtapas:\n1. Avião até Porto Alegre e ônibus até Uruguaiana.\n2. Ônibus direto de Florianópolis.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 5914,
+        "fallback_reason": "low_confidence",
+        "local_agent": "planner_agent",
+        "mode": "decision",
+        "response": {
+          "choice": "planner_agent",
+          "confidence": 0.4768,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 1112.4,
+          "probabilities": {
+            "critic_agent": 0.0065,
+            "executor_agent": 0.2994,
+            "planner_agent": 0.5814,
+            "researcher_agent": 0.1008,
+            "summarizer_agent": 0.0118
+          }
+        },
+        "selected_agent": "planner_agent",
+        "status": "observed",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T23:55:28.032539+00:00",
+      "output_status": "present",
+      "result": "Premissas: Viagem de fim de semana de Florianópolis para Uruguaiana de ônibus ou avião.\nDependências: Nenhuma.\nCritérios de sucesso: Itinerário e transportes descritos.\n\nEtapas:\n1. Avião até Porto Alegre e ônibus até Uruguaiana.\n2. Ônibus direto de Florianópolis.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:planning",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T23:55:28.048322+00:00"
+    },
+    {
+      "assigned_agent": "critic_agent",
+      "attempt": 1,
+      "error": "evaluation_failed",
+      "evaluated_at": "2026-10-08T23:56:14.150823+00:00",
+      "evaluation": null,
+      "evaluation_error": "evaluation must cover every criterion exactly once",
+      "execution_node": "iterative_refinement",
+      "execution_output": null,
+      "execution_strategy": "iterative_refinement",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-08T23:56:14.140772+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:iterative_refinement:workflow:iterative_refinement:task_type_fallback:review",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T23:56:14.150823+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T23:56:14.150823+00:00"
+}

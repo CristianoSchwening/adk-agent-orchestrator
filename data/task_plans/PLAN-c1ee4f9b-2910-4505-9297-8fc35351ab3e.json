@@ -1,0 +1,98 @@
+{
+  "assumptions": [
+    "O usuário compreende que a pergunta possui uma premissa logicamente incorreta (Brasília ser um território que possui uma capital) que precisa ser gentilmente corrigida."
+  ],
+  "created_at": "2026-10-08T09:52:03.492828+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Resposta textual final esclarecendo que Brasília é a capital do Brasil, formatada de maneira concisa e sem uso de emojis ou hashtags."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Não use emojis",
+      "Não use hashtags",
+      "Responder em português do Brasil (pt-BR)",
+      "Estilo de resposta conciso e prático"
+    ],
+    "objective": "Esclarecer a dúvida geográfica sobre a capital de Brasília, explicando sua natureza administrativa como a capital do Brasil.",
+    "success_criteria": [
+      "A resposta deve explicar claramente que Brasília é a capital do Brasil e está situada no Distrito Federal, não possuindo uma capital própria.",
+      "A resposta deve ser estritamente em português do Brasil (pt-BR).",
+      "A resposta não deve conter emojis nem hashtags.",
+      "O tom deve ser conciso e prático."
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-c1ee4f9b-2910-4505-9297-8fc35351ab3e",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Identificação clara de que Brasília é a capital federal do Brasil.",
+        "Explicação de que o Distrito Federal não é um estado comum e, portanto, Brasília não possui uma 'capital' interna."
+      ],
+      "depends_on": [],
+      "description": "Verificar a definição política e geográfica de Brasília e do Distrito Federal para fundamentar a resposta corretiva à pergunta do usuário.",
+      "metadata": {},
+      "required_capabilities": [
+        "geography_verification"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "research",
+      "title": "Análise Geográfica"
+    },
+    {
+      "acceptance_criteria": [
+        "Texto escrito em português do Brasil (pt-BR).",
+        "Texto conciso e prático, sem rodeios.",
+        "Ausência total de emojis e de hashtags."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Redigir a explicação de forma direta, concisa e prática, em português de acordo com os fatos verificados.",
+      "metadata": {},
+      "required_capabilities": [
+        "content_generation"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "creation",
+      "title": "Redação da Resposta"
+    },
+    {
+      "acceptance_criteria": [
+        "Verificação bem-sucedida de que não há emojis no texto final.",
+        "Verificação bem-sucedida de que não há hashtags.",
+        "Validação de que a resposta atende à dúvida de forma direta e correta."
+      ],
+      "depends_on": [
+        "TASK-002"
+      ],
+      "description": "Revisar a resposta para garantir que nenhuma restrição do usuário (sem emojis, sem hashtags, concisão) foi violada.",
+      "metadata": {},
+      "required_capabilities": [
+        "content_review"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "verification",
+      "task_id": "TASK-003",
+      "task_type": "verification",
+      "title": "Revisão e Controle de Qualidade"
+    }
+  ],
+  "updated_at": "2026-10-08T09:52:03.492828+00:00",
+  "workstream_id": "WS-100e68b4-5acc-4c1e-bace-858b29a99638"
+}

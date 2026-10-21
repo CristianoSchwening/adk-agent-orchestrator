@@ -1,0 +1,84 @@
+{
+  "assumptions": [
+    "A distancia exige aviao ou onibus de longa duracao",
+    "Uruguaiana esta localizada no estado do Rio Grande do Sul"
+  ],
+  "created_at": "2026-10-14T21:43:19.499086+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Itinerario de fim de semana validado e logisticamente viavel de Florianopolis para Uruguaiana."
+    },
+    {
+      "deliverable_id": "DEL-002",
+      "description": "Relatorio de validacao geografica confirmando que Uruguaiana fica no Rio Grande do Sul."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Maximo 20 palavras por resposta",
+      "Nao use emojis",
+      "Nao use hashtags",
+      "Apenas 1 turno para cada agente"
+    ],
+    "objective": "Criar itinerario de fim de semana saindo de Florianopolis para Uruguaiana com transporte, validando precisao geografica e logistica, respeitando limite de 20 palavras por resposta.",
+    "success_criteria": [
+      "Itinerario gerado corretamente",
+      "Precisao geografica de Uruguaiana validada",
+      "Transporte especificado",
+      "Respeito rigoroso aos limites de palavras e restricoes"
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-d41d5804-fef0-4772-a6aa-e2d44a10dd70",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Itinerario de fim de semana criado",
+        "Opcoes de transporte definidas",
+        "Limite de 20 palavras respeitado"
+      ],
+      "depends_on": [],
+      "description": "Criar o itinerario de fim de semana de Florianopolis para Uruguaiana incluindo opcoes de transporte, mantendo cada resposta com no maximo 20 palavras.",
+      "metadata": {},
+      "required_capabilities": [
+        "geracao_itinerario",
+        "transporte"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "planejamento_viagem",
+      "title": "Gerar Itinerario e Transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Uruguaiana confirmada no Brasil e nao no Uruguai",
+        "Logistica do trajeto validada"
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Validar a precisao geografica de Uruguaiana no Rio Grande do Sul e checar a viabilidade logistica do trajeto.",
+      "metadata": {},
+      "required_capabilities": [
+        "validacao_geografica",
+        "logistica"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "review_critic",
+      "task_id": "TASK-002",
+      "task_type": "validacao_geografica",
+      "title": "Validar Precisao Geografica e Logistica"
+    }
+  ],
+  "updated_at": "2026-10-14T21:43:19.499086+00:00",
+  "workstream_id": "WS-0d0ec6de-c770-4f88-8b36-c74ac9caa41c"
+}

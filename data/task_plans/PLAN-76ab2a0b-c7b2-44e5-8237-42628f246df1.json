@@ -1,0 +1,83 @@
+{
+  "assumptions": [
+    "O usuário busca um entendimento rápido e formal, ideal para apresentações ou tomadas de decisão na gestão de produtos.",
+    "A resposta deve ser fundamentada na organização político-administrativa da República Federativa do Brasil."
+  ],
+  "created_at": "2026-10-08T09:28:59.681125+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Texto final de esclarecimento geográfico e factual sobre Brasília e o Distrito Federal, estruturado de forma concisa, em pt-BR e livre de emojis ou hashtags."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Não use emojis",
+      "Não use hashtags",
+      "Idioma: pt-BR",
+      "Estilo de resposta conciso e prático"
+    ],
+    "objective": "Esclarecer a relação geográfica e factual sobre Brasília ser a capital do Brasil e não possuir uma capital própria, dado que é uma cidade/distrito federal.",
+    "success_criteria": [
+      "Explicação factual de que Brasília é a capital do Brasil.",
+      "Esclarecimento claro sobre a natureza jurídica do Distrito Federal, que não pode ser dividido em municípios e, portanto, não possui capital própria.",
+      "Ausência total de emojis e hashtags no texto final.",
+      "Estilo de escrita direto, conciso e prático."
+    ]
+  },
+  "lineage_id": "PLAN-a8359f0d-4407-4ff6-9434-c5951204d6c5",
+  "parent_plan_id": "PLAN-60cf30d6-5f4d-4954-8367-ebec1f97bf19",
+  "plan_id": "PLAN-76ab2a0b-c7b2-44e5-8237-42628f246df1",
+  "replan_trigger": "blocker_detected",
+  "revision": 3,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "O texto explica de forma explícita e correta que Brasília é a capital do Brasil.",
+        "O texto detalha que o Distrito Federal não possui capital própria devido ao seu caráter híbrido e vedação constitucional de divisão em municípios.",
+        "O texto gerado deve ser retornado de forma íntegra (não nulo) e deve adotar tom profissional e prático.",
+        "Ausência completa de emojis e de hashtags no texto produzido."
+      ],
+      "depends_on": [],
+      "description": "Redigir uma explicação concisa e direta esclarecendo que Brasília é a capital federal do Brasil e que o Distrito Federal possui uma natureza jurídica e administrativa mista (acumulando competências estaduais e municipais), não se dividindo em municípios e, por isso, não possuindo uma capital própria. Esta tarefa adota a estratégia 'single_agent' para mitigar de forma concreta o problema de execução anterior (falha de nulo/exceção decorrente de processos iterativos mais complexos).",
+      "metadata": {},
+      "required_capabilities": [
+        "geopolitica_brasileira",
+        "redacao_concisa",
+        "direito_constitucional"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "generation",
+      "title": "Geração direta da explicação geopolítica sobre Brasília"
+    },
+    {
+      "acceptance_criteria": [
+        "Confirmação de que o texto final está estritamente em português (pt-BR).",
+        "Garantia absoluta de que não há qualquer emoji ou hashtag no conteúdo revisado.",
+        "O texto final é curto, direto e está estruturado de forma legível e profissional, com no máximo 3 parágrafos."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Revisar detalhadamente o conteúdo gerado na TASK-001 para assegurar conformidade total com todas as restrições impostas: ausência de emojis, ausência de hashtags, idioma pt-BR, concisão (com limite sugerido de até 3 parágrafos curtos) e adequação ao estilo prático de resposta solicitado.",
+      "metadata": {},
+      "required_capabilities": [
+        "revisao_editorial",
+        "verificacao_de_restricoes"
+      ],
+      "requires_approval": true,
+      "requires_review": false,
+      "strategy": "verification",
+      "task_id": "TASK-002",
+      "task_type": "verification",
+      "title": "Verificação e refinamento de conformidade editorial"
+    }
+  ],
+  "updated_at": "2026-10-08T09:30:17.707084+00:00",
+  "workstream_id": "WS-2584dd0c-fb7b-4192-903a-bfd9b97f66e9"
+}

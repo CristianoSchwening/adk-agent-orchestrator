@@ -1,0 +1,108 @@
+{
+  "assumptions": [
+    "A extrema limitação de palavras exige uma entrega ultra-concisa focada apenas em dados essenciais de transporte e destino.",
+    "O limite de 1 turno de interação por papel exige assertividade imediata nas respostas."
+  ],
+  "created_at": "2026-10-09T17:34:26.717467+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Validação geográfica e definição do transporte adequado para a viagem."
+    },
+    {
+      "deliverable_id": "DEL-002",
+      "description": "Roteiro de fim de semana de Florianópolis para Uruguaiana formatado com limite estrito de 20 palavras, sem hashtags e sem emojis."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Máximo de 20 palavras por resposta",
+      "Não usar emojis",
+      "Não usar hashtags",
+      "Corrigir imediatamente qualquer erro de localização geográfica",
+      "Limite de 1 turno de interação para cada papel"
+    ],
+    "objective": "Elaborar um roteiro de viagem de fim de semana partindo de Florianópolis para Uruguaiana, validando a precisão geográfica do destino e definindo o meio de transporte adequado sob estritas restrições de formatação.",
+    "success_criteria": [
+      "Uruguaiana validada corretamente como município do Rio Grande do Sul, Brasil",
+      "Meio de transporte adequado para fim de semana definido",
+      "Roteiro final elaborado e entregue respeitando o limite estrito de 20 palavras",
+      "Ausência completa de emojis e hashtags no resultado"
+    ]
+  },
+  "lineage_id": "PLAN-cbd6daef-a282-48b6-b7f0-6b4dc4d4b5b0",
+  "parent_plan_id": "PLAN-cbd6daef-a282-48b6-b7f0-6b4dc4d4b5b0",
+  "plan_id": "PLAN-5871a9a4-fc14-4347-bdde-acebb357e7e3",
+  "replan_trigger": "blocker_detected",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Declaração explícita de que Uruguaiana localiza-se no Rio Grande do Sul, Brasil.",
+        "Texto gerado com no máximo 20 palavras.",
+        "Ausência de emojis e hashtags."
+      ],
+      "depends_on": [],
+      "description": "Validar a exata localização de Uruguaiana, corrigindo a associação incorreta ao Uruguai e confirmando o município no Rio Grande do Sul, Brasil.",
+      "metadata": {},
+      "required_capabilities": [
+        "Análise de geolocalização",
+        "Validação de fronteiras internacionais"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "validation",
+      "title": "Validação Geográfica do Destino"
+    },
+    {
+      "acceptance_criteria": [
+        "Meio de transporte definido objetivamente.",
+        "Resposta contendo menos de 20 palavras no total.",
+        "Nenhum emoji ou hashtag utilizado."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Analisar e selecionar a melhor opção de transporte para um fim de semana entre Florianópolis e Uruguaiana, considerando a viabilidade de tempo.",
+      "metadata": {},
+      "required_capabilities": [
+        "Definição de rotas de partida",
+        "Logística de transporte"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "analysis",
+      "title": "Definição Logística e Transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Roteiro final estruturado com no máximo 20 palavras.",
+        "Indicação do destino correto (Uruguaiana, RS) e transporte.",
+        "Sem qualquer uso de emojis ou hashtags.",
+        "Resultado textual completo, válido e não-nulo para verificação."
+      ],
+      "depends_on": [
+        "TASK-002"
+      ],
+      "description": "Elaborar a síntese do roteiro final de fim de semana contendo o destino correto (Uruguaiana, RS) e transporte (aéreo) em formato de texto não-nulo, mitigando o risco de saídas ausentes e fornecendo a evidência textual concreta para verificação.",
+      "metadata": {},
+      "required_capabilities": [
+        "Mapeamento de pontos turísticos"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-003",
+      "task_type": "creation",
+      "title": "Consolidação do Roteiro de Viagem"
+    }
+  ],
+  "updated_at": "2026-10-09T17:35:53.212105+00:00",
+  "workstream_id": "WS-6af67dc4-fffb-4f16-b235-dd1bb9e9b5f9"
+}

@@ -1,0 +1,105 @@
+{
+  "created_at": "2026-10-10T02:04:12.429254+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-b74e7ce1-3178-4fe0-8701-3bf86cee888c",
+  "replan_request": null,
+  "run_id": "RUN-e6eb3f6e-0870-48d8-a2b4-d50f7b2d29f1",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "completed",
+  "tasks": [
+    {
+      "assigned_agent": "planner_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-10T02:06:01.761756+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "8132ecd44dbf7fc25df452fd296a3e08e784e47e3dd0d71e597a73148db0a7fd",
+            "evidence": "Sábado: centro histórico e Parque D. João VI. Domingo: fronteira e retorno.",
+            "rationale": "O roteiro abrange as atividades planejadas para sábado e domingo, cobrindo o fim de semana.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "acd8526414e82bdc40c114d650f6b9841375c54f1dd5708e0311676da976d668",
+            "evidence": "Avião até Porto Alegre e ônibus para Uruguaiana.",
+            "rationale": "Os modais de transporte foram claramente especificados (avião e ônibus).",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "8132ecd44dbf7fc25df452fd296a3e08e784e47e3dd0d71e597a73148db0a7fd",
+            "text": "Roteiro cobrindo fim de semana completo"
+          },
+          {
+            "criterion_id": "acd8526414e82bdc40c114d650f6b9841375c54f1dd5708e0311676da976d668",
+            "text": "Transporte indicado expressamente"
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos plenamente, apresentando roteiro para sábado e domingo com transporte expressamente indicado.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Avião até Porto Alegre e ônibus para Uruguaiana. Sábado: centro histórico e Parque D. João VI. Domingo: fronteira e retorno.",
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-10T02:05:47.145750+00:00",
+      "output_status": "present",
+      "result": "Avião até Porto Alegre e ônibus para Uruguaiana. Sábado: centro histórico e Parque D. João VI. Domingo: fronteira e retorno.",
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:planning",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-10T02:06:01.768384+00:00"
+    },
+    {
+      "assigned_agent": "critic_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-10T02:06:41.578459+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "f6d9fe906eddf9080f04101eebf24bd43b0350e38d14a8adac4e8317369cd15e",
+            "evidence": "Uruguaiana fica no RS, fronteira com a Argentina.",
+            "rationale": "A localização geográfica de Uruguaiana no RS foi verificada e confirmada.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "136883d03e7c81fde52a08460f9f832d5cd2fcaf149060d1452b5d59ca1ca80e",
+            "evidence": "Trajeto viável via voo até POA e ônibus para Uruguaiana.",
+            "rationale": "A viabilidade da logística do itinerário foi devidamente confirmada.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "f6d9fe906eddf9080f04101eebf24bd43b0350e38d14a8adac4e8317369cd15e",
+            "text": "Localização geográfica verificada e ajustada se houver erro"
+          },
+          {
+            "criterion_id": "136883d03e7c81fde52a08460f9f832d5cd2fcaf149060d1452b5d59ca1ca80e",
+            "text": "Logística do itinerário confirmada"
+          }
+        ],
+        "rationale": "A localização geográfica e a logística do itinerário foram verificadas e confirmadas com sucesso.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Uruguaiana fica no RS, fronteira com a Argentina. Trajeto viável via voo até POA e ônibus para Uruguaiana.",
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-10T02:06:29.994390+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana fica no RS, fronteira com a Argentina. Trajeto viável via voo até POA e ônibus para Uruguaiana.",
+      "selection_reason": "planned_strategy:review_critic:workflow:review_critic:task_type_fallback:review",
+      "status": "completed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-10T02:06:41.583168+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-10T02:06:41.583168+00:00"
+}

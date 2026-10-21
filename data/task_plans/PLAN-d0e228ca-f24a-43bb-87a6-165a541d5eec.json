@@ -1,0 +1,80 @@
+{
+  "assumptions": [
+    "Uruguaiana esta localizada no estado do Rio Grande do Sul no Brasil.",
+    "Fim de semana considerado de sexta a domingo."
+  ],
+  "created_at": "2026-10-09T18:26:04.562315+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Itinerario de fim de semana com meio de transporte e revisao geografica e logistica."
+    },
+    {
+      "deliverable_id": "DEL-002",
+      "description": "Relatorio de validacao de fatos geograficos."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Nao use emojis",
+      "Nao use hashtags",
+      "Maximo 20 palavras por resposta"
+    ],
+    "objective": "Montar um itinerario de fim de semana saindo de Florianopolis para Uruguaiana com meio de transporte, seguido de revisao de fatos geograficos e logisticos.",
+    "success_criteria": [
+      "Itinerario de fim de semana criado com meio de transporte",
+      "Revisao de fatos geograficos e logisticos concluida"
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-d0e228ca-f24a-43bb-87a6-165a541d5eec",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Itinerario de fim de semana detalhado",
+        "Meio de transporte definido"
+      ],
+      "depends_on": [],
+      "description": "Montar um itinerario de fim de semana saindo de Florianopolis para Uruguaiana definindo o meio de transporte.",
+      "metadata": {},
+      "required_capabilities": [
+        "travel_planning",
+        "route_calculation"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "planning",
+      "title": "Criar itinerario de viagem"
+    },
+    {
+      "acceptance_criteria": [
+        "Fatos geograficos validados",
+        "Consistencia logistica verificada"
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Revisar criticamente os fatos geograficos e logisticos do itinerario gerado entre Florianopolis e Uruguaiana.",
+      "metadata": {},
+      "required_capabilities": [
+        "geographical_validation",
+        "fact_checking"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "review_critic",
+      "task_id": "TASK-002",
+      "task_type": "review",
+      "title": "Revisar fatos geograficos e logisticos"
+    }
+  ],
+  "updated_at": "2026-10-09T18:26:04.562315+00:00",
+  "workstream_id": "WS-60292257-176c-4cab-a809-1b3435272a0a"
+}
