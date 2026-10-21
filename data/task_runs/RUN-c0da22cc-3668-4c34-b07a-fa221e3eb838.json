@@ -1,0 +1,100 @@
+{
+  "created_at": "2026-10-08T09:43:11.387617+00:00",
+  "parent_run_id": "RUN-85fe8313-e524-4da3-939a-bc22391694f5",
+  "plan_id": "PLAN-bf0af635-28c7-4daf-87cd-02cbe8e3db4c",
+  "replan_request": null,
+  "run_id": "RUN-c0da22cc-3668-4c34-b07a-fa221e3eb838",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T09:43:13.555030+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "867e714f1220f5093684826e92c05503632d15af8bec661c59be402473d0b072",
+            "evidence": "Brasilia e a capital federal do Brasil, sede do governo da Republica Federativa do Brasil, localizada no Distrito Federal. Por ser uma cidade-estado federal e a propria capital do pais, Brasilia nao possui uma capital propria.",
+            "rationale": "O texto detalha com clareza a relacao geografica e politica, definindo Brasilia como capital do Brasil e sua localizacao no Distrito Federal.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "c510788a9b260de293aa8157c54cc42512ff429c44a3251ecf5fa163586913e4",
+            "evidence": "O texto contem exatamente dois paragrafos de facil leitura.",
+            "rationale": "A resposta fornecida e extremamente concisa e direta, estruturada exatamente em dois paragrafos curtos.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "1e5adc56bb92069005543d3966dd628eca296887fedc87e860d7c3cafe92773b",
+            "evidence": "Brasilia e a capital federal do Brasil, sede do governo da Republica Federativa do Brasil, localizada no Distrito Federal.",
+            "rationale": "A redacao foi feita inteiramente no idioma portugues padrao do Brasil (pt-BR).",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "867e714f1220f5093684826e92c05503632d15af8bec661c59be402473d0b072",
+            "text": "O texto explica claramente a relação entre Brasília, Distrito Federal e Brasil."
+          },
+          {
+            "criterion_id": "c510788a9b260de293aa8157c54cc42512ff429c44a3251ecf5fa163586913e4",
+            "text": "A resposta é direta e não excede dois parágrafos simples."
+          },
+          {
+            "criterion_id": "1e5adc56bb92069005543d3966dd628eca296887fedc87e860d7c3cafe92773b",
+            "text": "O idioma utilizado é o português (pt-BR)."
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram plenamente atendidos e o texto cumpre o objetivo de esclarecer a duvida geopolitica de forma concisa e no idioma correto.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": "Brasília é a capital federal do Brasil, sede do governo da República Federativa do Brasil, localizada no Distrito Federal. Por ser uma cidade-estado federal e a própria capital do país, Brasília não possui uma capital própria.\n\nO Distrito Federal tem natureza político-administrativa singular e não se divide em municípios, funcionando a própria cidade de Brasília como o centro político nacional e a sede governamental local.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 2123,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "executor_agent",
+        "status": "unavailable",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T09:43:13.538989+00:00",
+      "output_status": "present",
+      "result": "Brasília é a capital federal do Brasil, sede do governo da República Federativa do Brasil, localizada no Distrito Federal. Por ser uma cidade-estado federal e a própria capital do país, Brasília não possui uma capital própria.\n\nO Distrito Federal tem natureza político-administrativa singular e não se divide em municípios, funcionando a própria cidade de Brasília como o centro político nacional e a sede governamental local.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:drafting",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T09:43:13.563024+00:00"
+    },
+    {
+      "assigned_agent": "critic_agent",
+      "attempt": 1,
+      "error": "evaluation_failed",
+      "evaluated_at": "2026-10-08T09:43:15.781950+00:00",
+      "evaluation": null,
+      "evaluation_error": "evaluation must cover every criterion exactly once",
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "verification",
+      "kev_observation": {
+        "elapsed_ms": 2174,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "critic_agent",
+        "status": "unavailable",
+        "task_id": "TASK-002"
+      },
+      "output_recorded_at": "2026-10-08T09:43:15.779089+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:verification:workflow:review_critic:task_type_fallback:verification",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T09:43:15.781950+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T09:43:15.781950+00:00"
+}

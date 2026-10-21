@@ -1,0 +1,161 @@
+{
+  "created_at": "2026-10-08T09:29:45.486012+00:00",
+  "parent_run_id": "RUN-23d5a4ef-b392-4809-b85f-7f791fc158fb",
+  "plan_id": "PLAN-60cf30d6-5f4d-4954-8367-ebec1f97bf19",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "499439bc0307fad55d3008a1873e1037035375dd3f647bd2ced7b1e1fd83f6b5",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "Nao e possivel verificar o criterio pois nenhum texto de resultado foi apresentado.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "e7d354718f83f09ef04d200f09dd41fcbe37cb0cfb7097495582fae779a911ef",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "Nao e possivel verificar a justificativa da ausencia de capital para o Distrito Federal sem o texto do resultado.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "061132f63da3aed811e85dddb454487970508f37d2edfa612be16943b0921016",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "Nao e possivel avaliar o tom do texto ja que nenhum conteudo foi gerado.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "05133288d52dacc84fdf330b9495dc9dbaa86f0b6102af176bf4c069588e490d",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "A presenca ou ausencia de emojis e hashtags nao pode ser validada devido a falta de conteudo.",
+            "status": "unverifiable"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "499439bc0307fad55d3008a1873e1037035375dd3f647bd2ced7b1e1fd83f6b5",
+            "text": "O texto explica explicitamente a relação entre Brasília, Distrito Federal e o Brasil."
+          },
+          {
+            "criterion_id": "e7d354718f83f09ef04d200f09dd41fcbe37cb0cfb7097495582fae779a911ef",
+            "text": "O texto justifica a ausência de uma capital para o Distrito Federal com base em sua organização político-administrativa única."
+          },
+          {
+            "criterion_id": "061132f63da3aed811e85dddb454487970508f37d2edfa612be16943b0921016",
+            "text": "O tom é puramente profissional, prático e informativo."
+          },
+          {
+            "criterion_id": "05133288d52dacc84fdf330b9495dc9dbaa86f0b6102af176bf4c069588e490d",
+            "text": "Não há uso de emojis nem de hashtags."
+          }
+        ],
+        "rationale": "O resultado da tarefa esta nulo, o que impede a realizacao de qualquer avaliacao dos criterios de aceitacao estabelecidos.",
+        "trigger": "blocker_detected"
+      },
+      "execution_output": null,
+      "output_status": "absent"
+    },
+    "rationale": "O resultado da tarefa esta nulo, o que impede a realizacao de qualquer avaliacao dos criterios de aceitacao estabelecidos.",
+    "requested_at": "2026-10-08T09:30:03.649788+00:00",
+    "task_id": "TASK-001",
+    "trigger": "blocker_detected"
+  },
+  "run_id": "RUN-abd49483-860b-4d05-9b7c-49e76da5c89c",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "replan:blocker_detected",
+      "evaluated_at": "2026-10-08T09:30:03.637783+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "499439bc0307fad55d3008a1873e1037035375dd3f647bd2ced7b1e1fd83f6b5",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "Nao e possivel verificar o criterio pois nenhum texto de resultado foi apresentado.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "e7d354718f83f09ef04d200f09dd41fcbe37cb0cfb7097495582fae779a911ef",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "Nao e possivel verificar a justificativa da ausencia de capital para o Distrito Federal sem o texto do resultado.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "061132f63da3aed811e85dddb454487970508f37d2edfa612be16943b0921016",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "Nao e possivel avaliar o tom do texto ja que nenhum conteudo foi gerado.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "05133288d52dacc84fdf330b9495dc9dbaa86f0b6102af176bf4c069588e490d",
+            "evidence": "O campo 'result' no payload e nulo.",
+            "rationale": "A presenca ou ausencia de emojis e hashtags nao pode ser validada devido a falta de conteudo.",
+            "status": "unverifiable"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "499439bc0307fad55d3008a1873e1037035375dd3f647bd2ced7b1e1fd83f6b5",
+            "text": "O texto explica explicitamente a relação entre Brasília, Distrito Federal e o Brasil."
+          },
+          {
+            "criterion_id": "e7d354718f83f09ef04d200f09dd41fcbe37cb0cfb7097495582fae779a911ef",
+            "text": "O texto justifica a ausência de uma capital para o Distrito Federal com base em sua organização político-administrativa única."
+          },
+          {
+            "criterion_id": "061132f63da3aed811e85dddb454487970508f37d2edfa612be16943b0921016",
+            "text": "O tom é puramente profissional, prático e informativo."
+          },
+          {
+            "criterion_id": "05133288d52dacc84fdf330b9495dc9dbaa86f0b6102af176bf4c069588e490d",
+            "text": "Não há uso de emojis nem de hashtags."
+          }
+        ],
+        "rationale": "O resultado da tarefa esta nulo, o que impede a realizacao de qualquer avaliacao dos criterios de aceitacao estabelecidos.",
+        "trigger": "blocker_detected"
+      },
+      "evaluation_error": null,
+      "execution_node": "iterative_refinement",
+      "execution_output": null,
+      "execution_strategy": "iterative_refinement",
+      "kev_observation": {
+        "elapsed_ms": 2173,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "executor_agent",
+        "status": "unavailable",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T09:30:03.626790+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:iterative_refinement:workflow:iterative_refinement:task_type_fallback:generation",
+      "status": "failed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T09:30:03.641785+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T09:30:03.641785+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T09:30:03.641785+00:00"
+}

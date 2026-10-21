@@ -1,0 +1,78 @@
+{
+  "assumptions": [
+    "Existe conexao de transporte viavel para um fim de semana entre Florianopolis e Uruguaiana",
+    "As restricoes de formatacao devem ser respeitadas",
+    "A tarefa de revisao deve retornar dados explicitos para evitar falhas de saida nula"
+  ],
+  "created_at": "2026-10-08T23:53:20.654862+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Itinerario de fim de semana validado de Florianopolis para Uruguaiana com indicacao de transporte e revisao geografica."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Maximo 20 palavras por resposta",
+      "Nao use emojis",
+      "Nao use hashtags"
+    ],
+    "objective": "Montar um itinerario de fim de semana de Florianopolis para Uruguaiana indicando transporte, com revisao geografica e logistica subsequente.",
+    "success_criteria": [
+      "Itinerario de fim de semana criado com sucesso",
+      "Opcoes de transporte indicadas explicitamente",
+      "Revisao geografica e logistica concluida"
+    ]
+  },
+  "lineage_id": "PLAN-31c7f150-74b1-4e00-b656-e6a6b38df0de",
+  "parent_plan_id": "PLAN-31c7f150-74b1-4e00-b656-e6a6b38df0de",
+  "plan_id": "PLAN-cff86f07-e9b4-4bef-a9f0-89877d042f97",
+  "replan_trigger": "acceptance_criteria_failed",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Itinerario de fim de semana cobrindo o trajeto Florianopolis-Uruguaiana entregue",
+        "Meios de transporte descritos claramente"
+      ],
+      "depends_on": [],
+      "description": "Elaborar o itinerario de fim de semana saindo de Florianopolis com destino a Uruguaiana, detalhando as opcoes de transporte.",
+      "metadata": {},
+      "required_capabilities": [
+        "planejamento de viagem",
+        "logistica de transporte"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "planning",
+      "title": "Criar itinerario inicial de transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Revisao geografica aprovada com parecer textual explicito",
+        "Viabilidade logistica validada sem inconformidades com evidencia documentada"
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Executar analise detalhada da rota geografica e logistica entre Florianopolis e Uruguaiana, produzindo um resultado em texto nao nulo que confirme a viabilidade.",
+      "metadata": {},
+      "required_capabilities": [
+        "analise geografica",
+        "validacao logistica"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "iterative_refinement",
+      "task_id": "TASK-002",
+      "task_type": "review",
+      "title": "Revisao geografica e logistica com geracao de relatorio explicito"
+    }
+  ],
+  "updated_at": "2026-10-08T23:55:22.079989+00:00",
+  "workstream_id": "WS-72a40ce9-a78a-462e-b21d-7a730ef7df5a"
+}

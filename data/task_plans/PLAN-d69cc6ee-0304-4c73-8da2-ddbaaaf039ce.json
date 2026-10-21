@@ -1,0 +1,73 @@
+{
+  "assumptions": [
+    "O termo 'brazília' refere-se ao país Brasil e à sua capital Brasília."
+  ],
+  "created_at": "2026-10-08T15:54:11.791933+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Nome da capital do Brasil devidamente formatado conforme as restrições."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Não usar emojis",
+      "Não usar hashtags",
+      "Responder de forma concisa e prática",
+      "Responder no idioma português (pt-BR)"
+    ],
+    "objective": "Identificar a capital do país referenciado pelo usuário como 'brazília' (Brasil).",
+    "success_criteria": [
+      "A capital do Brasil é identificada corretamente como Brasília",
+      "A resposta atende a todas as restrições de estilo e formatação"
+    ]
+  },
+  "lineage_id": "PLAN-f8928bfa-86da-4b52-a7b5-2ce3cf1be470",
+  "parent_plan_id": "PLAN-f8928bfa-86da-4b52-a7b5-2ce3cf1be470",
+  "plan_id": "PLAN-d69cc6ee-0304-4c73-8da2-ddbaaaf039ce",
+  "replan_trigger": "acceptance_criteria_failed",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "A cidade de Brasília é identificada como a capital federal do Brasil"
+      ],
+      "depends_on": [],
+      "description": "Consultar a base de conhecimento para determinar a capital oficial do país correspondente a 'brazília' ou 'Brasil'.",
+      "metadata": {},
+      "required_capabilities": [
+        "Fornecer dados geográficos e demográficos básicos"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "data_retrieval",
+      "title": "Identificar Capital"
+    },
+    {
+      "acceptance_criteria": [
+        "A resposta contém apenas a informação solicitada sem emojis ou hashtags",
+        "A resposta está em português do Brasil"
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Gerar explicitamente a resposta final informando a capital do Brasil sem retornar valores nulos, aplicando estritamente as restrições de ausência de emojis, ausência de hashtags, tom conciso e idioma pt-BR.",
+      "metadata": {},
+      "required_capabilities": [
+        "Gerar texto conciso em português"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "text_generation",
+      "title": "Formatar Resposta"
+    }
+  ],
+  "updated_at": "2026-10-08T15:54:26.195786+00:00",
+  "workstream_id": "WS-3af7759e-750e-4546-85c5-11c1a1fe8714"
+}

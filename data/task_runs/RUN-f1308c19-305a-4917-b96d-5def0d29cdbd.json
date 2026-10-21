@@ -1,0 +1,106 @@
+{
+  "created_at": "2026-10-09T18:06:36.814457+00:00",
+  "parent_run_id": "RUN-a17bd25e-aa90-4cbb-9830-de80d12568db",
+  "plan_id": "PLAN-58c732d7-bbdf-4dbe-af2f-4ce8bca91d04",
+  "replan_request": null,
+  "run_id": "RUN-f1308c19-305a-4917-b96d-5def0d29cdbd",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "researcher_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T18:06:41.802268+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "94f3c1864eda481f35dfe910d069eb8b4648e2a0610f757b8b7e17e3567d695c",
+            "evidence": "Uruguaiana localiza-se no Rio Grande do Sul, Brasil.",
+            "rationale": "A localização de Uruguaiana foi confirmada e corrigida para o Rio Grande do Sul, Brasil, conforme exigido pelo critério.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "7e4c163a4c742f8a2e0549949ca52bd40a1d57a758c75c0068c4c5e946ffcba7",
+            "evidence": "Partindo de Florianópolis, as rotas incluem transporte rodoviário (BR-282 e BR-290) e aéreo com conexões.",
+            "rationale": "As rotas rodoviárias e aéreas partindo de Florianópolis para Uruguaiana foram devidamente identificadas.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "94f3c1864eda481f35dfe910d069eb8b4648e2a0610f757b8b7e17e3567d695c",
+            "text": "Localização de Uruguaiana corrigida para o Rio Grande do Sul, Brasil."
+          },
+          {
+            "criterion_id": "7e4c163a4c742f8a2e0549949ca52bd40a1d57a758c75c0068c4c5e946ffcba7",
+            "text": "Rotas e meios de transporte de Florianópolis para Uruguaiana identificados."
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos com sucesso com base no resultado fornecido.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "researcher_agent",
+      "execution_output": "Uruguaiana localiza-se no Rio Grande do Sul, Brasil. Partindo de Florianópolis, as rotas incluem transporte rodoviário (BR-282 e BR-290) e aéreo com conexões.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 2206,
+        "error_type": "ExceptionGroup",
+        "fallback_reason": "unavailable",
+        "local_agent": "researcher_agent",
+        "mode": "decision",
+        "selected_agent": "researcher_agent",
+        "status": "unavailable",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-09T18:06:40.157210+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana localiza-se no Rio Grande do Sul, Brasil. Partindo de Florianópolis, as rotas incluem transporte rodoviário (BR-282 e BR-290) e aéreo com conexões.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:research",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-09T18:06:41.802268+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "evaluation_failed",
+      "evaluated_at": "2026-10-09T18:07:21.515718+00:00",
+      "evaluation": null,
+      "evaluation_error": "Dynamic node replan_guard_agent failed",
+      "execution_node": "review_critic",
+      "execution_output": "Como não há arquivos de plano ou estado salvos no workspace atual (os arquivos `plan.md`, `session.json` ou `workspace.json` não foram encontrados), por favor, forneça o contexto, o problema ou o plano que você deseja que eu siga para que possamos continuar a partir daí!",
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-09T18:07:12.699927+00:00",
+      "output_status": "present",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:content_creation",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-09T18:07:21.515718+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-003",
+      "updated_at": "2026-10-09T18:07:21.515718+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-09T18:07:21.515718+00:00"
+}

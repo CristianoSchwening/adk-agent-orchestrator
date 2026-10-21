@@ -1,0 +1,222 @@
+{
+  "created_at": "2026-10-08T09:52:59.758763+00:00",
+  "parent_run_id": "RUN-88dca616-c508-4abb-a90a-e2546ec5d576",
+  "plan_id": "PLAN-1b1ccd74-6d63-4e52-a804-a49d9f29dc0f",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "6e9a9fcb5c2e4f631178a58696bbf9344dcc74fa7b4fb1a61adcebc90991fc8c",
+            "evidence": "O campo result est¡ preenchido com null.",
+            "rationale": "Nenhum texto foi gerado, pois o resultado encontra-se nulo.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "e6b0a65a4f15997cb62860d51e0bdd544183c388b22afb6c2dd019ea5ab1b4d4",
+            "evidence": "O campo result est¡ preenchido com null.",
+            "rationale": "Nenhum texto foi gerado, pois o resultado encontra-se nulo.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "6d020d82b42591fea142e6e2b9b97b199589ecd51a89696fd1027a30c7d00b26",
+            "evidence": "O campo result est¡ preenchido com null.",
+            "rationale": "Nenhum texto foi gerado, pois o resultado encontra-se nulo.",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "6e9a9fcb5c2e4f631178a58696bbf9344dcc74fa7b4fb1a61adcebc90991fc8c",
+            "text": "Texto escrito em português do Brasil (pt-BR)."
+          },
+          {
+            "criterion_id": "e6b0a65a4f15997cb62860d51e0bdd544183c388b22afb6c2dd019ea5ab1b4d4",
+            "text": "Texto conciso e prático, sem rodeios."
+          },
+          {
+            "criterion_id": "6d020d82b42591fea142e6e2b9b97b199589ecd51a89696fd1027a30c7d00b26",
+            "text": "Ausência total de emojis e de hashtags."
+          }
+        ],
+        "rationale": "O resultado da tarefa est¡ nulo (null), o que impede a verificaç£o e o cumprimento dos critérios de aceitaç£o.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "execution_output": null,
+      "output_status": "absent"
+    },
+    "rationale": "O resultado da tarefa est¡ nulo (null), o que impede a verificaç£o e o cumprimento dos critérios de aceitaç£o.",
+    "requested_at": "2026-10-08T09:53:04.591616+00:00",
+    "task_id": "TASK-002",
+    "trigger": "acceptance_criteria_failed"
+  },
+  "run_id": "RUN-0f8e8cab-60aa-4cb1-ae8e-bdf57a577c02",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "researcher_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T09:53:02.102871+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "b6888868dff93fd168b2a1e99528ca8ef2441946a1c152909f2a0be57755f1c2",
+            "evidence": "Brasília é a capital federal do Brasil e a sede do governo do Distrito Federal.",
+            "rationale": "O resultado identifica claramente que Brasília é a capital federal do Brasil.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "148b808fa56dfdfedf2b52ab01a9e417cfe086540a48e8f93885b001c669febb",
+            "evidence": "O Distrito Federal é uma unidade federativa especial do Brasil que abriga a capital do país e não se divide em municípios... Brasília não possui uma 'capital' interna",
+            "rationale": "O resultado explica a natureza especial do Distrito Federal e esclarece que Brasília não possui uma capital interna.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "b6888868dff93fd168b2a1e99528ca8ef2441946a1c152909f2a0be57755f1c2",
+            "text": "Identificação clara de que Brasília é a capital federal do Brasil."
+          },
+          {
+            "criterion_id": "148b808fa56dfdfedf2b52ab01a9e417cfe086540a48e8f93885b001c669febb",
+            "text": "Explicação de que o Distrito Federal não é um estado comum e, portanto, Brasília não possui uma 'capital' interna."
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos com sucesso, conforme demonstrado no resultado da tarefa.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "researcher_agent",
+      "execution_output": "Brasília é a capital federal do Brasil e a sede do governo do Distrito Federal. \n\nO Distrito Federal é uma unidade federativa especial do Brasil que abriga a capital do país e não se divide em municípios, sendo administrado diretamente por seu governo distrital. Por essa razão, **Brasília não possui uma \"capital\" interna**, pois a própria cidade é a capital federal e coincide territorial e administrativamente com a área de gestão do Distrito Federal.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 2306,
+        "response": {
+          "choice": "researcher_agent",
+          "confidence": 0.403,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 126.7,
+          "probabilities": {
+            "critic_agent": 0.248,
+            "executor_agent": 0.1332,
+            "planner_agent": 0.0715,
+            "researcher_agent": 0.5224,
+            "summarizer_agent": 0.0249
+          }
+        },
+        "selected_agent": "researcher_agent",
+        "status": "observed",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T09:53:02.092542+00:00",
+      "output_status": "present",
+      "result": "Brasília é a capital federal do Brasil e a sede do governo do Distrito Federal. \n\nO Distrito Federal é uma unidade federativa especial do Brasil que abriga a capital do país e não se divide em municípios, sendo administrado diretamente por seu governo distrital. Por essa razão, **Brasília não possui uma \"capital\" interna**, pois a própria cidade é a capital federal e coincide territorial e administrativamente com a área de gestão do Distrito Federal.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:research",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T09:53:02.102871+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "replan:acceptance_criteria_failed",
+      "evaluated_at": "2026-10-08T09:53:04.589625+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "6e9a9fcb5c2e4f631178a58696bbf9344dcc74fa7b4fb1a61adcebc90991fc8c",
+            "evidence": "O campo result est¡ preenchido com null.",
+            "rationale": "Nenhum texto foi gerado, pois o resultado encontra-se nulo.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "e6b0a65a4f15997cb62860d51e0bdd544183c388b22afb6c2dd019ea5ab1b4d4",
+            "evidence": "O campo result est¡ preenchido com null.",
+            "rationale": "Nenhum texto foi gerado, pois o resultado encontra-se nulo.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "6d020d82b42591fea142e6e2b9b97b199589ecd51a89696fd1027a30c7d00b26",
+            "evidence": "O campo result est¡ preenchido com null.",
+            "rationale": "Nenhum texto foi gerado, pois o resultado encontra-se nulo.",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "6e9a9fcb5c2e4f631178a58696bbf9344dcc74fa7b4fb1a61adcebc90991fc8c",
+            "text": "Texto escrito em português do Brasil (pt-BR)."
+          },
+          {
+            "criterion_id": "e6b0a65a4f15997cb62860d51e0bdd544183c388b22afb6c2dd019ea5ab1b4d4",
+            "text": "Texto conciso e prático, sem rodeios."
+          },
+          {
+            "criterion_id": "6d020d82b42591fea142e6e2b9b97b199589ecd51a89696fd1027a30c7d00b26",
+            "text": "Ausência total de emojis e de hashtags."
+          }
+        ],
+        "rationale": "O resultado da tarefa est¡ nulo (null), o que impede a verificaç£o e o cumprimento dos critérios de aceitaç£o.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "review_critic",
+      "kev_observation": {
+        "elapsed_ms": 2432,
+        "response": {
+          "choice": "executor_agent",
+          "confidence": 0.8759,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 127.9,
+          "probabilities": {
+            "critic_agent": 0.0099,
+            "executor_agent": 0.9007,
+            "planner_agent": 0.0302,
+            "researcher_agent": 0.0199,
+            "summarizer_agent": 0.0392
+          }
+        },
+        "selected_agent": "executor_agent",
+        "status": "observed",
+        "task_id": "TASK-002"
+      },
+      "output_recorded_at": "2026-10-08T09:53:04.576986+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:creation",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T09:53:04.591616+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-003",
+      "updated_at": "2026-10-08T09:53:04.591616+00:00"
+    }
+  ],
+  "terminal_error": {
+    "code": "replan_limit_exhausted",
+    "limit": 2,
+    "recorded_at": "2026-10-08T09:53:04.591616+00:00",
+    "used": 2
+  },
+  "updated_at": "2026-10-08T09:53:04.591616+00:00"
+}

@@ -1,0 +1,184 @@
+{
+  "created_at": "2026-10-08T09:42:11.194089+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-d4ce83b2-b59d-439b-ac58-98271c70ba05",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "10cc384ada1c3ea326662f1632b0d3839ce6a8f17cdfddd600e46804772b2f03",
+            "evidence": "O campo result é nulo.",
+            "rationale": "A ausência de conteúdo no resultado impossibilita a verificação de emojis no texto.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "d2588fe6a42e2c3a2b4860aaee4fbd7f68eb18f04ea6f2a458f41bd79310d87d",
+            "evidence": "O campo result é nulo.",
+            "rationale": "A ausência de conteúdo no resultado impossibilita a verificação de hashtags no texto.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "d49f8f80ed4e6132be9d7a0e03ad3cd53722887831a705e7b047431189742257",
+            "evidence": "O campo result é nulo.",
+            "rationale": "A ausência de conteúdo no resultado impossibilita a avaliação do estilo de escrita conciso e focado.",
+            "status": "unverifiable"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "10cc384ada1c3ea326662f1632b0d3839ce6a8f17cdfddd600e46804772b2f03",
+            "text": "O texto final não contém nenhum caractere de emoji."
+          },
+          {
+            "criterion_id": "d2588fe6a42e2c3a2b4860aaee4fbd7f68eb18f04ea6f2a458f41bd79310d87d",
+            "text": "O texto final não possui nenhuma hashtag."
+          },
+          {
+            "criterion_id": "d49f8f80ed4e6132be9d7a0e03ad3cd53722887831a705e7b047431189742257",
+            "text": "O estilo de escrita é estritamente conciso e focado nas necessidades do perfil do usuário."
+          }
+        ],
+        "rationale": "O resultado da tarefa fornecido está nulo, impedindo a verificação de conformidade e a revisão do texto contra os critérios de aceitação estabelecidos.",
+        "trigger": "blocker_detected"
+      },
+      "execution_output": null,
+      "output_status": "absent"
+    },
+    "rationale": "O resultado da tarefa fornecido está nulo, impedindo a verificação de conformidade e a revisão do texto contra os critérios de aceitação estabelecidos.",
+    "requested_at": "2026-10-08T09:43:00.029764+00:00",
+    "task_id": "TASK-002",
+    "trigger": "blocker_detected"
+  },
+  "run_id": "RUN-85fe8313-e524-4da3-939a-bc22391694f5",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T09:42:21.634706+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "867e714f1220f5093684826e92c05503632d15af8bec661c59be402473d0b072",
+            "evidence": "Brasilia e a capital federal do Brasil, sede do governo da Republica Federativa do Brasil, localizada no Distrito Federal. Por ser uma cidade-estado federal e a propria capital do pais, Brasilia nao possui uma capital propria.",
+            "rationale": "O texto detalha com clareza a relacao geografica e politica, definindo Brasilia como capital do Brasil e sua localizacao no Distrito Federal.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "c510788a9b260de293aa8157c54cc42512ff429c44a3251ecf5fa163586913e4",
+            "evidence": "O texto contem exatamente dois paragrafos de facil leitura.",
+            "rationale": "A resposta fornecida e extremamente concisa e direta, estruturada exatamente em dois paragrafos curtos.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "1e5adc56bb92069005543d3966dd628eca296887fedc87e860d7c3cafe92773b",
+            "evidence": "Brasilia e a capital federal do Brasil, sede do governo da Republica Federativa do Brasil, localizada no Distrito Federal.",
+            "rationale": "A redacao foi feita inteiramente no idioma portugues padrao do Brasil (pt-BR).",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "867e714f1220f5093684826e92c05503632d15af8bec661c59be402473d0b072",
+            "text": "O texto explica claramente a relação entre Brasília, Distrito Federal e Brasil."
+          },
+          {
+            "criterion_id": "c510788a9b260de293aa8157c54cc42512ff429c44a3251ecf5fa163586913e4",
+            "text": "A resposta é direta e não excede dois parágrafos simples."
+          },
+          {
+            "criterion_id": "1e5adc56bb92069005543d3966dd628eca296887fedc87e860d7c3cafe92773b",
+            "text": "O idioma utilizado é o português (pt-BR)."
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram plenamente atendidos e o texto cumpre o objetivo de esclarecer a duvida geopolitica de forma concisa e no idioma correto.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "executor_agent",
+      "execution_output": "Brasília é a capital federal do Brasil, sede do governo da República Federativa do Brasil, localizada no Distrito Federal. Por ser uma cidade-estado federal e a própria capital do país, Brasília não possui uma capital própria.\n\nO Distrito Federal tem natureza político-administrativa singular e não se divide em municípios, funcionando a própria cidade de Brasília como o centro político nacional e a sede governamental local.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 2972,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "executor_agent",
+        "status": "unavailable",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T09:42:15.502100+00:00",
+      "output_status": "present",
+      "result": "Brasília é a capital federal do Brasil, sede do governo da República Federativa do Brasil, localizada no Distrito Federal. Por ser uma cidade-estado federal e a própria capital do país, Brasília não possui uma capital própria.\n\nO Distrito Federal tem natureza político-administrativa singular e não se divide em municípios, funcionando a própria cidade de Brasília como o centro político nacional e a sede governamental local.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:drafting",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T09:42:21.642714+00:00"
+    },
+    {
+      "assigned_agent": "critic_agent",
+      "attempt": 1,
+      "error": "replan:blocker_detected",
+      "evaluated_at": "2026-10-08T09:43:00.015383+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "10cc384ada1c3ea326662f1632b0d3839ce6a8f17cdfddd600e46804772b2f03",
+            "evidence": "O campo result é nulo.",
+            "rationale": "A ausência de conteúdo no resultado impossibilita a verificação de emojis no texto.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "d2588fe6a42e2c3a2b4860aaee4fbd7f68eb18f04ea6f2a458f41bd79310d87d",
+            "evidence": "O campo result é nulo.",
+            "rationale": "A ausência de conteúdo no resultado impossibilita a verificação de hashtags no texto.",
+            "status": "unverifiable"
+          },
+          {
+            "criterion_id": "d49f8f80ed4e6132be9d7a0e03ad3cd53722887831a705e7b047431189742257",
+            "evidence": "O campo result é nulo.",
+            "rationale": "A ausência de conteúdo no resultado impossibilita a avaliação do estilo de escrita conciso e focado.",
+            "status": "unverifiable"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "10cc384ada1c3ea326662f1632b0d3839ce6a8f17cdfddd600e46804772b2f03",
+            "text": "O texto final não contém nenhum caractere de emoji."
+          },
+          {
+            "criterion_id": "d2588fe6a42e2c3a2b4860aaee4fbd7f68eb18f04ea6f2a458f41bd79310d87d",
+            "text": "O texto final não possui nenhuma hashtag."
+          },
+          {
+            "criterion_id": "d49f8f80ed4e6132be9d7a0e03ad3cd53722887831a705e7b047431189742257",
+            "text": "O estilo de escrita é estritamente conciso e focado nas necessidades do perfil do usuário."
+          }
+        ],
+        "rationale": "O resultado da tarefa fornecido está nulo, impedindo a verificação de conformidade e a revisão do texto contra os critérios de aceitação estabelecidos.",
+        "trigger": "blocker_detected"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "review_critic",
+      "kev_observation": {
+        "elapsed_ms": 2209,
+        "error_type": "ExceptionGroup",
+        "selected_agent": "critic_agent",
+        "status": "unavailable",
+        "task_id": "TASK-002"
+      },
+      "output_recorded_at": "2026-10-08T09:42:49.844676+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:review_critic:workflow:review_critic:task_type_fallback:verification",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T09:43:00.025385+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T09:43:00.025385+00:00"
+}

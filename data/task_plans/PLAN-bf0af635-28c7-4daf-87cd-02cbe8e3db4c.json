@@ -1,0 +1,79 @@
+{
+  "assumptions": [
+    "O usuário busca uma resposta informativa e imediata sobre o tema, sem necessidade de aprofundamentos históricos longos."
+  ],
+  "created_at": "2026-10-08T09:42:04.963927+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Texto de resposta final esclarecendo de forma factual e concisa a relação geopolítica entre Brasília, Distrito Federal e o Brasil, em conformidade total com as restrições."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Responder em português (pt-BR) de acordo com o perfil do usuário",
+      "Apresentar uma resposta de forma concisa e prática",
+      "Não usar emojis",
+      "Não usar hashtags"
+    ],
+    "objective": "Esclarecer a relação geográfica e política entre Brasília e o Brasil, respondendo à dúvida sobre 'qual é a capital de brasília' de forma concisa e factual.",
+    "success_criteria": [
+      "A resposta esclarece diretamente que Brasília é a capital federal do Brasil e, portanto, não possui uma capital própria.",
+      "A explicação diferencia o papel de Brasília e do Distrito Federal de maneira sucinta.",
+      "O texto final está em português (pt-BR), sem emojis e sem hashtags."
+    ]
+  },
+  "lineage_id": "PLAN-d4ce83b2-b59d-439b-ac58-98271c70ba05",
+  "parent_plan_id": "PLAN-d4ce83b2-b59d-439b-ac58-98271c70ba05",
+  "plan_id": "PLAN-bf0af635-28c7-4daf-87cd-02cbe8e3db4c",
+  "replan_trigger": "blocker_detected",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "O texto explica claramente a relação entre Brasília, Distrito Federal e Brasil.",
+        "A resposta é direta e não excede dois parágrafos simples.",
+        "O idioma utilizado é o português (pt-BR)."
+      ],
+      "depends_on": [],
+      "description": "Elaborar um texto explicativo curto focado na dúvida 'qual é a capital de brasília', esclarecendo que Brasília é a capital do Brasil e que, por ser uma cidade/capital federal situada no Distrito Federal, ela própria não possui capital.",
+      "metadata": {},
+      "required_capabilities": [
+        "Consultar divisões administrativas brasileiras",
+        "Fornecer fatos geográficos do Brasil"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "drafting",
+      "title": "Redação da explicação geopolítica sobre Brasília"
+    },
+    {
+      "acceptance_criteria": [
+        "O resultado da tarefa contém explicitamente o texto final revisado completo, sem estar nulo.",
+        "O texto final não contém nenhum caractere de emoji.",
+        "O texto final não possui nenhuma hashtag.",
+        "O estilo de escrita é estritamente conciso e focado nas necessidades do perfil do usuário em português (pt-BR)."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Revisar o texto gerado na TASK-001 para garantir conformidade estrita às restrições de formatação (sem emojis, sem hashtags, concisão e idioma pt-BR). Esta tarefa deve obrigatoriamente produzir e retornar em seu campo de resultado o texto final consolidado e aprovado, garantindo que a saída não fique nula e forneça a evidência necessária para a verificação de todos os critérios.",
+      "metadata": {},
+      "required_capabilities": [
+        "Revisão de texto"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "verification",
+      "task_id": "TASK-002",
+      "task_type": "verification",
+      "title": "Revisão, conformidade e consolidação do texto"
+    }
+  ],
+  "updated_at": "2026-10-08T09:43:11.365410+00:00",
+  "workstream_id": "WS-a3a40f4f-efb7-4a71-8ae7-d47657b3fa24"
+}

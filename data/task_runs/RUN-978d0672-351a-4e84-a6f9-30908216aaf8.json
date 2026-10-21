@@ -1,0 +1,163 @@
+{
+  "created_at": "2026-10-08T23:53:48.117356+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-31c7f150-74b1-4e00-b656-e6a6b38df0de",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "6d4e44900bc980a26dcb3f905e628c3bb254307b18f04bed694e72e944fca618",
+            "evidence": "Nao ha resultado disponivel.",
+            "rationale": "O resultado da tarefa nao foi fornecido.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "1c7a80bdda7ae47213c25c0c0042949b09afb22bbefae165f7d6d593f780aaea",
+            "evidence": "Nao ha resultado disponivel.",
+            "rationale": "O resultado da tarefa nao foi fornecido.",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "6d4e44900bc980a26dcb3f905e628c3bb254307b18f04bed694e72e944fca618",
+            "text": "Revisao geografica aprovada"
+          },
+          {
+            "criterion_id": "1c7a80bdda7ae47213c25c0c0042949b09afb22bbefae165f7d6d593f780aaea",
+            "text": "Viabilidade logistica validada sem inconformidades"
+          }
+        ],
+        "rationale": "O resultado da tarefa esta nulo, impedindo a verificacao se os criterios de aceitacao foram atendidos.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "execution_output": null,
+      "output_status": "absent"
+    },
+    "rationale": "O resultado da tarefa esta nulo, impedindo a verificacao se os criterios de aceitacao foram atendidos.",
+    "requested_at": "2026-10-08T23:55:06.388327+00:00",
+    "task_id": "TASK-002",
+    "trigger": "acceptance_criteria_failed"
+  },
+  "run_id": "RUN-978d0672-351a-4e84-a6f9-30908216aaf8",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "planner_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-08T23:54:26.645880+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "1ee4ae07e02ba78a8e67fbfed036518a3fbfe92de8cddadf5396c7ef48e70c84",
+            "evidence": "Etapas: 1. Avião até Porto Alegre e ônibus até Uruguaiana. 2. Ônibus direto de Florianópolis.",
+            "rationale": "O resultado apresenta o itinerario cobrindo o trajeto Florianopolis-Uruguaiana para o fim de semana.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "39666d52a96e9eea678050bea4bc75047d7a4c3910909c9043cedf9abf7b5402",
+            "evidence": "Avião até Porto Alegre e ônibus até Uruguaiana. 2. Ônibus direto de Florianópolis.",
+            "rationale": "Os meios de transporte foram descritos de forma clara nas etapas do itinerario.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "1ee4ae07e02ba78a8e67fbfed036518a3fbfe92de8cddadf5396c7ef48e70c84",
+            "text": "Itinerario de fim de semana cobrindo o trajeto Florianopolis-Uruguaiana entregue"
+          },
+          {
+            "criterion_id": "39666d52a96e9eea678050bea4bc75047d7a4c3910909c9043cedf9abf7b5402",
+            "text": "Meios de transporte descritos claramente"
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram atendidos com sucesso, apresentando o itinerario de Florianopolis para Uruguaiana e descrevendo claramente os meios de transporte.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "planner_agent",
+      "execution_output": "Premissas: Viagem de fim de semana de Florianópolis para Uruguaiana de ônibus ou avião.\nDependências: Nenhuma.\nCritérios de sucesso: Itinerário e transportes descritos.\n\nEtapas:\n1. Avião até Porto Alegre e ônibus até Uruguaiana.\n2. Ônibus direto de Florianópolis.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 6043,
+        "fallback_reason": "low_confidence",
+        "local_agent": "planner_agent",
+        "mode": "decision",
+        "response": {
+          "choice": "planner_agent",
+          "confidence": 0.4768,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 1241.8,
+          "probabilities": {
+            "critic_agent": 0.0065,
+            "executor_agent": 0.2994,
+            "planner_agent": 0.5814,
+            "researcher_agent": 0.1008,
+            "summarizer_agent": 0.0118
+          }
+        },
+        "selected_agent": "planner_agent",
+        "status": "observed",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-08T23:54:09.793429+00:00",
+      "output_status": "present",
+      "result": "Premissas: Viagem de fim de semana de Florianópolis para Uruguaiana de ônibus ou avião.\nDependências: Nenhuma.\nCritérios de sucesso: Itinerário e transportes descritos.\n\nEtapas:\n1. Avião até Porto Alegre e ônibus até Uruguaiana.\n2. Ônibus direto de Florianópolis.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:planning",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-08T23:54:26.652054+00:00"
+    },
+    {
+      "assigned_agent": "critic_agent",
+      "attempt": 1,
+      "error": "replan:acceptance_criteria_failed",
+      "evaluated_at": "2026-10-08T23:55:06.371565+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "6d4e44900bc980a26dcb3f905e628c3bb254307b18f04bed694e72e944fca618",
+            "evidence": "Nao ha resultado disponivel.",
+            "rationale": "O resultado da tarefa nao foi fornecido.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "1c7a80bdda7ae47213c25c0c0042949b09afb22bbefae165f7d6d593f780aaea",
+            "evidence": "Nao ha resultado disponivel.",
+            "rationale": "O resultado da tarefa nao foi fornecido.",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "6d4e44900bc980a26dcb3f905e628c3bb254307b18f04bed694e72e944fca618",
+            "text": "Revisao geografica aprovada"
+          },
+          {
+            "criterion_id": "1c7a80bdda7ae47213c25c0c0042949b09afb22bbefae165f7d6d593f780aaea",
+            "text": "Viabilidade logistica validada sem inconformidades"
+          }
+        ],
+        "rationale": "O resultado da tarefa esta nulo, impedindo a verificacao se os criterios de aceitacao foram atendidos.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": null,
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-08T23:54:56.633445+00:00",
+      "output_status": "absent",
+      "result": null,
+      "selection_reason": "planned_strategy:review_critic:workflow:review_critic:task_type_fallback:review",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-08T23:55:06.377344+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-08T23:55:06.377344+00:00"
+}

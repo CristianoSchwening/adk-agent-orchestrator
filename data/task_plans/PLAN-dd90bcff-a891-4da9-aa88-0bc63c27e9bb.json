@@ -1,0 +1,76 @@
+{
+  "assumptions": [
+    "A consulta pode estar se referindo ao município de Uruguaiana ou a um distrito/localidade menor chamada Uruguai.",
+    "As fontes de dados geográficos oficiais do Rio Grande do Sul estão acessíveis."
+  ],
+  "created_at": "2026-10-08T15:57:07.692924+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Relatório conciso com a localização e esclarecimento sobre a cidade de Uruguai / Uruguaiana no Rio Grande do Sul."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Não use emojis",
+      "Não use hashtags",
+      "Response style must be concise and practical"
+    ],
+    "objective": "Identificar e localizar a entidade 'cidade de uruguai' no estado do Rio Grande do Sul, esclarecendo eventuais ambiguidades como Uruguaiana ou localidades homônimas.",
+    "success_criteria": [
+      "A localização exata ou correspondência correta (ex: Uruguaiana) é identificada no Rio Grande do Sul",
+      "A resposta é concisa, prática e sem emojis ou hashtags"
+    ]
+  },
+  "lineage_id": null,
+  "parent_plan_id": null,
+  "plan_id": "PLAN-dd90bcff-a891-4da9-aa88-0bc63c27e9bb",
+  "replan_trigger": null,
+  "revision": 1,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Identificação clara se 'Uruguai' se refere a Uruguaiana, a um distrito ou a outra localidade específica no RS",
+        "Coordenadas ou descrição geográfica precisa da localidade encontrada"
+      ],
+      "depends_on": [],
+      "description": "Consultar bases de dados geográficas e cartográficas para verificar a existência da cidade ou localidade denominada 'Uruguai' no Rio Grande do Sul, investigando possíveis confusões com 'Uruguaiana' ou distritos homônimos.",
+      "metadata": {},
+      "required_capabilities": [
+        "Geographical lookup",
+        "Geographical identification"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "research",
+      "title": "Pesquisa Geográfica e Histórica"
+    },
+    {
+      "acceptance_criteria": [
+        "A resposta explica claramente a localização da entidade no Rio Grande do Sul",
+        "Nenhum emoji ou hashtag está presente no texto final"
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Elaborar a resposta final respondendo diretamente à localização da entidade com estilo conciso e prático, garantindo a ausência de emojis e hashtags conforme restrições.",
+      "metadata": {},
+      "required_capabilities": [
+        "Text generation",
+        "Compliance checking"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-002",
+      "task_type": "synthesis",
+      "title": "Formulação da Resposta Final"
+    }
+  ],
+  "updated_at": "2026-10-08T15:57:07.692924+00:00",
+  "workstream_id": "WS-fc0964ca-d373-40ec-8c70-c09d77590a60"
+}

@@ -1,0 +1,202 @@
+{
+  "created_at": "2026-10-09T18:03:26.580372+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-a7a1d4b7-685b-4030-b745-02ad65e05f8e",
+  "replan_request": {
+    "evidence": {
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "cf633d6a4d27873e8843afe8a71ab47742bf8f1e4f12fef2e18c241be3bca11c",
+            "evidence": "Por favor, forneça mais detalhes ou o contexto sobre qual é o projeto",
+            "rationale": "O itinerário não foi elaborado, pois o resultado contém apenas uma mensagem pedindo mais detalhes.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "e4152e34b6b27c0d5a123be632d3274808b58d6853aa55c02568b2e712758416",
+            "evidence": "Por favor, forneça mais detalhes ou o contexto sobre qual é o projeto...",
+            "rationale": "O texto gerado não contém emojis ou hashtags.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "48163d0c3560e2994fb7a9ec7cea083374b2f2d3410ac274f0cf2d4375d0a87b",
+            "evidence": "Ausência de menção à cidade no resultado retornado.",
+            "rationale": "O texto gerado não menciona a cidade de Uruguaiana, falhando no foco exclusivo.",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "cf633d6a4d27873e8843afe8a71ab47742bf8f1e4f12fef2e18c241be3bca11c",
+            "text": "Itinerário estruturado englobando ida, estadia curta e volta."
+          },
+          {
+            "criterion_id": "e4152e34b6b27c0d5a123be632d3274808b58d6853aa55c02568b2e712758416",
+            "text": "Texto sem emojis ou hashtags."
+          },
+          {
+            "criterion_id": "48163d0c3560e2994fb7a9ec7cea083374b2f2d3410ac274f0cf2d4375d0a87b",
+            "text": "Foco exclusivo na cidade brasileira de Uruguaiana."
+          }
+        ],
+        "rationale": "O resultado gerado indica que o agente não executou a tarefa, solicitando contexto adicional em vez de produzir o itinerário exigido.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "execution_output": "Por favor, forneça mais detalhes ou o contexto sobre qual é o projeto, tarefa ou objetivo atual (já que não há um arquivo de plano pré-existente no workspace), para que eu possa dar continuidade exatamente de onde você precisa!",
+      "output_status": "present"
+    },
+    "rationale": "O resultado gerado indica que o agente não executou a tarefa, solicitando contexto adicional em vez de produzir o itinerário exigido.",
+    "requested_at": "2026-10-09T18:05:55.706878+00:00",
+    "task_id": "TASK-002",
+    "trigger": "acceptance_criteria_failed"
+  },
+  "run_id": "RUN-38664c74-4e4e-4544-80f4-eaf8b4eca919",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "researcher_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T18:05:19.256797+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "94f3c1864eda481f35dfe910d069eb8b4648e2a0610f757b8b7e17e3567d695c",
+            "evidence": "Uruguaiana fica no Rio Grande do Sul.",
+            "rationale": "A localização de Uruguaiana foi confirmada no Rio Grande do Sul.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "7e4c163a4c742f8a2e0549949ca52bd40a1d57a758c75c0068c4c5e946ffcba7",
+            "evidence": "Rota de Florianópolis: rodoviária (BR-282/BR-290, aprox. 10h) ou aérea via Porto Alegre.",
+            "rationale": "As rotas rodoviárias e aéreas partindo de Florianópolis foram devidamente identificadas.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "94f3c1864eda481f35dfe910d069eb8b4648e2a0610f757b8b7e17e3567d695c",
+            "text": "Localização de Uruguaiana corrigida para o Rio Grande do Sul, Brasil."
+          },
+          {
+            "criterion_id": "7e4c163a4c742f8a2e0549949ca52bd40a1d57a758c75c0068c4c5e946ffcba7",
+            "text": "Rotas e meios de transporte de Florianópolis para Uruguaiana identificados."
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos com sucesso com base no resultado fornecido.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "researcher_agent",
+      "execution_output": "Uruguaiana fica no Rio Grande do Sul. Rota de Florianópolis: rodoviária (BR-282/BR-290, aprox. 10h) ou aérea via Porto Alegre.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 6384,
+        "fallback_reason": "low_confidence",
+        "local_agent": "researcher_agent",
+        "mode": "decision",
+        "response": {
+          "choice": "planner_agent",
+          "confidence": 0.2292,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 1147.5,
+          "probabilities": {
+            "critic_agent": 0.1178,
+            "executor_agent": 0.306,
+            "planner_agent": 0.3833,
+            "researcher_agent": 0.1788,
+            "summarizer_agent": 0.0141
+          }
+        },
+        "selected_agent": "researcher_agent",
+        "status": "observed",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-09T18:03:34.197735+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana fica no Rio Grande do Sul. Rota de Florianópolis: rodoviária (BR-282/BR-290, aprox. 10h) ou aérea via Porto Alegre.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:research",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-09T18:05:19.256797+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "replan:acceptance_criteria_failed",
+      "evaluated_at": "2026-10-09T18:05:55.692555+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "cf633d6a4d27873e8843afe8a71ab47742bf8f1e4f12fef2e18c241be3bca11c",
+            "evidence": "Por favor, forneça mais detalhes ou o contexto sobre qual é o projeto",
+            "rationale": "O itinerário não foi elaborado, pois o resultado contém apenas uma mensagem pedindo mais detalhes.",
+            "status": "failed"
+          },
+          {
+            "criterion_id": "e4152e34b6b27c0d5a123be632d3274808b58d6853aa55c02568b2e712758416",
+            "evidence": "Por favor, forneça mais detalhes ou o contexto sobre qual é o projeto...",
+            "rationale": "O texto gerado não contém emojis ou hashtags.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "48163d0c3560e2994fb7a9ec7cea083374b2f2d3410ac274f0cf2d4375d0a87b",
+            "evidence": "Ausência de menção à cidade no resultado retornado.",
+            "rationale": "O texto gerado não menciona a cidade de Uruguaiana, falhando no foco exclusivo.",
+            "status": "failed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "cf633d6a4d27873e8843afe8a71ab47742bf8f1e4f12fef2e18c241be3bca11c",
+            "text": "Itinerário estruturado englobando ida, estadia curta e volta."
+          },
+          {
+            "criterion_id": "e4152e34b6b27c0d5a123be632d3274808b58d6853aa55c02568b2e712758416",
+            "text": "Texto sem emojis ou hashtags."
+          },
+          {
+            "criterion_id": "48163d0c3560e2994fb7a9ec7cea083374b2f2d3410ac274f0cf2d4375d0a87b",
+            "text": "Foco exclusivo na cidade brasileira de Uruguaiana."
+          }
+        ],
+        "rationale": "O resultado gerado indica que o agente não executou a tarefa, solicitando contexto adicional em vez de produzir o itinerário exigido.",
+        "trigger": "acceptance_criteria_failed"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Por favor, forneça mais detalhes ou o contexto sobre qual é o projeto, tarefa ou objetivo atual (já que não há um arquivo de plano pré-existente no workspace), para que eu possa dar continuidade exatamente de onde você precisa!",
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-09T18:05:53.820150+00:00",
+      "output_status": "present",
+      "result": null,
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:content_creation",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-09T18:05:55.698633+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-003",
+      "updated_at": "2026-10-09T18:05:55.698633+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-09T18:05:55.698633+00:00"
+}

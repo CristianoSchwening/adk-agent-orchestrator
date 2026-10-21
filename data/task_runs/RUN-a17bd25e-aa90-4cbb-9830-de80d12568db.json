@@ -1,0 +1,126 @@
+{
+  "created_at": "2026-10-09T18:05:59.361740+00:00",
+  "parent_run_id": "RUN-38664c74-4e4e-4544-80f4-eaf8b4eca919",
+  "plan_id": "PLAN-66f0d9e8-0e8c-4957-bc69-10c8c401e687",
+  "replan_request": {
+    "evidence": {
+      "error": "Dynamic node iterative_refinement_workflow failed"
+    },
+    "rationale": "The selected ADK node failed during task execution.",
+    "requested_at": "2026-10-09T18:06:33.502532+00:00",
+    "task_id": "TASK-002",
+    "trigger": "task_failed"
+  },
+  "run_id": "RUN-a17bd25e-aa90-4cbb-9830-de80d12568db",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "failed",
+  "tasks": [
+    {
+      "assigned_agent": "researcher_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T18:06:15.771447+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "94f3c1864eda481f35dfe910d069eb8b4648e2a0610f757b8b7e17e3567d695c",
+            "evidence": "Uruguaiana localiza-se no Rio Grande do Sul, Brasil.",
+            "rationale": "A localização de Uruguaiana foi corretamente identificada no Rio Grande do Sul, Brasil.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "7e4c163a4c742f8a2e0549949ca52bd40a1d57a758c75c0068c4c5e946ffcba7",
+            "evidence": "Rotas de Florianópolis: rodoviária via BR-282 e BR-290; aéreo via Porto Alegre.",
+            "rationale": "As rotas rodoviária e aérea partindo de Florianópolis para Uruguaiana foram devidamente mapeadas.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "94f3c1864eda481f35dfe910d069eb8b4648e2a0610f757b8b7e17e3567d695c",
+            "text": "Localização de Uruguaiana corrigida para o Rio Grande do Sul, Brasil."
+          },
+          {
+            "criterion_id": "7e4c163a4c742f8a2e0549949ca52bd40a1d57a758c75c0068c4c5e946ffcba7",
+            "text": "Rotas e meios de transporte de Florianópolis para Uruguaiana identificados."
+          }
+        ],
+        "rationale": "Todos os critérios de aceitação foram atendidos com sucesso com base no resultado apresentado pela tarefa.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "researcher_agent",
+      "execution_output": "Uruguaiana localiza-se no Rio Grande do Sul, Brasil. Rotas de Florianópolis: rodoviária via BR-282 e BR-290; aéreo via Porto Alegre.",
+      "execution_strategy": "single_agent",
+      "kev_observation": {
+        "elapsed_ms": 6586,
+        "fallback_reason": "low_confidence",
+        "local_agent": "researcher_agent",
+        "mode": "decision",
+        "response": {
+          "choice": "planner_agent",
+          "confidence": 0.2292,
+          "model": "jaredpalmer/kev-4b",
+          "model_latency_ms": 1269.1,
+          "probabilities": {
+            "critic_agent": 0.1178,
+            "executor_agent": 0.306,
+            "planner_agent": 0.3833,
+            "researcher_agent": 0.1788,
+            "summarizer_agent": 0.0141
+          }
+        },
+        "selected_agent": "researcher_agent",
+        "status": "observed",
+        "task_id": "TASK-001"
+      },
+      "output_recorded_at": "2026-10-09T18:06:06.943906+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana localiza-se no Rio Grande do Sul, Brasil. Rotas de Florianópolis: rodoviária via BR-282 e BR-290; aéreo via Porto Alegre.",
+      "selection_reason": "planned_strategy:single_agent:task_type_fallback:research",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-09T18:06:15.778576+00:00"
+    },
+    {
+      "assigned_agent": "executor_agent",
+      "attempt": 1,
+      "error": "Dynamic node iterative_refinement_workflow failed",
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": "iterative_refinement",
+      "execution_output": null,
+      "execution_strategy": "iterative_refinement",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": "planned_strategy:iterative_refinement:workflow:iterative_refinement:task_type_fallback:content_creation",
+      "status": "failed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-09T18:06:33.498929+00:00"
+    },
+    {
+      "assigned_agent": null,
+      "attempt": 0,
+      "error": null,
+      "evaluated_at": null,
+      "evaluation": null,
+      "evaluation_error": null,
+      "execution_node": null,
+      "execution_output": null,
+      "execution_strategy": "single_agent",
+      "kev_observation": null,
+      "output_recorded_at": null,
+      "output_status": "not_recorded",
+      "result": null,
+      "selection_reason": null,
+      "status": "blocked",
+      "task_id": "TASK-003",
+      "updated_at": "2026-10-09T18:06:33.498929+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-09T18:06:33.498929+00:00"
+}

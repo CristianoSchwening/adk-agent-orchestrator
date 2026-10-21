@@ -1,0 +1,105 @@
+{
+  "created_at": "2026-10-09T18:26:31.029846+00:00",
+  "parent_run_id": null,
+  "plan_id": "PLAN-d0e228ca-f24a-43bb-87a6-165a541d5eec",
+  "replan_request": null,
+  "run_id": "RUN-845686a3-f3f5-46da-bde6-23fa8e5f8af8",
+  "schema_version": "orchestrator.task_run.v2",
+  "status": "completed",
+  "tasks": [
+    {
+      "assigned_agent": "planner_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T18:28:13.526484+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "d6b8733204ca5521dbdf70701d375aeaad3fd657d96fd6c2335fd386e4052cc6",
+            "evidence": "Ida de avião Florianópolis-Porto Alegre, ônibus para Uruguaiana. Retorno reverso no domingo.",
+            "rationale": "O itinerario detalha o deslocamento de ida e volta para o fim de semana.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "2b68c523f83152b4e628645eac3959cc5bfc36c3030c9646d801f4e913114255",
+            "evidence": "Transporte aéreo e terrestre definidos.",
+            "rationale": "Os meios de transporte aereo e terrestre foram explicitamente definidos.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "d6b8733204ca5521dbdf70701d375aeaad3fd657d96fd6c2335fd386e4052cc6",
+            "text": "Itinerario de fim de semana detalhado"
+          },
+          {
+            "criterion_id": "2b68c523f83152b4e628645eac3959cc5bfc36c3030c9646d801f4e913114255",
+            "text": "Meio de transporte definido"
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram atendidos com sucesso conforme o resultado apresentado.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Ida de avião Florianópolis-Porto Alegre, ônibus para Uruguaiana. Retorno reverso no domingo. Transporte aéreo e terrestre definidos.",
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-09T18:28:05.574108+00:00",
+      "output_status": "present",
+      "result": "Ida de avião Florianópolis-Porto Alegre, ônibus para Uruguaiana. Retorno reverso no domingo. Transporte aéreo e terrestre definidos.",
+      "selection_reason": "planned_strategy:single_agent:policy_override:requires_review:workflow:review_critic:task_type_fallback:planning",
+      "status": "completed",
+      "task_id": "TASK-001",
+      "updated_at": "2026-10-09T18:28:13.534210+00:00"
+    },
+    {
+      "assigned_agent": "critic_agent",
+      "attempt": 1,
+      "error": null,
+      "evaluated_at": "2026-10-09T18:28:42.696247+00:00",
+      "evaluation": {
+        "criteria": [
+          {
+            "criterion_id": "efe0ff2fbd92780978d5bfdd72f6614d806d518c5539a0d8f6414a013179ae9b",
+            "evidence": "Uruguaiana fica no Rio Grande do Sul.",
+            "rationale": "O fato geografico de Uruguaiana estar no Rio Grande do Sul e a distancia em relacao a Florianopolis foram verificados.",
+            "status": "passed"
+          },
+          {
+            "criterion_id": "492351b195db4bd84c778c7117231edb2f0ece41f105c95c16db5da18168b848",
+            "evidence": "Viagem de fim de semana a partir de Florianópolis é inviável por distância e tempo.",
+            "rationale": "A consistencia logistica foi verificada, concluindo que a viagem de fim de semana e inviavel por distancia e tempo.",
+            "status": "passed"
+          }
+        ],
+        "criteria_catalog": [
+          {
+            "criterion_id": "efe0ff2fbd92780978d5bfdd72f6614d806d518c5539a0d8f6414a013179ae9b",
+            "text": "Fatos geograficos validados"
+          },
+          {
+            "criterion_id": "492351b195db4bd84c778c7117231edb2f0ece41f105c95c16db5da18168b848",
+            "text": "Consistencia logistica verificada"
+          }
+        ],
+        "rationale": "Todos os criterios de aceitacao foram atendidos com sucesso, pois o resultado validou os fatos geograficos e a consistencia logistica da viagem entre Florianopolis e Uruguaiana.",
+        "trigger": "none"
+      },
+      "evaluation_error": null,
+      "execution_node": "review_critic",
+      "execution_output": "Uruguaiana fica no Rio Grande do Sul. Viagem de fim de semana a partir de Florianópolis é inviável por distância e tempo.",
+      "execution_strategy": "review_critic",
+      "kev_observation": null,
+      "output_recorded_at": "2026-10-09T18:28:40.997061+00:00",
+      "output_status": "present",
+      "result": "Uruguaiana fica no Rio Grande do Sul. Viagem de fim de semana a partir de Florianópolis é inviável por distância e tempo.",
+      "selection_reason": "planned_strategy:review_critic:workflow:review_critic:task_type_fallback:review",
+      "status": "completed",
+      "task_id": "TASK-002",
+      "updated_at": "2026-10-09T18:28:42.700993+00:00"
+    }
+  ],
+  "terminal_error": null,
+  "updated_at": "2026-10-09T18:28:42.700993+00:00"
+}

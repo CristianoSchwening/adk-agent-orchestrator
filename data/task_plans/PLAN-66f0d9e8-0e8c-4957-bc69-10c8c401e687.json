@@ -1,0 +1,102 @@
+{
+  "assumptions": [
+    "O usuário deseja realizar a viagem de forma prática, priorizando otimização de tempo devido à distância.",
+    "A correção geográfica sobre Uruguaiana ser no Brasil deve ser explícita no início da entrega."
+  ],
+  "created_at": "2026-10-09T18:01:47.455653+00:00",
+  "deliverables": [
+    {
+      "deliverable_id": "DEL-001",
+      "description": "Itinerário de fim de semana Florianópolis-Uruguaiana validado geograficamente, detalhando transporte, de forma ultra-concisa e sem elementos supérfluos."
+    }
+  ],
+  "goal": {
+    "constraints": [
+      "Máximo de 20 palavras por resposta nas interações.",
+      "Estilo extremamente direto e conciso.",
+      "Não utilizar emojis.",
+      "Não utilizar hashtags.",
+      "Validar e corrigir imediatamente a localização geográfica de Uruguaiana antes de consolidar o roteiro."
+    ],
+    "objective": "Criar e revisar um itinerário de fim de semana de Florianópolis para Uruguaiana, corrigindo inconsistências geográficas e indicando transporte.",
+    "success_criteria": [
+      "Uruguaiana corretamente identificada no Rio Grande do Sul (Brasil) e não no Uruguai.",
+      "Opções de transporte (aéreo ou rodoviário) de Florianópolis para Uruguaiana apresentadas de forma clara.",
+      "Itinerário de fim de semana elaborado de forma extremamente concisa, sem emojis e sem hashtags."
+    ]
+  },
+  "lineage_id": "PLAN-a7a1d4b7-685b-4030-b745-02ad65e05f8e",
+  "parent_plan_id": "PLAN-a7a1d4b7-685b-4030-b745-02ad65e05f8e",
+  "plan_id": "PLAN-66f0d9e8-0e8c-4957-bc69-10c8c401e687",
+  "replan_trigger": "acceptance_criteria_failed",
+  "revision": 2,
+  "schema_version": "orchestrator.task_plan.v1",
+  "status": "validated",
+  "tasks": [
+    {
+      "acceptance_criteria": [
+        "Localização de Uruguaiana corrigida para o Rio Grande do Sul, Brasil.",
+        "Rotas e meios de transporte de Florianópolis para Uruguaiana identificados."
+      ],
+      "depends_on": [],
+      "description": "Confirmar a localização de Uruguaiana no Rio Grande do Sul e mapear as rotas de transporte (aéreo e rodoviário) partindo de Florianópolis.",
+      "metadata": {},
+      "required_capabilities": [
+        "geographic_validation",
+        "transportation_routing"
+      ],
+      "requires_approval": false,
+      "requires_review": false,
+      "strategy": "single_agent",
+      "task_id": "TASK-001",
+      "task_type": "research",
+      "title": "Validação Geográfica e de Transporte"
+    },
+    {
+      "acceptance_criteria": [
+        "Itinerário estruturado englobando ida, estadia curta e volta.",
+        "Texto sem emojis ou hashtags.",
+        "Foco exclusivo na cidade brasileira de Uruguaiana."
+      ],
+      "depends_on": [
+        "TASK-001"
+      ],
+      "description": "Escrever o itinerário de fim de semana integrando dados de transporte da tarefa anterior e mencionando explicitamente que Uruguaiana fica no Rio Grande do Sul, Brasil, fornecendo todo o contexto prévio no prompt do agente para evitar falhas de escopo.",
+      "metadata": {},
+      "required_capabilities": [
+        "itinerary_design",
+        "concise_writing"
+      ],
+      "requires_approval": false,
+      "requires_review": true,
+      "strategy": "iterative_refinement",
+      "task_id": "TASK-002",
+      "task_type": "content_creation",
+      "title": "Elaboração do Roteiro de Fim de Semana com Contexto Explícito"
+    },
+    {
+      "acceptance_criteria": [
+        "Roteiro final aprovado sem conter emojis.",
+        "Roteiro final aprovado sem conter hashtags.",
+        "Texto final extremamente conciso e factual."
+      ],
+      "depends_on": [
+        "TASK-002"
+      ],
+      "description": "Revisar o itinerário gerado para garantir estrito cumprimento do limite de tamanho, tom conciso, ausência de emojis e de hashtags.",
+      "metadata": {},
+      "required_capabilities": [
+        "compliance_checking",
+        "copyediting"
+      ],
+      "requires_approval": true,
+      "requires_review": false,
+      "strategy": "review_critic",
+      "task_id": "TASK-003",
+      "task_type": "review",
+      "title": "Revisão e Refinamento de Restrições"
+    }
+  ],
+  "updated_at": "2026-10-09T18:05:59.354247+00:00",
+  "workstream_id": "WS-0f529694-1c3c-4264-9aff-92b2153acc28"
+}
