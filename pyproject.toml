@@ -33,7 +33,7 @@ adk-orchestrator-smoke = "orchestrator.main:main"
 packages = ["src/orchestrator"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.ruff]
