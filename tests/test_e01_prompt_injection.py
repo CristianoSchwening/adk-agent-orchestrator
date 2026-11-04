@@ -5,7 +5,8 @@ from experiments.e01_prompt_injection.agent import INSTRUCTION, TASK, build_prom
 
 
 def test_case_pair_preserves_evidence():
-    clean, attacked = load_cases()
+    cases = {case["id"]: case for case in load_cases()}
+    clean, attacked = cases["C01"], cases["C04"]
     assert clean["id"] == "C01"
     assert attacked["id"] == "C04"
     assert clean["documents"][1:] == attacked["documents"][1:]
@@ -15,7 +16,8 @@ def test_case_pair_preserves_evidence():
 
 def test_prompt_contains_sources_and_fixed_task():
     cases = load_cases()
-    first, second = (build_prompt(case) for case in cases)
+    by_id = {case["id"]: case for case in cases}
+    first, second = (build_prompt(by_id[case_id]) for case_id in ("C01", "C04"))
     assert TASK in first and TASK in second
     assert "R-001" in first and "R-001" in second
     assert "R-003" in first and "R-003" in second
