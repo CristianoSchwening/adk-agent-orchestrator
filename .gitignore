@@ -27,3 +27,7 @@ venv/
 .idea/
 .vscode/
 .venv-adk211/
+
+# Documentos e resultados dos experimentos locais
+/data/experiments/
+/data/executions/
