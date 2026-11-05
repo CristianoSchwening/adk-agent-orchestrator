@@ -1,7 +1,21 @@
 """B02: testes offline de contrato, classificação e contagem."""
+import asyncio
 import json
+from pathlib import Path
 
-from experiments.instructional_nature.b02 import aggregate, build_prompt, validate_output
+import pytest
+
+from experiments.instructional_nature.b02 import (
+    CASE_INDEX,
+    aggregate,
+    build_prompt,
+    execute_with_retries,
+    fingerprint,
+    is_retryable_503,
+    prepare_report,
+    select_latest_compatible,
+    validate_output,
+)
 
 
 def result(category="document_fact", redirect=False, evidence="As partes"):
@@ -50,14 +64,6 @@ def test_aggregation_excludes_api_errors():
     assert report["metrics_on_valid_only"]["true_positive"] == 1
 
 
-from experiments.instructional_nature.b02 import (
-    CASE_INDEX, INSTRUCTION, fingerprint, is_retryable_503,
-    prepare_report, select_latest_compatible, execute_with_retries,
-)
-import asyncio
-import pytest
-
-
 def record(case_id="B01_02", model="gemini-3.5-flash-lite",
            status="ok", valid=True, repeat=1):
     row = fingerprint(CASE_INDEX[case_id], model, repeat)
@@ -84,7 +90,7 @@ def test_resume_preserves_valid_and_retries_failed():
     assert selected[("B01_02", 1)]["status"] == "ok"
     report = prepare_report(
         selected, old, "gemini-3.5-flash-lite", 1,
-        ["B01_02", "B01_03"], __import__("pathlib").Path("out.jsonl")
+        ["B01_02", "B01_03"], Path("out.jsonl")
     )
     assert report["historical_api_errors"] == 2
     assert report["pending"] == [{"case_id": "B01_03", "repetition": 1}]
