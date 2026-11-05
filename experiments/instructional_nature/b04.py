@@ -10,20 +10,19 @@ from pathlib import Path
 from time import perf_counter
 from uuid import uuid4
 
-from experiments.instructional_nature.b04_cases import CASES
-from experiments.instructional_nature.b03 import (
-    INSTRUCTION, build_prompt, consistency_flags, hash_text, validate_output,
-)
 from experiments.instructional_nature.b02 import is_retryable_503, read_history
+from experiments.instructional_nature.b03 import (
+    INSTRUCTION,
+    build_prompt,
+    consistency_flags,
+    hash_text,
+    validate_output,
+)
+from experiments.instructional_nature.b04_cases import CASES
 
 DEFAULT_OUTPUT = Path("data/executions/instructional_nature/b04_results.jsonl")
 DEFAULT_REPORT = Path("data/executions/instructional_nature/b04_report.json")
 CASE_INDEX = {case[0]: case for case in CASES}
-FRAMINGS = {"active", "quoted_or_reported", "none", "ambiguous"}
-
-
-
-
 
 def fingerprint(case: tuple, model: str, repetition: int) -> dict:
     case_id, _, excerpt, _, _ = case
@@ -37,62 +36,6 @@ def fingerprint(case: tuple, model: str, repetition: int) -> dict:
         "prompt_sha256": hash_text(build_prompt(case_id, excerpt)),
     }
 
-
-def validate_output(raw: str, excerpt: str) -> dict:
-    try:
-        obj = json.loads(raw.strip())
-    except (ValueError, json.JSONDecodeError):
-        return {"contract_valid": False, "validation_error": "invalid_json", "parsed": None}
-    expected = {
-        "tipo_conteudo", "destinatario", "contem_instrucao_ia", "enquadramento",
-        "tentativa_redirecionamento", "evidencia_textual", "requer_revisao",
-    }
-    if not isinstance(obj, dict) or set(obj) != expected:
-        return {"contract_valid": False, "validation_error": "invalid_fields", "parsed": obj}
-    valid = (
-        type(obj["tipo_conteudo"]) is str and obj["tipo_conteudo"] in CATEGORIES
-        and type(obj["destinatario"]) is str and obj["destinatario"] in RECIPIENTS
-        and type(obj["contem_instrucao_ia"]) is bool
-        and type(obj["enquadramento"]) is str and obj["enquadramento"] in FRAMINGS
-        and type(obj["tentativa_redirecionamento"]) is bool
-        and type(obj["requer_revisao"]) is bool
-        and type(obj["evidencia_textual"]) is str
-        and bool(obj["evidencia_textual"].strip())
-        and obj["evidencia_textual"] in excerpt
-    )
-    return {
-        "contract_valid": valid,
-        "validation_error": None if valid else "invalid_values_or_evidence",
-        "parsed": obj,
-    }
-
-
-def consistency_flags(parsed: dict) -> list[str]:
-    """Heurísticas auditáveis: sinalizam revisão sem alterar a previsão do LLM."""
-    flags = []
-    framing = parsed["enquadramento"]
-    active = parsed["tentativa_redirecionamento"]
-    present = parsed["contem_instrucao_ia"]
-    category = parsed["tipo_conteudo"]
-    if active and not present:
-        flags.append("active_without_instruction_presence")
-    if framing == "quoted_or_reported" and active:
-        flags.append("quoted_context_marked_active")
-    if framing == "active" and not active:
-        flags.append("active_context_not_marked_redirect")
-    if framing == "none" and (active or present):
-        flags.append("none_context_conflicts_with_command")
-    if framing == "ambiguous" and not parsed["requer_revisao"]:
-        flags.append("ambiguous_without_review")
-    if category == "quoted_attack" and framing != "quoted_or_reported":
-        flags.append("quoted_category_framing_mismatch")
-    if category == "agent_directive" and framing != "active":
-        flags.append("active_category_framing_mismatch")
-    if category == "quoted_attack" and active:
-        flags.append("quoted_category_marked_active")
-    if category == "agent_directive" and not active:
-        flags.append("active_category_not_marked_redirect")
-    return flags
 
 
 def aggregate(records: list[dict], *, requested: int = 24) -> dict:
