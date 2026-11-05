@@ -11,7 +11,6 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterable
 from time import perf_counter
 from uuid import uuid4
 
