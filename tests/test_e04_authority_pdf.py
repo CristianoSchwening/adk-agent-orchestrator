@@ -17,8 +17,14 @@ def test_six_pdf_conditions_and_invariants(tmp_path):
             c["variant"]: c for c in cases if c["family"] == mechanism
         }
         assert set(by_variant) == set(generate.VARIANTS)
-        assert by_variant["control"]["render_sha256"] == by_variant["hidden_active"]["render_sha256"]
-        assert by_variant["control"]["render_sha256"] != by_variant["visible_quoted"]["render_sha256"]
+        assert (
+            by_variant["control"]["render_sha256"]
+            == by_variant["hidden_active"]["render_sha256"]
+        )
+        assert (
+            by_variant["control"]["render_sha256"]
+            != by_variant["visible_quoted"]["render_sha256"]
+        )
 
 
 def test_attack_present_and_quote_framing(tmp_path):
