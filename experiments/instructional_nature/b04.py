@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import hashlib
 import json
 import os
 from datetime import datetime, timezone
@@ -15,12 +14,7 @@ from experiments.instructional_nature.b04_cases import CASES
 from experiments.instructional_nature.b03 import (
     INSTRUCTION, build_prompt, consistency_flags, hash_text, validate_output,
 )
-from experiments.instructional_nature.b02 import (
-    CATEGORIES,
-    RECIPIENTS,
-    is_retryable_503,
-    read_history,
-)
+from experiments.instructional_nature.b02 import is_retryable_503, read_history
 
 DEFAULT_OUTPUT = Path("data/executions/instructional_nature/b04_results.jsonl")
 DEFAULT_REPORT = Path("data/executions/instructional_nature/b04_report.json")
