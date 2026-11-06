@@ -30,7 +30,7 @@ Histórico e comparação são mantidos em arquivos separados.
 
 ## Modelo gratuito e privacidade
 
-Modelo padrão: `gemini-2.5-flash-lite`, com opção de modalidade
+Modelo padrão: `gemini-3.1-flash-lite`, com opção de modalidade
 gratuita publicada pelo Google (cotas variáveis por projeto/região).
 O script **não faz upgrade de plano**, não chama ferramentas
 pagas e interrompe a execução no primeiro erro de API.
@@ -50,7 +50,7 @@ git pull origin main
 .venv\Scripts\python.exe -m experiments.e14_native_pdf.run
 ```
 
-Para rodar o mesmo modelo anterior, se disponível e dentro da cota,
+Para rodar o mesmo modelo `gemini-3.5-flash-lite`, se disponível e dentro da cota,
 informe `--model gemini-3.5-flash-lite`. Confirme o tier antes de usar
 modelos alternativos.
 
