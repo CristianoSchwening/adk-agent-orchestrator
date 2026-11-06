@@ -177,8 +177,28 @@ def report_for(cases: dict, history: dict, scenarios: list[str], model: str) -> 
                     "scenario": scenario, "arm": arm, "phase": phase,
                     **evaluate(cases[scenario], phase, record),
                 })
+    paired = []
+    for scenario in scenarios:
+        for phase in PHASES:
+            native = next(
+                r for r in rows if r["scenario"] == scenario
+                and r["arm"] == "native_pdf" and r["phase"] == phase
+            )
+            text = next(
+                r for r in rows if r["scenario"] == scenario
+                and r["arm"] == "reference_text" and r["phase"] == phase
+            )
+            paired.append({
+                "scenario": scenario, "phase": phase,
+                "both_valid": native["contract_valid"] and text["contract_valid"],
+                "native_matched_facts": native.get("matched_fact_count"),
+                "reference_matched_facts": text.get("matched_fact_count"),
+                "native_framing": native.get("framing"),
+                "reference_framing": text.get("framing"),
+            })
     return {
         "experiment": "E14b", "model": model,
+        "paired_comparisons": paired,
         "calls_expected": len(rows),
         "valid_calls": sum(r["contract_valid"] for r in rows),
         "complete": all(r["contract_valid"] for r in rows),
@@ -279,12 +299,7 @@ def main() -> int:
     cases = generate(args.folder) if not args.output.exists() else None
     if cases is None:
         # Reutilizar PDFs existentes garante que hashes anteriores sejam válidos.
-        cases = {k: {
-            "path": str(args.folder / f"E14B_{k}.pdf"),
-            "source": s[0],
-            "facts": [], "framing": s[3],
-        } for k, s in []}
-        # Gabarito é recriado de forma determinística, sem alterar arquivos em uso.
+        # Gabarito reconstruído fora da API sem reescrever PDFs históricos.
         import tempfile
 
         with tempfile.TemporaryDirectory() as temp:
