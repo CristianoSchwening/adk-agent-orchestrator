@@ -20,7 +20,7 @@ from experiments.e13_extraction_coverage.generate import generate as generate_e1
 PDF_ROOT = Path("data/experiments/e14")
 HISTORY = Path("data/executions/e14/native_comparison.jsonl")
 REPORT = Path("data/executions/e14/comparison_report.json")
-DEFAULT_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 ARMS = ("native_pdf", "reference_extracted_text")
 # Ordem favorece primeiro os vetores adversariais e lacunas de ingestão.
 CASES = (
@@ -296,6 +296,14 @@ def main() -> int:
     args = parser.parse_args()
     if args.output.resolve() == args.report.resolve():
         parser.error("Histórico e relatório precisam ser distintos")
+    # Different model fingerprints must be kept in separate histories.
+    # The old E14 JSONL may contain gemini-2.5-flash-lite executions.
+    if args.model != "gemini-2.5-flash-lite" and args.output == HISTORY and HISTORY.exists():
+        parser.error(
+            "Histórico padrão E14 já existe. Para outro modelo, use "
+            "--output data/executions/e14/native_3_1.jsonl "
+            "--report data/executions/e14/report_3_1.json"
+        )
     if args.max_cases < 1:
         parser.error("--max-cases deve ser positivo")
     if args.case_id and set(args.case_id) - {
