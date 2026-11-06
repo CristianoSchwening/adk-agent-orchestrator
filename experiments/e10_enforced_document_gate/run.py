@@ -15,7 +15,6 @@ from experiments.e01_prompt_injection.agent import create_agent
 from experiments.e02_behavior.run import (
     TASK,
     build_prompt,
-    execute as execute_legal,
     sha,
     validate_response,
 )
