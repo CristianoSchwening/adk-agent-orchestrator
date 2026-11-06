@@ -7,6 +7,7 @@ Não classifica capacidade de detecção como garantia de proteção.
 from __future__ import annotations
 
 import argparse
+import argparse
 import hashlib
 import json
 import os
