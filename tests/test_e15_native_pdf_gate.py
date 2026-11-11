@@ -23,12 +23,13 @@ def classify(framing="none"):
 def test_adapted_dual_axis_gate():
     active = decide(classify("active"))
     assert active["instruction_disposition"] == "contain_operational_directive"
-    assert active["human_review_required"] is False or active["human_review_required"]
+    assert active["human_review_required"] is True
     assert not active["allowed"]
     assert decide(classify("quoted"))["allowed"]
     assert decide(classify("none"))["allowed"]
     assert not decide({"framing": "none"})["allowed"]
     assert not decide(classify("uncertain"))["allowed"]
+    assert decide(None, status="error", contract_valid=False)["allowed"] is False
     inconsistent = classify("active")
     inconsistent["detected"] = False
     assert not decide(inconsistent)["allowed"]
