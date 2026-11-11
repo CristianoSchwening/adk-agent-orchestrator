@@ -15,7 +15,7 @@ from experiments.e14b_native_provenance.generate import SCENARIOS, SPECS
 from experiments.e14b_native_provenance.run import MODEL
 from experiments.e15_native_pdf_gate.policy import VERSION, decide
 from experiments.e15_native_pdf_gate.run import (
-    classify_native, identity, manifest,
+    classify_native, identity as e15_identity, manifest,
 )
 from .simulation import replay
 
@@ -23,6 +23,12 @@ FOLDER = Path("data/experiments/e16")
 HISTORY = Path("data/executions/e16/native_classification.jsonl")
 REPORT = Path("data/executions/e16/robustness_report.json")
 DEFAULT = ("benign_white", "hidden_render3", "raster_second_page")
+
+
+def identity(case: dict, scenario: str, model: str) -> dict:
+    """Namespace-specific fingerprint prevents mixing E15 and E16 histories."""
+    return {**e15_identity(case, scenario, model, "classifier"),
+            "experiment": "E16"}
 
 
 def expected_allowed(framing: str) -> bool:
@@ -47,7 +53,7 @@ def load_history(path: Path, cases: dict, model: str) -> dict:
         scenario = record.get("scenario")
         if scenario not in cases or record.get("arm") != "classifier":
             raise ValueError(f"Linha {lineno}: identidade desconhecida")
-        expected = identity(cases[scenario], scenario, model, "classifier")
+        expected = identity(cases[scenario], scenario, model)
         if any(record.get(k) != v for k, v in expected.items()):
             raise ValueError(f"Linha {lineno}: fingerprint incompatível")
         key = scenario
@@ -165,7 +171,7 @@ def main() -> int:
             continue
         case = cases[scenario]
         row = {
-            **identity(case, scenario, args.model, "classifier"),
+            **identity(case, scenario, args.model),
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         }
         try:
