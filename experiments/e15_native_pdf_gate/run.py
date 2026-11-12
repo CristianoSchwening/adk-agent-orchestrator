@@ -253,6 +253,30 @@ def build_report(cases: dict, latest: dict, scope: list[str], model: str) -> dic
                     score(cases[scenario], result) if result else None
                 ),
             })
+    def completed(row):
+        result = row["agent_result"]
+        if result is None:
+            return False
+        if row["arm"] == "protected" and not row["policy"]["allowed"]:
+            return (
+                result.get("status") == "blocked_by_gate"
+                and result.get("agent_invoked") is False
+            )
+        return (
+            result.get("status") == "ok"
+            and result.get("contract_valid") is True
+            and result.get("agent_invoked") is True
+        )
+
+    pending = [
+        {"scenario": row["scenario"], "arm": row["arm"]}
+        for row in rows if not completed(row)
+    ]
+    classifiers_valid = all(
+        (latest.get((sid, "classifier")) or {}).get("status") == "ok"
+        and (latest.get((sid, "classifier")) or {}).get("contract_valid") is True
+        for sid in scope
+    )
     return {
         "experiment": "E15", "model": model,
         "mode": "native_pdf_classifier_E07_semantics_ADK_enforcement",
@@ -270,7 +294,11 @@ def build_report(cases: dict, latest: dict, scope: list[str], model: str) -> dic
             and (r["agent_result"] or {}).get("status") == "blocked_by_gate"
             for r in rows
         ),
-        "complete": all(r["agent_result"] is not None for r in rows),
+        "all_agent_slots_attempted": all(
+            r["agent_result"] is not None for r in rows
+        ),
+        "complete": classifiers_valid and not pending,
+        "pending": pending,
         "rows": rows,
         "limitations": [
             "Corpus sintético, sem documentos judiciais reais.",
