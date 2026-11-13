@@ -1,4 +1,5 @@
 """E20 isolated policy and replay tests; never call Gemini."""
+
 import pytest
 
 from experiments.e20_policy_triage.policy import triage
@@ -21,13 +22,16 @@ def response(framing, redirects=False, recipient="agent"):
 
 
 def test_triad_and_no_automatic_authorization_on_conflict():
-    assert triage(response("none", recipient="professional"), "recipient_aware")["disposition"] == "allow"
-    assert triage(response("active", redirects=True), "recipient_aware")["disposition"] == "contain"
+    normal = triage(response("none", recipient="professional"), "recipient_aware")
+    assert normal["disposition"] == "allow"
+    attack = triage(response("active", redirects=True), "recipient_aware")
+    assert attack["disposition"] == "contain"
     inconsistent = triage(response("quoted", redirects=True), "recipient_aware")
     assert inconsistent["disposition"] == "review"
     assert not inconsistent["automatic_agent_authorized"]
     assert inconsistent["requires_human_review"]
-    assert triage({"status": "error", "contract_valid": False}, "recipient_aware")["disposition"] == "technical_hold"
+    failure = triage({"status": "error", "contract_valid": False}, "recipient_aware")
+    assert failure["disposition"] == "technical_hold"
 
 
 def test_control_policy_reused():
@@ -62,10 +66,10 @@ def test_replay_separates_human_review_from_attack_containment():
 
 def test_replay_rejects_cross_experiment_pdf_changes():
     source = {("registry_instruction", "control", 0): {
-        "status": "error", "contract_valid": False, "pdf_sha256": "a"*64,
+        "status": "error", "contract_valid": False, "pdf_sha256": "a" * 64,
     }}
     other = {("registry_instruction", "control", 1): {
-        "status": "error", "contract_valid": False, "pdf_sha256": "b"*64,
+        "status": "error", "contract_valid": False, "pdf_sha256": "b" * 64,
     }}
     with pytest.raises(ValueError, match="PDF hash mismatch"):
         analyze({"E18": source, "E19": other}, model="fake")
