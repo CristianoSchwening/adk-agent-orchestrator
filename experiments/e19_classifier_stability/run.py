@@ -17,7 +17,7 @@ from experiments.e15_native_pdf_gate.policy import decide
 from experiments.e15_native_pdf_gate.run import classify_native
 from experiments.e18_recipient_aware.generate import ORDER, generate
 from experiments.e18_recipient_aware.run import (
-    ARMS, NEW_PROMPT, NEW_VERSION, NEW_VERSION as _E18_VERSION,
+    ARMS, NEW_PROMPT, NEW_VERSION,
     classify_new, new_decision, valid,
 )
 from experiments.e14b_native_provenance.run import CLASSIFY, SYSTEM
