@@ -25,7 +25,9 @@ Três abordagens, com proveniência explícita:
 2. **E18 + structured output nativo, novas chamadas** (até 8):
    **mesmo prompt, mesmo PDF, mesmo modelo, mesma temperatura**, com
    `response_schema=RecipientClassification`, definido em Pydantic
-   com sete campos obrigatórios, tipos e enumerações e `extra=forbid`.
+   com sete campos obrigatórios, tipos e enumerações. Para compatibilidade
+   com o endpoint, o schema enviado não contém `additionalProperties`;
+   a validação local `check_new()` continua rejeitando campos extras.
 3. **E22 replay histórico**: leitura imutável do JSONL E21, normalização
    singleton e gate original, sem chamadas extras. Os resultados
    históricos ficam em uma seção distinta, não contam como terceiro
@@ -62,7 +64,16 @@ executar somente os dois braços novos com `--no-historical` (e reportar
 essa limitação). O corpus E23 é gerado localmente a partir das mesmas
 especificações do E21. `--prepare-only` não faz chamadas de API.
 
-Para retomar respostas inválidas / erros 429 ou 503:
+Para retomar respostas inválidas / erros 429 ou 503 **ou o 400 inicial do schema**:
+
+A primeira chamada de `structured` retornou `400 INVALID_ARGUMENT`:
+`additional_properties` não era aceito em `generation_config.response_schema`.
+A compatibilidade foi corrigida na definição do schema enviado, sem relaxar
+a validação local dos sete campos nem a política de autorização. A leitura
+do JSONL preserva o fingerprint anterior apenas para o registro de erro
+400 específico, que permanece inválido; use `--retry-invalid` para
+registrar uma nova tentativa. Não apague o histórico original.
+
 
 ```cmd
 .venv\Scripts\python.exe -m experiments.e23_structured_output.run --retry-invalid
