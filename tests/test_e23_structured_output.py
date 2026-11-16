@@ -9,12 +9,14 @@ from experiments.e23_structured_output.run import (
     ARMS,
     CONTESTED,
     RecipientClassification,
+    LEGACY_REJECTED_SCHEMA_SHA,
     _load,
     classify_structured,
     fingerprint,
     historic_replay,
     summarize,
 )
+from experiments.e18_recipient_aware.run import check_new
 from experiments.e21_tcu_indirect.generate import ORDER, generate
 
 
@@ -39,8 +41,8 @@ def record(framing="active", redirected=True, status="ok", contract=True):
 def test_structured_model_is_strict():
     valid = record()["parsed"]
     assert RecipientClassification.model_validate(valid).framing == "active"
-    with pytest.raises(ValidationError):
-        RecipientClassification.model_validate({**valid, "extra": "x"})
+    assert "additionalProperties" not in RecipientClassification.model_json_schema()
+    assert not check_new({**valid, "extra": "x"})
     with pytest.raises(ValidationError):
         RecipientClassification.model_validate({**valid, "page": 0})
 
@@ -110,5 +112,22 @@ def test_fingerprint_rejects_mismatch(tmp_path):
         }) + "\n",
         encoding="utf-8",
     )
+    with pytest.raises(ValueError, match="fingerprint"):
+        _load(path, cases, "fake")
+
+
+def test_legacy_400_remains_invalid_and_retryable(tmp_path):
+    cases = generate(tmp_path / "pdf")
+    cid = "source_omission_attack"
+    row = fingerprint(cases[cid], cid, "structured", "fake")
+    row["schema_sha256"] = LEGACY_REJECTED_SCHEMA_SHA
+    row.update({"status": "error", "contract_valid": False,
+                "parsed": None, "error": "400 INVALID_ARGUMENT additional_properties"})
+    path = tmp_path / "history.jsonl"
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
+    assert _load(path, cases, "fake")[(cid, "structured")]["status"] == "error"
+    row["status"] = "ok"
+    row["contract_valid"] = True
+    path.write_text(json.dumps(row) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="fingerprint"):
         _load(path, cases, "fake")
