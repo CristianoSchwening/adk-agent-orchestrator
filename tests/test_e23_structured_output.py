@@ -3,6 +3,7 @@ import json
 from copy import deepcopy
 
 import pytest
+from pydantic import ValidationError
 
 from experiments.e23_structured_output.run import (
     ARMS,
@@ -38,9 +39,9 @@ def record(framing="active", redirected=True, status="ok", contract=True):
 def test_structured_model_is_strict():
     valid = record()["parsed"]
     assert RecipientClassification.model_validate(valid).framing == "active"
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         RecipientClassification.model_validate({**valid, "extra": "x"})
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         RecipientClassification.model_validate({**valid, "page": 0})
 
 
