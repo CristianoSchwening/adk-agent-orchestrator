@@ -37,13 +37,14 @@ REPORT = Path("data/executions/e23/structured_report.json")
 E21_HISTORY = Path("data/executions/e21/paired.jsonl")
 ARMS = ("original", "structured")
 VERSION = "E23-structured-output-v1"
+LEGACY_REJECTED_SCHEMA_SHA = "bc4b21c5622ebfe576961cc81f5ab5b84aa5b5dfb8c6fe9e4f9e6bd0f7f8f2aa"
 CONTESTED = frozenset({"source_omission_control"})
 
 
 class RecipientClassification(BaseModel):
     """Structural output schema; semantic consistency checked separately."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     detected: bool
     recipient: Literal["agent", "court", "professional", "other", "none", "unclear"]
@@ -133,7 +134,22 @@ def _load(path: Path, cases: dict, model: str) -> dict:
         if cid not in cases or arm not in ARMS:
             raise ValueError(f"Line {number}: unknown case/arm")
         expected = fingerprint(cases[cid], cid, arm, model)
-        if any(row.get(k) != v for k, v in expected.items()):
+        matches = all(row.get(k) == v for k, v in expected.items())
+        # Only historical 400 errors from the rejected provider schema may
+        # retain the old fingerprint. They remain invalid and retryable.
+        legacy_error = (
+            arm == "structured"
+            and row.get("schema_sha256") == LEGACY_REJECTED_SCHEMA_SHA
+            and row.get("status") == "error"
+            and row.get("contract_valid") is False
+            and "400 INVALID_ARGUMENT" in row.get("error", "")
+            and "additional_properties" in row.get("error", "")
+            and all(
+                row.get(k) == v for k, v in expected.items()
+                if k != "schema_sha256"
+            )
+        )
+        if not (matches or legacy_error):
             raise ValueError(f"Line {number}: fingerprint mismatch")
         key = cid, arm
         previous = records.get(key)
